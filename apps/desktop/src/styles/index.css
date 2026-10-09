@@ -312,11 +312,12 @@ html:root {
    compact sizes. */
 .reflect-note-surface {
   font-size: var(--editor-font-size, var(--text-base));
-  /* Keep SF Pro at its regular master and use macOS grayscale antialiasing:
-     WebKit's `auto` rendering makes the same 400 weight noticeably heavier. */
+  /* Meowdown forces grayscale antialiasing and a very loose 1.7 leading on
+     `.ProseMirror`. Override both on the primary reading surface so WebKit can
+     use the native macOS rendering of SF Pro at its regular master. */
   font-weight: 400;
   line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: auto;
 }
 
 :root[data-editor-full-width='true'] {
