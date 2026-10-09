@@ -408,6 +408,15 @@ html:root {
    re-scales here: the subject one step above body, section headings at body
    size carried by weight — the same hierarchy, compressed. Unlayered, so
    these win over meowdown's `@layer meowdown` theme rules. */
+.reflect-hover-preview .reflect-editor {
+  /* Compact previews do not carry `.reflect-note-surface`, so explicitly
+     mirror the note body's native rendering instead of falling back to
+     Meowdown's pale grayscale antialiasing and loose leading. */
+  font-family: var(--font-reading, var(--font-sans));
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: auto;
+}
 .reflect-hover-preview .reflect-editor h1,
 .reflect-hover-preview .reflect-daily-subject {
   font-size: var(--text-sm, 0.875rem);
