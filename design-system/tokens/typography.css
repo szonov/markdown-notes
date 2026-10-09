@@ -14,8 +14,11 @@
     'InterVariable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
     sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, monospace;
-  /* The note editor / reading surface can swap to a serif */
-  --font-reading: 'InterVariable', Georgia, 'Times New Roman', serif;
+  /* Notes use the native UI face. On macOS this resolves to SF Pro, matching
+     the denser, crisper reading surface users expect from native editors. */
+  --font-reading:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
   /* Keyboard-shortcut glyphs (⌘ ⌥ ⇧) — system-ui renders them cleanly */
   --font-shortcut: system-ui, ui-monospace, SFMono-Regular, Menlo, monospace;
 
