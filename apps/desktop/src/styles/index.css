@@ -275,17 +275,17 @@ html:root {
 /* Editor reading size (Settings → Editor → "Text size"). The size lives in a
    variable on the document root so the `.reflect-editor` rules below resolve
    whatever the user picked; `EditorTextSizeEffect` mirrors the setting onto
-   `[data-editor-text-size]`. Medium is the DS prose default (16px); small and
-   large step one DS size down/up. The `:root` fallback keeps medium before the
+   `[data-editor-text-size]`. Medium is 17px; small and large use the adjacent
+   14px and 18px steps. The `:root` fallback keeps medium before the
    effect has run (and in tests that never mount it). */
 :root {
-  --editor-font-size: var(--text-base);
+  --editor-font-size: 1.0625rem;
 }
 :root[data-editor-text-size='small'] {
   --editor-font-size: var(--text-sm);
 }
 :root[data-editor-text-size='medium'] {
-  --editor-font-size: var(--text-base);
+  --editor-font-size: 1.0625rem;
 }
 :root[data-editor-text-size='large'] {
   --editor-font-size: var(--text-lg);
@@ -307,17 +307,20 @@ html:root {
 
 /* The primary note editor (the note pane and every daily-stream row, both via
    NotePane) reads at the user's chosen text size (Settings, Editor, "Text size";
-   default 16px) instead of inheriting <body>'s 14px chrome size. Scoped to this
+   default 17px) instead of inheriting <body>'s 14px chrome size. Scoped to this
    class, never bare `.reflect-editor`, so read-only previews keep their own
    compact sizes. */
 .reflect-note-surface {
   font-size: var(--editor-font-size, var(--text-base));
-  /* Meowdown forces grayscale antialiasing and a very loose 1.7 leading on
-     `.ProseMirror`. Override both on the primary reading surface so WebKit can
-     use the native macOS rendering of SF Pro at its regular master. */
+  /* Match the calm native typography used by the Codex conversation surface:
+     regular SF Pro, compact leading, and thin grayscale antialiasing. */
   font-weight: 400;
   line-height: 1.5;
-  -webkit-font-smoothing: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+html:not(.dark) .reflect-note-surface {
+  color: #242424;
 }
 
 :root[data-editor-full-width='true'] {
