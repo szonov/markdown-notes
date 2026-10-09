@@ -19,7 +19,6 @@ const core = vi.hoisted(() => ({
 }))
 const flushOpenDocuments = vi.hoisted(() => vi.fn(async () => {}))
 const flushSettings = vi.hoisted(() => vi.fn(async () => {}))
-const flushBackup = vi.hoisted(() => vi.fn(async () => {}))
 
 vi.mock('@tauri-apps/api/window', () => ({
   getCurrentWindow: () => ({
@@ -40,7 +39,6 @@ vi.mock('@reflect/core', () => ({
 }))
 
 vi.mock('@/editor/open-documents.ts', () => ({ flushOpenDocuments }))
-vi.mock('@/lib/backup-flush.ts', () => ({ flushBackup }))
 vi.mock('@/lib/settings-flush.ts', () => ({ flushSettings }))
 vi.mock('@/lib/platform.ts', () => ({ isMacosDesktop: true, isNativeShell: () => true }))
 vi.mock('@/lib/windows/window-role.ts', () => ({
@@ -82,7 +80,6 @@ describe('installQuitFlush', () => {
     await closeRequest.completed
     expect(flushOpenDocuments).toHaveBeenCalledOnce()
     expect(flushSettings).toHaveBeenCalledOnce()
-    expect(flushBackup).toHaveBeenCalledOnce()
     expect(windowMock.hide).toHaveBeenCalledOnce()
 
     dispose()
@@ -96,7 +93,6 @@ describe('installQuitFlush', () => {
     expect(closeRequest.preventDefault).not.toHaveBeenCalled()
     await closeRequest.completed
     expect(flushOpenDocuments).toHaveBeenCalledOnce()
-    expect(flushBackup).toHaveBeenCalledOnce()
     expect(windowMock.hide).not.toHaveBeenCalled()
 
     dispose()

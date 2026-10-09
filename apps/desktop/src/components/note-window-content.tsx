@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react'
-import { dailyPath, displayNoteTitle } from '@reflect/core'
+import { displayNoteTitle } from '@reflect/core'
+import { DailyNoteView } from '@/components/daily-note-view.tsx'
 import { NoteFindBar } from '@/components/note-find-bar.tsx'
 import { RouteContent } from '@/components/route-content.tsx'
-import { SingleNoteView } from '@/components/single-note-view.tsx'
 import { useNoteRow } from '@/hooks/use-note-row.ts'
 import { useNoteWindowTitle } from '@/hooks/use-note-window-title.ts'
 import { formatDayLabel, todayIso } from '@/lib/dates.ts'
@@ -40,21 +40,7 @@ export function NoteWindowContent(): ReactElement {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-surface text-text">
-      {dailyDate !== null ? (
-        <SingleNoteView
-          path={dailyPath(dailyDate)}
-          dailyDate={dailyDate}
-          heading={
-            // The stream's day label, standing in for the title a daily
-            // note doesn't carry.
-            <h2 className="reflect-daily-subject reflect-content-gutter mb-3">
-              {formatDayLabel(dailyDate, settings.dateFormat)}
-            </h2>
-          }
-        />
-      ) : (
-        <RouteContent />
-      )}
+      {dailyDate !== null ? <DailyNoteView date={dailyDate} /> : <RouteContent />}
       <NoteFindBar />
     </div>
   )

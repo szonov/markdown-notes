@@ -1,39 +1,12 @@
-import { useId, useState, type ReactElement } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  aiProvider,
-  aiProviderRequiresApiKey,
-  errorMessage,
-  listNotes,
-  CHAT_SYSTEM_PROMPT_MAX_LENGTH,
-  TRANSCRIPTION_PROMPT_MAX_LENGTH,
-  normalizeChatSystemPrompt,
-  normalizeTranscriptionPrompt,
-  presentOfferCodeRedeemSheet,
-  syncAppStore,
-  type AiPrompt,
-  type AiProviderConfig,
-  type EditorTextSize,
-  type ThemePreference,
-} from '@reflect/core'
-import { useAiPrompts } from '@/hooks/use-ai-prompts.ts'
-import { useAiProviders } from '@/hooks/use-ai-providers.ts'
+import type { ReactElement } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { listNotes, type EditorTextSize, type ThemePreference } from '@reflect/core'
 import { useAppVersion } from '@/hooks/use-app-version.ts'
-import { usePaywallRequested } from '@/hooks/use-paywall-requested.ts'
 import { useBridgeReady } from '@/hooks/use-bridge-ready.ts'
-import { useCrashTest, useDebugUnlockTap } from '@/hooks/use-debug-unlock.ts'
 import { marketingVersion } from '@/lib/marketing-version.ts'
-import { openUrlSync } from '@/lib/open-url.ts'
 import { queryKeys } from '@/lib/query-client.ts'
-import { AddAiProviderDrawer } from '@/mobile/add-ai-provider-drawer.tsx'
-import { AiPromptDrawer } from '@/mobile/ai-prompt-drawer.tsx'
-import { AiProviderActionsDrawer } from '@/mobile/ai-provider-actions-drawer.tsx'
-import { ConnectGithubDrawer } from '@/mobile/connect-github-drawer.tsx'
-import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '@/mobile/legal-urls.ts'
 import { MobileScreenHeader } from '@/mobile/screen-header.tsx'
-import { TextSettingDrawer } from '@/mobile/text-setting-drawer.tsx'
 import {
-  SettingsActionRow,
   SettingsGroup,
   SettingsNavRow,
   SettingsSegmentedRow,
@@ -41,21 +14,8 @@ import {
   SettingsValueRow,
   type SegmentedOption,
 } from '@/mobile/settings-list.tsx'
-import {
-  refetchActiveSubscription,
-  useActiveSubscription,
-} from '@/mobile/use-active-subscription.ts'
-import { useAppStoreEnvironment } from '@/mobile/use-app-store-environment.ts'
-import {
-  classicAccessMessage,
-  formatClassicDate,
-  useClassicAccess,
-  useClassicSignOut,
-} from '@/mobile/use-classic-access.ts'
-import { useMobileSyncStatus } from '@/mobile/use-sync-status.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
 import { useSettings } from '@/providers/settings-provider.tsx'
-import { useSyncContext } from '@/providers/sync-provider.tsx'
 import { useRouter } from '@/routing/router.tsx'
 
 const THEME_OPTIONS: readonly SegmentedOption<ThemePreference>[] = [
@@ -64,140 +24,24 @@ const THEME_OPTIONS: readonly SegmentedOption<ThemePreference>[] = [
   { value: 'dark', label: 'Dark' },
 ]
 
-function aiProviderValue(provider: AiProviderConfig, defaultProviderId: string | null): string {
-  const credential =
-    aiProviderRequiresApiKey(provider.provider) || provider.keyHint !== ''
-      ? `·····${provider.keyHint}`
-      : 'No API key'
-  return provider.id === defaultProviderId ? `${credential} · Default` : credential
-}
-
 const TEXT_SIZE_OPTIONS: readonly SegmentedOption<EditorTextSize>[] = [
   { value: 'small', label: 'Small' },
   { value: 'medium', label: 'Medium' },
   { value: 'large', label: 'Large' },
 ]
 
-/**
- * The mobile Settings screen — a pushed card (route kind `settings`) in the
- * iOS inset-grouped idiom, replacing the old bottom-sheet hodgepodge. The
- * graph row discloses into the Graphs switcher screen; appearance and editor
- * preferences edit the shared settings document (the same keys desktop
- * exposes); the backup group mirrors the status pill's engine state, connects
- * GitHub for the local graph (the {@link ConnectGithubDrawer} sheet — iCloud
- * graphs sync through the container instead, Plan 21), and can disconnect.
- */
+/** Mobile settings shared by a future Android shell: local notes only. */
 export function MobileSettings(): ReactElement {
   const { back, canBack, navigate } = useRouter()
-  const { graph, mobileStorageKind, platform } = useGraph()
-  const isIos = platform === 'ios'
-  const subscription = useActiveSubscription()
-  const classicAccess = useClassicAccess()
-  const classicSignOut = useClassicSignOut()
-  const queryClient = useQueryClient()
-  const [, setPaywallRequested] = usePaywallRequested()
-  const [restorePending, setRestorePending] = useState(false)
-  const [redeemPending, setRedeemPending] = useState(false)
-  const [subscriptionMessage, setSubscriptionMessage] = useState<string | null>(null)
-
-  const handleRestore = async (): Promise<void> => {
-    setRestorePending(true)
-    setSubscriptionMessage(null)
-    try {
-      await syncAppStore()
-      const found = await refetchActiveSubscription(queryClient)
-      if (found === null) {
-        setSubscriptionMessage('No previous purchase found for this Apple account.')
-      }
-    } catch {
-      setSubscriptionMessage('Restore failed. Check your connection and try again.')
-    } finally {
-      setRestorePending(false)
-    }
-  }
-
-  const handleRedeem = async (): Promise<void> => {
-    setRedeemPending(true)
-    setSubscriptionMessage(null)
-    try {
-      await presentOfferCodeRedeemSheet()
-      // A redeemed code normally arrives as a purchaseUpdated event; the
-      // refetch here covers a sheet that closed without emitting one.
-      subscription.invalidate()
-    } catch {
-      setSubscriptionMessage('Could not open the redemption sheet. Try again.')
-    } finally {
-      setRedeemPending(false)
-    }
-  }
+  const { graph } = useGraph()
   const { settings, updateSettings } = useSettings()
   const version = useAppVersion()
-  const { unlocked: debugUnlocked, tap: versionTap } = useDebugUnlockTap()
-  const crashTest = useCrashTest()
-  const environment = useAppStoreEnvironment()
-  const sync = useSyncContext()
-  // Shared with the status pill (one hook, one query cache entry) — and null
-  // until the conflict count is known, so the row never claims `Backed up`
-  // over conflict markers already on disk and then flips.
-  const status = useMobileSyncStatus()
-  const [disconnecting, setDisconnecting] = useState(false)
-  const [connectOpen, setConnectOpen] = useState(false)
-  const { providers, defaultProvider, addProvider, removeProvider, makeDefault, setDefaultModel } =
-    useAiProviders()
-  const [addProviderOpen, setAddProviderOpen] = useState(false)
-  const [systemPromptOpen, setSystemPromptOpen] = useState(false)
-  const [transcriptionPromptOpen, setTranscriptionPromptOpen] = useState(false)
-  const { prompts, addPrompt, updatePrompt, removePrompt } = useAiPrompts()
-  // The edited prompt sticks around after close so the exit animation has
-  // content; `promptOpen` alone drives visibility (the edit-sheet pattern).
-  const [editingPrompt, setEditingPrompt] = useState<AiPrompt | 'new' | null>(null)
-  const [promptOpen, setPromptOpen] = useState(false)
-  const audioMemoDescriptionId = useId()
-  // The managed provider sticks around after close so the exit animation has
-  // content; `manageOpen` alone drives visibility (the edit-sheet pattern).
-  const [managedProvider, setManagedProvider] = useState<AiProviderConfig | null>(null)
-  const [manageOpen, setManageOpen] = useState(false)
-
   const bridgeReady = useBridgeReady()
   const { data: notes } = useQuery({
     queryKey: queryKeys.index.mobileNoteCount(graph?.root),
     queryFn: () => listNotes(),
     enabled: bridgeReady && graph !== null,
   })
-
-  const backup = sync?.backup ?? null
-  const repo = backup !== null && backup.phase === 'connected' ? backup.repo : null
-  // The connect entry point is local-graph-only (iCloud sync and a Git remote
-  // are mutually exclusive per graph, Plan 21) and waits out the controller's
-  // `loading` phase so the row never flashes on a graph that turns out to be
-  // connected.
-  const canConnect = mobileStorageKind === 'local' && backup?.phase === 'disconnected'
-
-  // Stop backing this graph up and forget the GitHub credential (one graph
-  // per device — unlinking is signing out). The local clone stays; the
-  // controller restarts into its disconnected state, and re-connecting
-  // re-onboards.
-  async function disconnect(): Promise<void> {
-    if (sync === null) {
-      return
-    }
-    setDisconnecting(true)
-    try {
-      await sync.disconnectGraph()
-      await sync.signOut()
-    } catch (err) {
-      console.error('GitHub disconnect failed:', errorMessage(err))
-    } finally {
-      setDisconnecting(false)
-    }
-  }
-
-  const storageLabel =
-    mobileStorageKind === 'icloud'
-      ? 'iCloud Drive'
-      : mobileStorageKind === 'local'
-        ? 'This device'
-        : undefined
 
   return (
     <div
@@ -213,14 +57,13 @@ export function MobileSettings(): ReactElement {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex flex-col gap-6 px-4 py-4">
-          <SettingsGroup header="Graph">
+          <SettingsGroup header="Notes">
             <SettingsNavRow
-              label={graph?.name ?? '—'}
-              value={storageLabel}
+              label={graph?.name ?? 'Local notes'}
+              value="This device"
               onPress={() => navigate({ kind: 'graphs' })}
             />
           </SettingsGroup>
-
           <SettingsGroup header="Appearance">
             <SettingsSegmentedRow
               label="Theme"
@@ -235,7 +78,6 @@ export function MobileSettings(): ReactElement {
               onChange={(editorTextSize) => updateSettings({ editorTextSize })}
             />
           </SettingsGroup>
-
           <SettingsGroup header="Editor">
             <SettingsSwitchRow
               label="Smooth caret animation"
@@ -257,181 +99,6 @@ export function MobileSettings(): ReactElement {
               }
             />
           </SettingsGroup>
-
-          <SettingsGroup
-            header="AI"
-            footer="Keys stay in this device’s keychain and are never synced."
-          >
-            {providers.map((provider) => (
-              <SettingsNavRow
-                key={provider.id}
-                label={aiProvider(provider.provider).label}
-                value={aiProviderValue(provider, defaultProvider?.id ?? null)}
-                onPress={() => {
-                  setManagedProvider(provider)
-                  setManageOpen(true)
-                }}
-              />
-            ))}
-            <SettingsActionRow label="Add AI provider" onPress={() => setAddProviderOpen(true)} />
-            <SettingsNavRow
-              label="System prompt"
-              value={
-                normalizeChatSystemPrompt(settings.chatSystemPrompt) === '' ? 'Default' : 'Custom'
-              }
-              onPress={() => setSystemPromptOpen(true)}
-            />
-          </SettingsGroup>
-
-          <SettingsGroup
-            header="AI prompts"
-            footer="Prompts run on text you select in a note, after the built-in set. They stay on this device and aren’t synced."
-          >
-            {prompts.map((prompt) => (
-              <SettingsNavRow
-                key={prompt.id}
-                label={prompt.label}
-                onPress={() => {
-                  setEditingPrompt(prompt)
-                  setPromptOpen(true)
-                }}
-              />
-            ))}
-            <SettingsActionRow
-              label="Add prompt"
-              onPress={() => {
-                setEditingPrompt('new')
-                setPromptOpen(true)
-              }}
-            />
-          </SettingsGroup>
-
-          <SettingsGroup
-            header="Audio memos"
-            footer="Uses AI to add punctuation, paragraphs, and light Markdown. Helper text is sent to your transcription provider with every memo."
-            footerId={audioMemoDescriptionId}
-          >
-            <SettingsSwitchRow
-              label="Transcription auto-format"
-              checked={settings.transcriptionFormat}
-              descriptionId={audioMemoDescriptionId}
-              onCheckedChange={(transcriptionFormat) => updateSettings({ transcriptionFormat })}
-            />
-            <SettingsNavRow
-              label="Helper text"
-              value={
-                normalizeTranscriptionPrompt(settings.transcriptionPrompt) === ''
-                  ? 'None'
-                  : 'Custom'
-              }
-              onPress={() => setTranscriptionPromptOpen(true)}
-            />
-          </SettingsGroup>
-
-          {repo !== null || status !== null || canConnect ? (
-            <SettingsGroup
-              header="Backup"
-              footer={
-                canConnect
-                  ? 'Sync notes with Reflect on your other devices.'
-                  : (status?.detail ?? null)
-              }
-            >
-              {repo !== null ? (
-                <SettingsValueRow label="GitHub" value={`${repo.owner}/${repo.name}`} />
-              ) : null}
-              {status !== null ? <SettingsValueRow label="Status" value={status.label} /> : null}
-              {canConnect ? (
-                <SettingsActionRow label="Connect GitHub" onPress={() => setConnectOpen(true)} />
-              ) : null}
-              {repo !== null ? (
-                <SettingsActionRow
-                  label="Disconnect GitHub"
-                  tone="destructive"
-                  pending={disconnecting}
-                  onPress={() => void disconnect()}
-                />
-              ) : null}
-            </SettingsGroup>
-          ) : null}
-
-          {isIos ? (
-            <SettingsGroup
-              header="Subscription"
-              footer={subscriptionMessage ?? classicAccessMessage(classicAccess)}
-            >
-              <SettingsValueRow
-                label="Plan"
-                value={
-                  subscription.value === 'monthly'
-                    ? 'Monthly'
-                    : subscription.value === 'yearly'
-                      ? 'Yearly'
-                      : classicAccess.active && classicAccess.value !== null
-                        ? `Reflect Classic, until ${formatClassicDate(classicAccess.value.expiresAt)}`
-                        : subscription.isLoading || classicAccess.isLoading
-                          ? 'Checking…'
-                          : 'Not subscribed'
-                }
-              />
-              {subscription.value === null && !classicAccess.active ? (
-                // The request flips usePaywallGate to 'show', so the gate in
-                // mobile-app.tsx replaces the app with the paywall immediately.
-                // It is what makes that work outside the App Store, where the
-                // gate otherwise never shows the paywall at all.
-                <SettingsActionRow
-                  label="Subscribe"
-                  onPress={() => {
-                    setPaywallRequested(true)
-                  }}
-                />
-              ) : subscription.value !== null ? (
-                <SettingsActionRow
-                  label="Manage Subscription"
-                  onPress={() => {
-                    openUrlSync('https://apps.apple.com/account/subscriptions')
-                  }}
-                />
-              ) : null}
-              {classicAccess.value !== null ? (
-                <>
-                  <SettingsValueRow
-                    label="Verified Account"
-                    value={classicAccess.value.email ?? 'Unknown'}
-                  />
-                  <SettingsActionRow
-                    label="Remove Reflect Classic Verification"
-                    tone="destructive"
-                    pending={classicSignOut.isPending}
-                    onPress={() => {
-                      classicSignOut.mutate()
-                    }}
-                  />
-                </>
-              ) : null}
-              <SettingsActionRow
-                label="Redeem Code"
-                pending={redeemPending}
-                onPress={() => {
-                  void handleRedeem()
-                }}
-              />
-              <SettingsActionRow
-                label="Restore Purchases"
-                pending={restorePending}
-                onPress={() => {
-                  void handleRestore()
-                }}
-              />
-              <SettingsActionRow
-                label="Terms of Use"
-                onPress={() => {
-                  openUrlSync(TERMS_OF_USE_URL)
-                }}
-              />
-            </SettingsGroup>
-          ) : null}
-
           <SettingsGroup header="About">
             <SettingsValueRow
               label="Notes"
@@ -440,90 +107,10 @@ export function MobileSettings(): ReactElement {
             <SettingsValueRow
               label="Version"
               value={version === null ? '…' : marketingVersion(version)}
-              onPress={versionTap}
-            />
-            <SettingsActionRow
-              label="Privacy Policy"
-              onPress={() => {
-                openUrlSync(PRIVACY_POLICY_URL)
-              }}
             />
           </SettingsGroup>
-
-          {debugUnlocked ? (
-            <SettingsGroup
-              header="Debug"
-              footer="Production is an App Store install; Sandbox is TestFlight or a development install."
-            >
-              {isIos ? (
-                <SettingsValueRow
-                  label="Environment"
-                  value={environment.value ?? (environment.isError ? 'Unknown' : 'Loading…')}
-                />
-              ) : null}
-              <SettingsActionRow
-                label="Trigger test error"
-                tone="destructive"
-                onPress={crashTest}
-              />
-            </SettingsGroup>
-          ) : null}
         </div>
       </main>
-      <ConnectGithubDrawer open={connectOpen} onOpenChange={setConnectOpen} />
-      <AddAiProviderDrawer
-        open={addProviderOpen}
-        onOpenChange={setAddProviderOpen}
-        onAdd={addProvider}
-      />
-      <AiProviderActionsDrawer
-        provider={managedProvider}
-        isDefault={managedProvider !== null && managedProvider.id === defaultProvider?.id}
-        open={manageOpen}
-        onOpenChange={setManageOpen}
-        onMakeDefault={makeDefault}
-        onSetDefaultModel={setDefaultModel}
-        onRemove={removeProvider}
-      />
-      <TextSettingDrawer
-        title="System prompt"
-        description="Additional instructions sent with every AI chat. Reflect’s note-search, citation, and privacy rules still apply."
-        ariaLabel="System prompt instructions"
-        placeholder="Be concise. Challenge my assumptions and ask clarifying questions."
-        maxLength={CHAT_SYSTEM_PROMPT_MAX_LENGTH}
-        rows={8}
-        normalize={normalizeChatSystemPrompt}
-        value={settings.chatSystemPrompt}
-        open={systemPromptOpen}
-        onOpenChange={setSystemPromptOpen}
-        onSave={(chatSystemPrompt) => updateSettings({ chatSystemPrompt })}
-      />
-      <TextSettingDrawer
-        title="Transcription helper text"
-        description="Context sent to your transcription provider with every audio memo, such as names it tends to misspell."
-        ariaLabel="Transcription helper text"
-        placeholder="This transcription mentions the following names:"
-        maxLength={TRANSCRIPTION_PROMPT_MAX_LENGTH}
-        rows={3}
-        normalize={normalizeTranscriptionPrompt}
-        value={settings.transcriptionPrompt}
-        open={transcriptionPromptOpen}
-        onOpenChange={setTranscriptionPromptOpen}
-        onSave={(transcriptionPrompt) => updateSettings({ transcriptionPrompt })}
-      />
-      <AiPromptDrawer
-        prompt={editingPrompt}
-        open={promptOpen}
-        onOpenChange={setPromptOpen}
-        onSave={(draft) => {
-          if (editingPrompt === 'new') {
-            addPrompt(draft)
-          } else if (editingPrompt !== null) {
-            updatePrompt(editingPrompt.id, draft)
-          }
-        }}
-        onRemove={removePrompt}
-      />
     </div>
   )
 }

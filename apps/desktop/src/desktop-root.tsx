@@ -14,7 +14,6 @@ import { isNativeShell } from '@/lib/platform.ts'
 import { trackSubscriptions } from '@/lib/subscriptions.ts'
 import { GraphProvider } from '@/providers/graph-provider.tsx'
 import { SidebarWidthEffect } from '@/providers/sidebar-width.tsx'
-import { UpdateProvider } from '@/providers/update-provider.tsx'
 
 /**
  * The desktop surface tree (split out of `main.tsx` by the Plan 19 platform
@@ -24,11 +23,11 @@ import { UpdateProvider } from '@/providers/update-provider.tsx'
 export function DesktopRoot(): ReactElement {
   const bridgeReady = useBridgeReady()
   // Deep-link intake starts with the surface, not the workspace: a
-  // `reflect://` URL that launched the app (or arrived on the graph chooser)
+  // `reflect-local://` URL that launched the app (or arrived on the graph chooser)
   // buffers in `intake.ts` until a graph opens. Browser dev has no plugin.
   // Main window only: the plugin's event stream reaches every webview, and a
   // ⌘-clicked note window must not also navigate itself on OS-delivered URLs
-  // (in-note `reflect://` clicks still work — `dispatchDeepLink` and the
+  // (in-note `reflect-local://` clicks still work — `dispatchDeepLink` and the
   // handler are per-webview state).
   useMainWindowEffect(() => {
     if (!isNativeShell()) {
@@ -63,16 +62,14 @@ export function DesktopRoot(): ReactElement {
 
   return (
     <AppErrorBoundary>
-      <UpdateProvider>
-        <GraphProvider>
-          <TooltipProvider>
-            <SidebarWidthEffect />
-            <WindowDragRegion />
-            <App />
-            <Toaster />
-          </TooltipProvider>
-        </GraphProvider>
-      </UpdateProvider>
+      <GraphProvider>
+        <TooltipProvider>
+          <SidebarWidthEffect />
+          <WindowDragRegion />
+          <App />
+          <Toaster />
+        </TooltipProvider>
+      </GraphProvider>
     </AppErrorBoundary>
   )
 }

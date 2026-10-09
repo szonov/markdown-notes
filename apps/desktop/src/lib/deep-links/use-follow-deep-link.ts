@@ -4,7 +4,7 @@ import { parseDeepLink } from '@/lib/deep-links/parse.ts'
 import { openDeepLinkInNewWindow } from '@/lib/windows/open-in-new-window.ts'
 import { useLinkIntentGuard } from '@/lib/windows/use-link-intent-guard.ts'
 
-/** Follow one in-app `reflect://` link. */
+/** Follow one in-app `reflect-local://` link. */
 export type FollowDeepLink = (options: { href: string; openInNewWindow: boolean }) => void
 
 /**
@@ -21,7 +21,7 @@ export function useFollowDeepLink(): FollowDeepLink {
       const link = parseDeepLink(href)
       // A capture or rejected URL still dispatches so the graph-scoped handler
       // can write it or surface the error, but it cannot supersede navigation.
-      if (link === null || link.kind === 'capture') {
+      if (link === null) {
         dispatchDeepLink(href)
         return
       }

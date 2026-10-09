@@ -1,19 +1,19 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Reflect",
+  "productName": "Markdown Notes",
   "version": "../package.json",
-  "identifier": "app.reflect.desktop",
+  "identifier": "app.zonov.reflect-local",
   "build": {
-    "beforeDevCommand": "pnpm sidecar && pnpm dev",
+    "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm sidecar && pnpm build",
+    "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
   "app": {
     "windows": [
       {
         "create": false,
-        "title": "Reflect",
+        "title": "Markdown Notes",
         "width": 1300,
         "height": 650,
         "minWidth": 200,
@@ -25,20 +25,14 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: reflect-asset: http://reflect-asset.localhost https://reflect-asset.localhost https:; media-src 'self' https: reflect-asset: http://reflect-asset.localhost https://reflect-asset.localhost; font-src 'self' data:; frame-src 'self' https://platform.twitter.com https://platform.x.com https://syndication.twitter.com https://www.youtube-nocookie.com https://www.youtube.com https://youtube-relay-reflect.vercel.app; connect-src 'self' ipc: http://ipc.localhost https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai https://github.com https://api.github.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io"
+      "csp": "default-src 'self' ipc: http://ipc.localhost; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: reflect-asset: http://reflect-asset.localhost https://reflect-asset.localhost https:; media-src 'self' https: reflect-asset: http://reflect-asset.localhost https://reflect-asset.localhost; font-src 'self' data:; frame-src 'self' https://platform.twitter.com https://platform.x.com https://syndication.twitter.com https://www.youtube-nocookie.com https://www.youtube.com https://youtube-relay-reflect.vercel.app; connect-src 'self' ipc: http://ipc.localhost"
     }
   },
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["reflect"]
+        "schemes": ["reflect-local"]
       }
-    },
-    "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDREQ0RBRkJBN0ZDODdDMzkKUldRNWZNaC91cS9OVFhtTHdrSWVOV3p2cEdhc3RZbmtXM0g0bnpxUnZXVjlQMjZRNXFlWUdPNWMK",
-      "endpoints": [
-        "https://github.com/team-reflect/reflect-open/releases/latest/download/latest.json"
-      ]
     }
   },
   "bundle": {

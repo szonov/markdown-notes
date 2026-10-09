@@ -5,24 +5,18 @@ import type {
   WikilinkItem,
   WikilinkSearchHandler,
 } from '@meowdown/react'
-import { Counter, isNotNullish } from '@ocavue/utils'
+import { Counter } from '@ocavue/utils'
 import {
   aliasHint,
-  contactLinkSuggestions,
-  contactDetailsMarkdown,
   displayNoteTitle,
-  ensurePersonNote,
   errorMessage,
   hasBridge,
-  isContactsReadable,
   resolveOrCreateNoteWithTitle,
-  resolvePersonContact,
   suggestTags,
   suggestWikiLinkTargets,
 } from '@reflect/core'
 import { reportAmbiguousNoteTitle } from '@/editor/ambiguous-note-feedback.ts'
 import { buildAutocompleteEntries } from '@/editor/wiki-autocomplete-entries.ts'
-import { useContactsAuthorization } from '@/hooks/use-contacts-authorization.ts'
 import { formatDayLabel, todayIso } from '@/lib/dates.ts'
 import { startOperation } from '@/lib/operations.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
@@ -51,12 +45,7 @@ export interface EditorAutocomplete {
 export function useEditorAutocomplete(): EditorAutocomplete {
   const { graph } = useGraph()
   const { settings } = useSettings()
-  const authorization = useContactsAuthorization()
   const generation = graph?.generation ?? null
-  // Contacts join the `[[` menu (v1's backlink-menu behavior) only while the
-  // integration is on and the permission readable.
-  const contactsInMenu =
-    settings.contactsEnabled && authorization !== null && isContactsReadable(authorization)
 
   // The `[[` autocomplete's create row: re-resolve and inspect the title's
   // on-disk slug family before creating. The menu inserts the link text either
@@ -89,39 +78,9 @@ export function useEditorAutocomplete(): EditorAutocomplete {
         dateFormat: settings.dateFormat,
         weekStartDay: settings.weekStartDay,
       }
-      const [wikiLinks, contactResolutions] = await Promise.all([
-        suggestWikiLinkTargets(query, 8, dateContext),
-        // A contacts hiccup (permission revoked mid-session, store error)
-        // must cost only its own rows, never the note suggestions.
-        contactsInMenu
-          ? contactLinkSuggestions(query)
-              .then((contacts) =>
-                Promise.all(contacts.map((contact) => resolvePersonContact(contact))),
-              )
-              .catch((error: unknown) => {
-                console.error('contact link suggestions failed:', error)
-                return []
-              })
-          : Promise.resolve([]),
-      ])
-      const contacts = contactResolutions
-        .map((resolution) =>
-          resolution.kind === 'blocked'
-            ? null
-            : {
-                contact: resolution.contact,
-                target: resolution.insertText,
-                ownerPath: resolution.kind === 'existing' ? resolution.path : null,
-              },
-        )
-        .filter(isNotNullish)
-      const blockedContactNames = contactResolutions
-        .map((resolution) => (resolution.kind === 'blocked' ? resolution.contact.fullName : null))
-        .filter(isNotNullish)
+      const wikiLinks = await suggestWikiLinkTargets(query, 8, dateContext)
       const entries = buildAutocompleteEntries(query, wikiLinks.suggestions, {
         offerCreate: true,
-        contacts,
-        blockedContactNames,
         requireSerializableWikiText: true,
         queryReadsAsDate: wikiLinks.queryReadsAsDate,
         claimedTargetKeys: wikiLinks.claimedTargetKeys,
@@ -145,37 +104,6 @@ export function useEditorAutocomplete(): EditorAutocomplete {
                 console.error('create-from-autocomplete failed:', error)
                 startOperation('Creating note').fail(errorMessage(error))
               })
-            },
-          }
-        }
-        if (entry.kind === 'contact') {
-          const { contact } = entry
-          return {
-            target: entry.target,
-            label: contact.fullName,
-            detail: contact.emails[0] ?? contact.phones[0] ?? 'Contact',
-            onSelect: () => {
-              if (generation !== null) {
-                void ensurePersonNote({
-                  title: contact.fullName,
-                  emails: contact.emails,
-                  body: contactDetailsMarkdown(contact),
-                  generation,
-                })
-                  .then((outcome) => {
-                    if (outcome.kind === 'ambiguous') {
-                      reportAmbiguousNoteTitle('Creating note', contact.fullName)
-                    } else if (outcome.kind === 'unavailable') {
-                      startOperation('Creating note').fail(
-                        `Couldn’t create “${contact.fullName}” while a potentially matching note is unavailable. Try again when it is available on this device.`,
-                      )
-                    }
-                  })
-                  .catch((error: unknown) => {
-                    console.error('create-person-note failed:', error)
-                    startOperation('Creating note').fail(errorMessage(error))
-                  })
-              }
             },
           }
         }
@@ -211,7 +139,6 @@ export function useEditorAutocomplete(): EditorAutocomplete {
       settings.dateFormat,
       settings.weekStartDay,
       resolveOrCreateFromAutocomplete,
-      contactsInMenu,
       generation,
     ],
   )

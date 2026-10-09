@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react'
 import { isUntitledNotePath, type GraphInfo } from '@reflect/core'
-import { ListChecks, MessageSquare, SquarePen } from 'lucide-react'
-import { AudioMemoButton } from '@/components/audio-memo/audio-memo-button.tsx'
+import { ListChecks, SquarePen } from 'lucide-react'
 import { ListIcon } from '@/components/icons/list-icon.tsx'
 import { PencilIcon } from '@/components/icons/pencil-icon.tsx'
 import { usePinnedNotes } from '@/hooks/use-pinned-notes.ts'
@@ -64,7 +63,6 @@ export function Sidebar({ graph, context }: SidebarProps): ReactElement {
           <div className="min-w-0 flex-1">
             <SidebarSearch onOpen={() => context.openPalette()} />
           </div>
-          <AudioMemoButton />
         </div>
 
         <nav aria-label="Primary" className="mt-6 space-y-1 px-4">
@@ -114,17 +112,6 @@ export function Sidebar({ graph, context }: SidebarProps): ReactElement {
             binding={keybindingFor('nav.tasks') ?? undefined}
             active={route.kind === 'tasks'}
             onClick={() => void runCommand('nav.tasks', context)}
-          />
-          <SidebarItem
-            icon={
-              <span className={lucideBox}>
-                <MessageSquare aria-hidden strokeWidth={1.75} className="size-4" />
-              </span>
-            }
-            label="Chat"
-            binding={keybindingFor('chat.open') ?? undefined}
-            active={route.kind === 'chat'}
-            onClick={() => void runCommand('chat.open', context)}
           />
         </nav>
       </div>

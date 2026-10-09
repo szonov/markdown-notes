@@ -10,7 +10,7 @@ import {
 import { useRouter } from '@/routing/router.tsx'
 
 /**
- * Routes incoming `reflect://` URLs into the open graph session: attaches
+ * Routes incoming `reflect-local://` URLs into the open graph session: attaches
  * this workspace's handler to the app-lifetime intake (`intake.ts`), which
  * replays anything that arrived before a graph was open. No UI — outcomes
  * surface as navigation or a toast inside {@link handleDeepLink}.
@@ -42,7 +42,7 @@ export function DeepLinkProvider({ graph, children }: DeepLinkProviderProps): Re
       // Capture and rejected URLs do not express a navigation intent, so they
       // must not supersede a note target that is still resolving.
       const io =
-        link !== null && link.kind !== 'capture'
+        link !== null
           ? createNavigationIo(navigate, navigationRevision, sessionRef, issued)
           : { navigate, generation: issued }
       handleDeepLink(url, io).catch((cause: unknown) => {

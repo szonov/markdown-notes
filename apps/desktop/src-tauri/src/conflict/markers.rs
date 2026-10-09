@@ -33,6 +33,7 @@ pub fn contains_conflict_markers(source: &str) -> bool {
 /// honest.) Used when a multi-version fold hits overlapping edits: pairwise
 /// marker output can't be folded again (nesting corrupts the grammar), and
 /// the marked file itself must carry every side.
+#[cfg(test)]
 pub(crate) fn stacked_whole_note_markers(sides: &[ConflictSide]) -> String {
     debug_assert!(sides.len() >= 2, "stacking needs at least two sides");
     let mut out = whole_note_markers(&sides[0], &sides[1]);

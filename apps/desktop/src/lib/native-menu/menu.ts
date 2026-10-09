@@ -111,7 +111,6 @@ export function appMenuLayout(): AppSubmenuLayout[] {
         command('palette.open'),
         command('nav.today'),
         command('nav.allNotes'),
-        command('chat.open'),
         separator(),
         command('history.back'),
         command('history.forward'),
@@ -236,7 +235,8 @@ export async function installNativeMenu(): Promise<void> {
   // not make the whole install look failed.
   try {
     await invoke('menu_install_paste_and_match_style')
+    await invoke('menu_install_spelling')
   } catch (error) {
-    console.warn('failed to add the Paste and Match Style menu item:', error)
+    console.warn('failed to add native Edit menu items:', error)
   }
 }

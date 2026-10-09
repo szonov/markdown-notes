@@ -2,7 +2,6 @@ import { isNotNullish } from '@ocavue/utils'
 import { useEffect, useMemo, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toggleNotePinned } from '@/lib/note-pin.ts'
-import { toggleNotePrivate } from '@/lib/note-private.ts'
 import { getIsComposing } from '@meowdown/core'
 import { usePalette } from '@/components/command-palette/palette-provider.tsx'
 import { registerKeymap } from '@/editor/keymap.ts'
@@ -13,15 +12,10 @@ import { todayIso } from '@/lib/dates.ts'
 import { setMenuCommandDispatch } from '@/lib/native-menu/dispatch.ts'
 import { isNativeMenuInstalled } from '@/lib/native-menu/menu.ts'
 import { isMacosDesktop } from '@/lib/platform.ts'
-import { retryFailedEmbeddings } from '@/lib/semantic.ts'
 import type { CommandContext } from '@/lib/commands/types.ts'
-import { useAudioMemo } from '@/providers/audio-memo-provider.tsx'
-import { useChatSession } from '@/providers/chat-provider.tsx'
 import { useFocusedDailyDate } from '@/providers/focused-daily-provider.tsx'
 import { useGraph } from '@/providers/graph-provider.tsx'
 import { useNoteFindActions } from '@/providers/note-find-provider.tsx'
-import { useNoteTemplates } from '@/providers/note-templates-provider.tsx'
-import { useSettings } from '@/providers/settings-provider.tsx'
 import { useShortcuts } from '@/providers/shortcuts-provider.tsx'
 import { useSidebar } from '@/providers/sidebar-provider.tsx'
 import { useTheme } from '@/providers/theme-provider.tsx'
@@ -167,16 +161,7 @@ export function useAppShortcuts(): CommandContext {
   const { graph, recents, openRecent } = useGraph()
   const { openPalette, open: paletteOpen } = usePalette()
   const { openShortcuts, closeShortcuts, open: shortcutsOpen } = useShortcuts()
-  const {
-    openTemplatePicker,
-    openTemplateCreate,
-    pickerOpen: templatePickerOpen,
-    createOpen: templateCreateOpen,
-  } = useNoteTemplates()
   const { toggleSidebar } = useSidebar()
-  const { toggle: toggleAudioMemo } = useAudioMemo()
-  const { newChat } = useChatSession()
-  const { updateSettings } = useSettings()
   const {
     openForPath: openNoteFindForPath,
     next: findNextInNote,
@@ -190,10 +175,6 @@ export function useAppShortcuts(): CommandContext {
   // Same for the ⌘/ cheat-sheet, except ⌘/ itself toggles it closed.
   const shortcutsOpenRef = useRef(shortcutsOpen)
 
-  // And for the template dialogs — both are Radix modals; nothing may
-  // navigate behind them.
-  const templatesOpenRef = useRef(templatePickerOpen || templateCreateOpen)
-
   // Read at run time, not captured: a command can fire long after the render
   // that created the context (palette open across an index rebuild, etc.).
   const generationRef = useRef<number | null>(graph?.generation ?? null)
@@ -205,7 +186,6 @@ export function useAppShortcuts(): CommandContext {
   useEffect(() => {
     paletteOpenRef.current = paletteOpen
     shortcutsOpenRef.current = shortcutsOpen
-    templatesOpenRef.current = templatePickerOpen || templateCreateOpen
     generationRef.current = graph?.generation ?? null
     graphRootRef.current = graph?.root ?? null
     recentsRef.current = recents
@@ -235,24 +215,13 @@ export function useAppShortcuts(): CommandContext {
           await toggleNotePinned({ queryClient, root, generation, path })
         }
       },
-      togglePrivate: async () => {
-        const root = graphRootRef.current
-        const generation = generationRef.current
-        const path = focusedNotePathForRoute(
-          routeRef.current,
-          todayIso(),
-          focusedDailyDateRef.current,
-        )
-        if (root !== null && generation !== null && path !== null) {
-          await toggleNotePrivate({ queryClient, root, generation, path })
-        }
-      },
+      togglePrivate: async () => {},
       back,
       forward,
       clearScrollState,
       toggleTheme: () => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark'),
       toggleSidebar,
-      newChat,
+      newChat: () => {},
       openNoteFind: () => {
         openNoteFindForPath(
           focusedNotePathForRoute(routeRef.current, todayIso(), focusedDailyDateRef.current),
@@ -267,19 +236,13 @@ export function useAppShortcuts(): CommandContext {
         }
         void openRecentRef.current(recent.root)
       },
-      toggleAudioMemo,
+      toggleAudioMemo: () => {},
       generation: () => generationRef.current,
       graphRoot: () => graphRootRef.current,
       openPalette,
       openShortcuts,
-      openTemplatePicker,
-      openTemplateCreate,
-      enableSemanticSearch: () => {
-        updateSettings({ semanticSearchEnabled: true })
-        // EmbeddingsSync loads an untouched runtime; a `failed` one only
-        // retries on an explicit action like this command.
-        void retryFailedEmbeddings()
-      },
+      openTemplatePicker: () => {},
+      openTemplateCreate: () => {},
     }),
     [
       queryClient,
@@ -291,15 +254,10 @@ export function useAppShortcuts(): CommandContext {
       setTheme,
       openPalette,
       openShortcuts,
-      openTemplatePicker,
-      openTemplateCreate,
       toggleSidebar,
-      newChat,
       openNoteFindForPath,
       findNextInNote,
       findPreviousInNote,
-      toggleAudioMemo,
-      updateSettings,
     ],
   )
 
@@ -318,9 +276,6 @@ export function useAppShortcuts(): CommandContext {
           return true
         }
         return false
-      }
-      if (templatesOpenRef.current) {
-        return false // the template picker/create dialogs are modal too
       }
       void runCommand(id, context)
       return true

@@ -2,7 +2,6 @@ import {
   foldFallbackTitleKey,
   foldKey,
   serializeWikiSuggestionAddress,
-  type ContactMatch,
   type WikiSuggestion,
 } from '@reflect/core'
 
@@ -17,21 +16,7 @@ import {
 
 export type AutocompleteEntry<Suggestion extends WikiSuggestion = WikiSuggestion> =
   | { kind: 'suggestion'; suggestion: Suggestion }
-  | {
-      kind: 'contact'
-      contact: ContactMatch
-      target: string
-      ownerPath: string | null
-    }
   | { kind: 'create'; title: string }
-
-export interface ContactEntryCandidate {
-  readonly contact: ContactMatch
-  /** Validated text inserted by a wikilink consumer, or the attendee name. */
-  readonly target: string
-  /** Existing owner path, or null for a Contact that would create a note. */
-  readonly ownerPath: string | null
-}
 
 export interface EntryOptions {
   /**
@@ -40,14 +25,6 @@ export interface EntryOptions {
    * previous query, so "nothing matches" can't be concluded yet).
    */
   offerCreate: boolean
-  /**
-   * Apple Contacts matching the query (empty when the integration is off).
-   * A contact whose name would resolve to an existing suggestion is dropped —
-   * the note row already covers it, exactly v1's dedup.
-   */
-  contacts?: readonly ContactEntryCandidate[]
-  /** Exact Contact names whose identity is blocked and must not offer Create. */
-  blockedContactNames?: readonly string[]
   /**
    * Drop raw Create/contact text that cannot be embedded in `[[…]]` without
    * changing what Markdown parses. False for non-markdown consumers such as
@@ -88,12 +65,8 @@ export function buildAutocompleteEntries<Suggestion extends WikiSuggestion>(
   // ambiguous or unsafe still collides with the writable resolver's fallback
   // matching, so it must keep suppressing Create and contact rows.
   const resolvable = new Set<string>()
-  const suggestionPaths = new Set<string>()
   const fallbackResolvable = new Set([...claimedTargetKeys].map(foldFallbackTitleKey))
   for (const suggestion of suggestions) {
-    if (suggestion.path !== null) {
-      suggestionPaths.add(suggestion.path)
-    }
     resolvable.add(foldKey(suggestion.target))
     fallbackResolvable.add(foldFallbackTitleKey(suggestion.target))
     if (suggestion.alias !== null) {
@@ -101,30 +74,6 @@ export function buildAutocompleteEntries<Suggestion extends WikiSuggestion>(
       fallbackResolvable.add(foldFallbackTitleKey(suggestion.alias))
     }
   }
-  const contacts = (options.contacts ?? []).filter((candidate) => {
-    const { contact } = candidate
-    if (candidate.ownerPath !== null) {
-      return !suggestionPaths.has(candidate.ownerPath)
-    }
-    if (
-      claimedTargetKeys.has(foldKey(contact.fullName)) ||
-      resolvable.has(foldKey(contact.fullName)) ||
-      fallbackResolvable.has(foldFallbackTitleKey(contact.fullName))
-    ) {
-      return false
-    }
-    return (
-      !options.requireSerializableWikiText ||
-      serializeWikiSuggestionAddress(candidate.target, null) !== null
-    )
-  })
-  entries.push(
-    ...contacts.map((candidate) => ({
-      kind: 'contact' as const,
-      ...candidate,
-    })),
-  )
-
   if (title === '' || !options.offerCreate) {
     return entries
   }
@@ -138,11 +87,6 @@ export function buildAutocompleteEntries<Suggestion extends WikiSuggestion>(
   const hasDateSuggestion =
     options.queryReadsAsDate === true ||
     suggestions.some((suggestion) => suggestion.generated !== undefined)
-  // A contact row for the exact typed name IS the create action (prefilled) —
-  // a bare Create row beside it would just be the worse duplicate.
-  const contactCoversQuery =
-    contacts.some(({ contact }) => foldKey(contact.fullName) === key) ||
-    (options.blockedContactNames ?? []).some((name) => foldKey(name) === key)
   const canSerializeCreate =
     !options.requireSerializableWikiText || serializeWikiSuggestionAddress(title, null) !== null
   // A leading-emoji/whitespace fallback candidate is either the existing note
@@ -155,7 +99,6 @@ export function buildAutocompleteEntries<Suggestion extends WikiSuggestion>(
     !claimedTargetKeys.has(key) &&
     !hasFallbackCollision &&
     !hasDateSuggestion &&
-    !contactCoversQuery &&
     canSerializeCreate
   ) {
     entries.push({ kind: 'create', title })

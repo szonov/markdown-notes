@@ -1,10 +1,7 @@
 import type { ReactElement } from 'react'
 import { dailyPath } from '@reflect/core'
-import { DailyEventsSection } from './daily-events-section.tsx'
 import { DayCalendar } from './day-calendar.tsx'
 import { NoteActionsSection } from './note-actions-section.tsx'
-import { PublishedUrlSection } from './published-url-section.tsx'
-import { SimilarNotesSection } from './similar-notes-section.tsx'
 import { useToday } from '@/lib/use-today.ts'
 import { cn } from '@/lib/utils.ts'
 import { hasMacosTitleBarOverlay } from '@/lib/window-chrome.ts'
@@ -37,9 +34,6 @@ export function DailyContextSidebar({ date }: DailyContextSidebarProps): ReactEl
       <DayCalendar selectedDate={date} today={today} />
       <div className="my-4 space-y-4 pb-4">
         <NoteActionsSection path={dailyPath(date)} />
-        <DailyEventsSection date={date} />
-        <PublishedUrlSection path={dailyPath(date)} />
-        <SimilarNotesSection path={dailyPath(date)} />
       </div>
     </div>
   )

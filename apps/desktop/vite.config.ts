@@ -1,4 +1,3 @@
-import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
@@ -37,18 +36,6 @@ export default defineConfig({
     }),
 
     tailwindcss(),
-    sentryVitePlugin({
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      org: 'reflect-64',
-      project: 'reflect-open',
-      telemetry: false,
-      release: {
-        name: `reflect@${pkg.version}`,
-      },
-      sourcemaps: {
-        filesToDeleteAfterUpload: ['./dist/**/*.map'],
-      },
-    }),
   ],
 
   define: {
@@ -64,9 +51,7 @@ export default defineConfig({
         new URL(
           platform === 'mobile'
             ? './src/platform-root.mobile.tsx'
-            : platform === 'desktop'
-              ? './src/platform-root.desktop.tsx'
-              : './src/platform-root.unknown.tsx',
+            : './src/platform-root.desktop.tsx',
           import.meta.url,
         ),
       ),

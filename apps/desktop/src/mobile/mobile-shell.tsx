@@ -78,11 +78,6 @@ export function MobileShell(): ReactElement {
       return
     }
 
-    if (next === 'chat') {
-      navigate({ kind: 'chat' }, doubleTap ? { focusEditor: true } : undefined)
-      return
-    }
-
     if (doubleTap) {
       navigate({ kind: 'today' }, { focusEditor: true })
       return

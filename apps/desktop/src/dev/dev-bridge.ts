@@ -1,4 +1,4 @@
-import { IAP_PRODUCT_IDS, indexedNoteSchema, ReflectError, type IpcBridge } from '@reflect/core'
+import { indexedNoteSchema, ReflectError, type IpcBridge } from '@reflect/core'
 import { z } from 'zod'
 import type { DevFileStore } from '@/dev/dev-file-store.ts'
 import type { DevIndexDb } from '@/dev/dev-index-db.ts'
@@ -47,19 +47,6 @@ const chatSaveArgsSchema = z.object({
   }),
 })
 const chatDeleteArgsSchema = z.object({ id: z.string() })
-const iapPayloadSchema = z.object({ productType: z.literal('subs') })
-const iapProductArgsSchema = z.object({
-  payload: iapPayloadSchema.extend({ productId: z.string() }),
-})
-const iapProductsArgsSchema = z.object({
-  payload: iapPayloadSchema.extend({ productIds: z.array(z.string()) }),
-})
-
-// Fixed preview prices, independent of App Store Connect and browser locale.
-const iapProducts = [
-  { productId: IAP_PRODUCT_IDS.monthly, formattedPrice: '$9999.99' },
-  { productId: IAP_PRODUCT_IDS.yearly, formattedPrice: '$99999.99' },
-]
 
 /**
  * The in-browser stand-in for the Rust shell (dev builds only): answers the
@@ -78,7 +65,6 @@ export function createDevBridge(backend: DevBridgeBackend): IpcBridge {
   const graphInfo = { root: DEV_GRAPH_ROOT, name: 'Dev Graph', generation: 1 }
   let settingsDocument: Record<string, unknown> = { mobileOnboarded: true }
   const assets = new Map<string, string>()
-  let ownedProductId: string | null = null
   // In-memory keychain stand-in so the AI-provider settings flow (and chat,
   // against a CORS-permissive provider) works end-to-end in the harness.
   const secrets = new Map<string, string>()
@@ -93,29 +79,6 @@ export function createDevBridge(backend: DevBridgeBackend): IpcBridge {
         return null
       case 'plugin:mobile-haptics|impact_light':
         return null
-      case 'plugin:app-store|get_environment':
-        return { environment: 'Sandbox' }
-      case 'plugin:app-store|sync':
-      case 'plugin:app-store|present_offer_code_redeem_sheet':
-        return null
-      case 'plugin:iap|get_products': {
-        const { payload } = iapProductsArgsSchema.parse(args)
-        return {
-          products: iapProducts.filter((product) => payload.productIds.includes(product.productId)),
-        }
-      }
-      case 'plugin:iap|get_product_status': {
-        const { payload } = iapProductArgsSchema.parse(args)
-        return { productId: payload.productId, isOwned: payload.productId === ownedProductId }
-      }
-      case 'plugin:iap|purchase': {
-        const { payload } = iapProductArgsSchema.parse(args)
-        if (!iapProducts.some((product) => product.productId === payload.productId)) {
-          throw new ReflectError('notFound', `unknown preview product: ${payload.productId}`)
-        }
-        ownedProductId = payload.productId
-        return null
-      }
       case 'mobile_storage':
         // No iCloud in a plain browser — the dev harness exercises the
         // local-storage path (and, via `mobileOnboarded` above, skips

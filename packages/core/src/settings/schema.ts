@@ -1,116 +1,30 @@
 import { z } from 'zod'
-import { isHttpBaseUrl, normalizeOpenAICompatibleBaseUrl } from '../ai/openai-compatible.ts'
 
-/**
- * The user-settings schema — the policy half of the settings store. Rust
- * persists an opaque JSON object in the OS config dir; this schema owns the
- * known keys, their defaults, and their validation.
- *
- * Resilience contract (mirrors the frontmatter schema): a missing or invalid
- * value degrades to its default (`.catch`) instead of failing the whole load,
- * and unknown keys are preserved (`.passthrough`) so a document written by a
- * newer app version round-trips through an older one without losing fields.
- */
-
-/**
- * How the editor renders markdown syntax characters. `hide` (the default)
- * hides them, `show` always displays them, and `hybrid` reveals them only
- * around the caret.
- *
- * The persisted name is implementation-neutral on purpose: it maps to
- * meowdown's "mark mode" at the editor boundary (`hybrid` becomes meowdown's
- * `focus`), but the settings document must outlive any one editor library.
- */
 export const editorMarkdownSyntaxSchema = z.enum(['hide', 'show', 'hybrid']).catch('hide')
-
 export type EditorMarkdownSyntax = z.infer<typeof editorMarkdownSyntaxSchema>
 
-/**
- * Whether the editor underlines misspelled words (the platform's native
- * spell check on the contenteditable). On by default — turning it off is the
- * preference of users who find the underlines noisy in note-taking.
- */
-export const editorSpellCheckSchema = z.boolean().catch(true)
-
-/**
- * Whether a note that opens with an empty body starts the editor on a single
- * empty bullet — old Reflect's every-note default. On by default.
- *
- * The bullet is an **editor affordance only**, never persisted on its own: an
- * empty list item serializes to nothing (`docToMarkdown` drops it), so an
- * unedited note still writes an empty file — and a not-yet-created daily-note
- * placeholder stays uncreated until the first real keystroke (the lazy
- * no-litter contract). The seam lives at the editor (`note-pane.tsx`), not the
- * save pipeline, because seeding the document model with the literal `- `
- * markdown would classify lossy and open the note read-only.
- */
 export const editorDefaultBulletSchema = z.boolean().catch(true)
-
-/**
- * Whether pressing Return at the end of a heading starts a new bullet on the
- * next line — old Reflect's "type a title, then bullet" capture flow. On by
- * default.
- *
- * Independent of {@link editorDefaultBulletSchema}: that seeds an empty note's
- * first line, this shapes what Enter *after a heading* produces. They are
- * separate keys so each can be turned off on its own.
- */
 export const editorBulletAfterHeadingSchema = z.boolean().catch(true)
-
-/**
- * Whether the caret animates smoothly between positions while editing. On by
- * default. Display-only; it never changes the document or stored Markdown.
- */
 export const editorSmoothCaretAnimationSchema = z.boolean().catch(true)
-
-/**
- * The editor's reading text size. `small` (the default) is one design-system
- * size down from the prose size (14px); `medium` is the DS prose size (16px)
- * and `large` steps one DS size up (18px). Display-only — it scales the editor
- * body via a CSS variable on the document root (`--editor-font-size`, applied
- * by `EditorTextSizeEffect`) and never touches the stored markdown.
- */
 export const editorTextSizeSchema = z.enum(['small', 'medium', 'large']).catch('small')
-
 export type EditorTextSize = z.infer<typeof editorTextSizeSchema>
-
-/**
- * Whether note content stretches across the available desktop pane instead
- * of staying in the default centered reading column. Off by default to
- * preserve Reflect Open's existing layout.
- */
 export const editorFullWidthSchema = z.boolean().catch(false)
+export const dailyNotesViewSchema = z.enum(['stream', 'pages']).catch('stream')
+export type DailyNotesView = z.infer<typeof dailyNotesViewSchema>
 
-/**
- * The clamp range for a user-adjustable sidebar width, in CSS pixels. Shared
- * between the schema (so a hand-edited document can't wreck the layout) and
- * the drag interaction (so the handle stops where the schema would clamp).
- */
 export interface SidebarWidthRange {
   readonly min: number
   readonly max: number
-  /** The width a fresh install starts from — also the double-click reset target. */
   readonly fallback: number
 }
 
-/**
- * The workspace (left) sidebar's range. The minimum keeps the sidebar clear
- * of the macOS traffic lights, which float over its top-left corner at an
- * OS-controlled position; the maximum protects the note pane.
- */
 export const SIDEBAR_WIDTH_RANGE: SidebarWidthRange = { min: 200, max: 480, fallback: 260 }
-
-/**
- * The contextual (right) panel's range. Its minimum is higher than the
- * workspace sidebar's because the panel's month calendar needs the room.
- */
 export const CONTEXT_SIDEBAR_WIDTH_RANGE: SidebarWidthRange = {
   min: 240,
   max: 480,
   fallback: 320,
 }
 
-/** Rounds a width to whole pixels and clamps it into the given range. */
 export function clampSidebarWidth(range: SidebarWidthRange, width: number): number {
   return Math.min(range.max, Math.max(range.min, Math.round(width)))
 }
@@ -122,188 +36,25 @@ function sidebarWidthValueSchema(range: SidebarWidthRange) {
     .transform((width) => clampSidebarWidth(range, width))
 }
 
-/**
- * The workspace (left) sidebar's width in CSS pixels, set by dragging its
- * right edge. Desktop-only — the mobile tree has its own shell and never
- * reads it. A non-number degrades to the default; an out-of-range number
- * clamps instead of resetting so a near-miss hand-edit keeps its intent.
- */
 export const sidebarWidthSchema = sidebarWidthValueSchema(SIDEBAR_WIDTH_RANGE)
-
-/**
- * The contextual (right) panel's width in CSS pixels, set by dragging its
- * left edge. Same resilience contract as {@link sidebarWidthSchema};
- * independent of it because the two panels carry different content densities.
- */
 export const contextSidebarWidthSchema = sidebarWidthValueSchema(CONTEXT_SIDEBAR_WIDTH_RANGE)
 
-/**
- * The app color theme. `system` (the default) follows the OS preference;
- * `light`/`dark` pin it. Persisted here so the choice survives relaunch.
- */
 export const themePreferenceSchema = z.enum(['system', 'light', 'dark']).catch('system')
-
 export type ThemePreference = z.infer<typeof themePreferenceSchema>
-
-/**
- * How times of day are displayed throughout the app. `12h` (the default)
- * renders `8:22pm`; `24h` renders `20:22`. Display-only — stored timestamps
- * and daily-note keys are unaffected.
- */
 export const timeFormatSchema = z.enum(['12h', '24h']).catch('12h')
-
 export type TimeFormat = z.infer<typeof timeFormatSchema>
-
-/**
- * How calendar dates are displayed throughout the app: `mdy` (the default)
- * renders `June 10th, 2026`, `dmy` renders `10th June 2026`, and `iso`
- * renders `2026-06-10`. Display-only — daily-note filenames and stored dates
- * stay ISO `YYYY-MM-DD` regardless.
- */
 export const dateFormatSchema = z.enum(['mdy', 'dmy', 'iso']).catch('mdy')
-
 export type DateFormat = z.infer<typeof dateFormatSchema>
-
-/**
- * Which day opens the calendar week. `monday` (the default) follows ISO 8601;
- * `sunday` matches the North-American convention; `saturday` matches the
- * convention of most Middle-East and North-Africa locales.
- */
 export const weekStartDaySchema = z.enum(['monday', 'sunday', 'saturday']).catch('monday')
-
 export type WeekStartDay = z.infer<typeof weekStartDaySchema>
-
 const WEEK_START_DOW: Record<WeekStartDay, 0 | 1 | 6> = { sunday: 0, monday: 1, saturday: 6 }
-
-/**
- * The week-start day in JS `getDay()` numbering (0 = Sunday, 6 = Saturday),
- * which is also date-fns' `weekStartsOn` convention.
- */
 export function weekStartDow(weekStartDay: WeekStartDay): 0 | 1 | 6 {
   return WEEK_START_DOW[weekStartDay]
 }
 
-/**
- * Tags pinned as one-click filters on the All Notes screen, in display order.
- * The defaults mirror the original app's built-in filter tabs (book/link/
- * person); the screen offers every other tag through its Custom menu, so an
- * empty list still filters fine. Matching is case-insensitive at the query —
- * entries here keep whatever casing the user typed.
- */
 export const allNotesFilterTagsSchema = z.array(z.string()).catch(['book', 'link', 'person'])
-
 export type AllNotesFilterTags = z.infer<typeof allNotesFilterTagsSchema>
 
-/**
- * Whether semantic search is on. Off by default — turning it on downloads the
- * ~90MB embedding model, and that first network fetch is the user's call
- * (Plan 09). Later launches load the cached model because this flag is set.
- */
-export const semanticSearchEnabledSchema = z.boolean().catch(false)
-
-/**
- * Whether new eligible images/PDFs added under `assets/` are automatically
- * described by the configured AI provider into a managed `.reflect.md` description
- * (Plan 20). On by default — only new assets, gated to those referenced by
- * public notes; existing assets are never auto-scanned (the Settings backfill
- * action handles those, with a cost warning). Off disables the automatic path
- * entirely.
- */
-export const describeAssetsSchema = z.boolean().catch(true)
-
-/**
- * Whether audio-memo transcripts receive a best-effort AI formatting pass
- * before they are written as Markdown. On by default, matching the original
- * Reflect preference. Turning it off keeps the transcription provider's raw
- * body; transcript-derived title generation remains enabled.
- */
-export const transcriptionFormatSchema = z.boolean().catch(true)
-
-/**
- * Maximum stored transcription hint. `whisper-1` (the OpenAI fallback model)
- * reads only the last 224 prompt tokens, so a longer hint would be cut from
- * the front.
- */
-export const TRANSCRIPTION_PROMPT_MAX_LENGTH = 500
-
-/** Canonicalize the user's transcription hint before storing or sending it. */
-export function normalizeTranscriptionPrompt(value: string): string {
-  return value.trim().slice(0, TRANSCRIPTION_PROMPT_MAX_LENGTH)
-}
-
-/**
- * Free-text context for audio-memo transcription (for example names the
- * provider tends to misspell). Sent verbatim with every segment as the
- * provider's prompt (OpenAI) or appended to the instruction (Gemini). Empty
- * (the default) sends nothing.
- */
-export const transcriptionPromptSchema = z
-  .string()
-  .catch('')
-  .transform(normalizeTranscriptionPrompt)
-
-/**
- * Whether the user has finished the mobile onboarding choice (Plan 19, step
- * 6): iCloud Drive or this device. Off by default — a fresh install shows
- * the onboarding screen before anything seeds a graph. Once set, later
- * launches open the chosen storage root directly. Mobile-only; desktop has
- * its own chooser, so this key is simply never read there.
- */
-export const mobileOnboardedSchema = z.boolean().catch(false)
-
-/**
- * Which storage root the mobile graph lives in (Plan 21): the app's iCloud
- * Drive container (`'icloud'` — the recommended default offered first during
- * onboarding, syncs across devices) or the app-sandbox Documents directory
- * (`'local'` — this device only, and the home of GitHub-cloned graphs).
- * Defaults to `'local'` so installs onboarded before this key existed keep
- * opening the root they already use. Only the *kind* is persisted — absolute
- * container paths change across restore/update and are re-derived every
- * launch. Mobile-only; desktop never reads it.
- */
-export const mobileStorageKindSchema = z.enum(['icloud', 'local']).catch('local')
-
-/**
- * The *name* of the iCloud graph the mobile app has open (the container
- * `Documents/` subdirectory name) — the persisted selector now that the
- * container can hold several graphs. A name, never a path: container paths
- * change across restore/update and are re-derived every launch. Empty means
- * "not chosen yet" — launch falls back to the first graph in the container.
- * Only read when `mobileStorage` is `'icloud'`. Mobile-only.
- */
-export const mobileGraphNameSchema = z.string().catch('')
-
-/**
- * Whether the Apple Contacts integration is on. Off by default — turning it
- * on triggers the OS contacts permission prompt. Lookups are live, on-demand
- * `CNContactStore` queries (attendee resolution, suggested-contact cards);
- * nothing is mirrored into the index and nothing ever leaves the device.
- */
-export const contactsEnabledSchema = z.boolean().catch(false)
-
-/**
- * Whether the Apple Calendar integration is on. Off by default — turning it
- * on triggers the macOS calendar-permission prompt, and that is the user's
- * call. Access is read-only and entirely local (EventKit); see
- * docs/porting/calendar-meetings-integration.md.
- */
-export const calendarEnabledSchema = z.boolean().catch(false)
-
-/**
- * EventKit identifiers of the calendars whose events appear beside the daily
- * note. Empty (the default) shows nothing — the Settings section lists every
- * calendar on the Mac for opt-in. Identifiers for since-removed accounts are
- * harmless: the Rust side skips ones it can't resolve.
- */
-export const calendarIdsSchema = z.array(z.string()).catch([])
-
-export type CalendarIds = z.infer<typeof calendarIdsSchema>
-
-/**
- * The preset palette for a graph's identity color (the swatch shown next to
- * the graph name). A closed set of named ids — not raw hex — so the UI can
- * map each id to values that read well in both light and dark themes.
- */
 export const graphColorSchema = z.enum([
   'indigo',
   'blue',
@@ -315,255 +66,32 @@ export const graphColorSchema = z.enum([
   'pink',
   'purple',
 ])
-
 export type GraphColor = z.infer<typeof graphColorSchema>
-
-/** Every graph color id, in the order pickers should display them. */
 export const GRAPH_COLOR_IDS = graphColorSchema.options
-
 export type GraphColors = Record<string, GraphColor>
+export const graphColorsSchema = z.record(z.string(), graphColorSchema).catch({})
 
-/**
- * Identity colors the user has chosen per graph, keyed by the graph's absolute
- * root path. An absent key means the default (the app accent). Entries for
- * forgotten graphs are kept on purpose — re-opening that graph later restores
- * its color. Resilience is per entry: a corrupt value is dropped while the
- * rest load, and a non-object value degrades to the empty record.
- */
-export const graphColorsSchema = z
-  .record(z.string(), z.unknown())
-  .catch({})
-  .transform((entries) => {
-    const colors: GraphColors = {}
-    for (const [root, value] of Object.entries(entries)) {
-      const parsed = graphColorSchema.safeParse(value)
-      if (parsed.success) {
-        colors[root] = parsed.data
-      }
-    }
-    return colors
+/** Only settings used by the local Markdown application are persisted. */
+export const settingsSchema = z
+  .looseObject({
+    editorSpellCheck: z.unknown().optional(),
+    editorMarkdownSyntax: editorMarkdownSyntaxSchema,
+    editorDefaultBullet: editorDefaultBulletSchema,
+    editorBulletAfterHeading: editorBulletAfterHeadingSchema,
+    editorSmoothCaretAnimation: editorSmoothCaretAnimationSchema,
+    editorTextSize: editorTextSizeSchema,
+    editorFullWidth: editorFullWidthSchema,
+    dailyNotesView: dailyNotesViewSchema,
+    sidebarWidth: sidebarWidthSchema,
+    contextSidebarWidth: contextSidebarWidthSchema,
+    theme: themePreferenceSchema,
+    timeFormat: timeFormatSchema,
+    dateFormat: dateFormatSchema,
+    weekStartDay: weekStartDaySchema,
+    allNotesFilterTags: allNotesFilterTagsSchema,
+    graphColors: graphColorsSchema,
   })
-
-/**
- * The AI providers Reflect can call directly (BYOK — the user's own keys, no
- * Reflect-hosted proxy). `openai-compatible` stores its user-supplied base URL
- * per configured entry.
- */
-export const aiProviderIdSchema = z.enum([
-  'openai',
-  'anthropic',
-  'google',
-  'openrouter',
-  'openai-compatible',
-])
-
-export type AiProviderId = z.infer<typeof aiProviderIdSchema>
-
-const hostedAiProviderIdSchema = z.enum(['openai', 'anthropic', 'google', 'openrouter'])
-
-export type HostedAiProviderId = z.infer<typeof hostedAiProviderIdSchema>
-
-export const openAiCompatibleBaseUrlSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .refine(isHttpBaseUrl)
-  .transform(normalizeOpenAICompatibleBaseUrl)
-
-/**
- * One configured AI provider: the provider, its default model id, and a key
- * hint. The API key itself lives in the OS keychain (addressed by `id` — see
- * `aiKeySecretName`) and **never** in this document; `keyHint` keeps only the
- * key's trailing characters so the settings UI can identify it. Which entry
- * is the app-wide default is a sibling scalar (`defaultAiProviderId`), not a
- * per-entry flag, so "at most one default" holds by construction.
- * OpenAI-compatible entries additionally carry their API base URL, because it
- * is user configuration rather than a fixed catalog endpoint.
- */
-const aiProviderConfigBaseSchema = z.object({
-  id: z.string().min(1),
-  model: z.string().min(1),
-  keyHint: z.string().catch(''),
-})
-
-const openAiProviderConfigSchema = aiProviderConfigBaseSchema.extend({
-  provider: z.literal('openai'),
-})
-
-const anthropicProviderConfigSchema = aiProviderConfigBaseSchema.extend({
-  provider: z.literal('anthropic'),
-})
-
-const googleProviderConfigSchema = aiProviderConfigBaseSchema.extend({
-  provider: z.literal('google'),
-})
-
-const openRouterProviderConfigSchema = aiProviderConfigBaseSchema.extend({
-  provider: z.literal('openrouter'),
-})
-
-const hostedAiProviderConfigSchema = z.union([
-  openAiProviderConfigSchema,
-  anthropicProviderConfigSchema,
-  googleProviderConfigSchema,
-  openRouterProviderConfigSchema,
-])
-
-export type HostedAiProviderConfig = z.infer<typeof hostedAiProviderConfigSchema>
-
-const openAiCompatibleProviderConfigSchema = aiProviderConfigBaseSchema.extend({
-  provider: z.literal('openai-compatible'),
-  baseUrl: openAiCompatibleBaseUrlSchema,
-})
-
-export type OpenAiCompatibleProviderConfig = z.infer<typeof openAiCompatibleProviderConfigSchema>
-
-export const aiProviderConfigSchema = z.discriminatedUnion('provider', [
-  openAiProviderConfigSchema,
-  anthropicProviderConfigSchema,
-  googleProviderConfigSchema,
-  openRouterProviderConfigSchema,
-  openAiCompatibleProviderConfigSchema,
-])
-
-export type AiProviderConfig = z.infer<typeof aiProviderConfigSchema>
-
-/**
- * The `aiProviders` entry AI features use by default. A dangling or null id
- * is legal (hand-edits, removed entries) — readers resolve it through
- * `defaultAiProvider`, which falls back to the first entry.
- */
-export const defaultAiProviderIdSchema = z.string().nullable().catch(null)
-
-/**
- * The model the chat last used: a configured `aiProviders` entry (`configId`)
- * plus a model id within it. Persisted so the next chat session starts on
- * whatever the user picked last; null (the default) means the app default
- * entry and its configured model. A dangling reference is legal (the entry
- * may have been removed since) — readers resolve it through
- * `resolveChatModel`, which falls back to the default entry — and an invalid
- * value degrades to null.
- */
-export const chatModelSelectionSchema = z
-  .object({
-    configId: z.string().min(1),
-    modelId: z.string().min(1),
-  })
-  .nullable()
-  .catch(null)
-
-/** A chat model choice — a configured provider entry + a model within it. */
-export type ChatModelSelection = NonNullable<z.infer<typeof chatModelSelectionSchema>>
-
-/** Maximum user-configured system prompt size (~5,000 prose tokens). */
-export const CHAT_SYSTEM_PROMPT_MAX_LENGTH = 20_000
-
-/** Canonicalize a user-configured chat prompt before storing or sending it. */
-export function normalizeChatSystemPrompt(value: string): string {
-  return value.trim().slice(0, CHAT_SYSTEM_PROMPT_MAX_LENGTH)
-}
-
-/**
- * Additional instructions the user wants included in every AI chat system
- * prompt. Reflect's built-in grounding and privacy rules remain in place;
- * this text is appended after them so users can configure tone, format, and
- * other assistant behavior. Empty (the default) adds nothing. Oversized
- * hand-edited values are truncated so the prompt cannot consume the model's
- * context window on its own.
- */
-export const chatSystemPromptSchema = z.string().catch('').transform(normalizeChatSystemPrompt)
-
-/**
- * The configured AI providers. Resilience is per entry, not per list: a
- * corrupt entry is dropped while the rest load, so one bad hand-edit can't
- * wipe every configured provider. A non-array value degrades to the empty
- * list.
- */
-export const aiProvidersSchema = z
-  .array(z.unknown())
-  .catch([])
-  .transform((entries) =>
-    entries.flatMap((entry) => {
-      const parsed = aiProviderConfigSchema.safeParse(entry)
-      return parsed.success ? [parsed.data] : []
-    }),
-  )
-
-/**
- * Where an AI selection prompt's accepted result lands: `replace` swaps the
- * selection for the result; `append` inserts the result after the selection's
- * block (e.g. "Continue writing"). An invalid value degrades to `replace`.
- */
-export const aiPromptModeSchema = z.enum(['replace', 'append']).catch('replace')
-
-export type AiPromptMode = z.infer<typeof aiPromptModeSchema>
-
-/**
- * One saved AI selection prompt: a label for the picker and a body sent to
- * the provider. The body may reference the selection with the
- * `{{selectedText}}` placeholder (old Reflect's syntax, so saved v1 prompts
- * port over verbatim); a body without the placeholder gets the selection
- * appended after it.
- */
-export const aiPromptSchema = z.object({
-  id: z.string().min(1),
-  label: z.string().min(1),
-  body: z.string().min(1),
-  mode: aiPromptModeSchema,
-})
-
-export type AiPrompt = z.infer<typeof aiPromptSchema>
-
-/**
- * The user's saved AI selection prompts, shown in the editor's AI menu after
- * the built-in set. Global across graphs — prompts are workflow, not note
- * content. Resilience is per entry: a corrupt entry is dropped while the rest
- * load, and a non-array value degrades to the empty list.
- */
-export const aiPromptsSchema = z
-  .array(z.unknown())
-  .catch([])
-  .transform((entries) =>
-    entries.flatMap((entry) => {
-      const parsed = aiPromptSchema.safeParse(entry)
-      return parsed.success ? [parsed.data] : []
-    }),
-  )
-
-export const settingsSchema = z.looseObject({
-  editorMarkdownSyntax: editorMarkdownSyntaxSchema,
-  editorSpellCheck: editorSpellCheckSchema,
-  editorDefaultBullet: editorDefaultBulletSchema,
-  editorBulletAfterHeading: editorBulletAfterHeadingSchema,
-  editorSmoothCaretAnimation: editorSmoothCaretAnimationSchema,
-  editorTextSize: editorTextSizeSchema,
-  editorFullWidth: editorFullWidthSchema,
-  sidebarWidth: sidebarWidthSchema,
-  contextSidebarWidth: contextSidebarWidthSchema,
-  semanticSearchEnabled: semanticSearchEnabledSchema,
-  describeAssets: describeAssetsSchema,
-  transcriptionFormat: transcriptionFormatSchema,
-  transcriptionPrompt: transcriptionPromptSchema,
-  contactsEnabled: contactsEnabledSchema,
-  mobileOnboarded: mobileOnboardedSchema,
-  mobileStorage: mobileStorageKindSchema,
-  mobileGraphName: mobileGraphNameSchema,
-  theme: themePreferenceSchema,
-  timeFormat: timeFormatSchema,
-  dateFormat: dateFormatSchema,
-  weekStartDay: weekStartDaySchema,
-  allNotesFilterTags: allNotesFilterTagsSchema,
-  calendarEnabled: calendarEnabledSchema,
-  calendarIds: calendarIdsSchema,
-  graphColors: graphColorsSchema,
-  aiProviders: aiProvidersSchema,
-  defaultAiProviderId: defaultAiProviderIdSchema,
-  chatModelSelection: chatModelSelectionSchema,
-  chatSystemPrompt: chatSystemPromptSchema,
-  aiPrompts: aiPromptsSchema,
-})
+  .transform(({ editorSpellCheck: _legacySpellCheck, ...settings }) => settings)
 
 export type Settings = z.infer<typeof settingsSchema>
-
-/** The settings a fresh install starts from (every key at its default). */
 export const DEFAULT_SETTINGS: Settings = settingsSchema.parse({})

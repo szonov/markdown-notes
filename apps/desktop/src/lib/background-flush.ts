@@ -1,6 +1,5 @@
 import { beginBackgroundTask, endBackgroundTask, type BackgroundTaskToken } from '@reflect/core'
 import { flushOpenDocuments } from '@/editor/open-documents.ts'
-import { flushBackup } from '@/lib/backup-flush.ts'
 import { flushSettings } from '@/lib/settings-flush.ts'
 
 /**
@@ -45,7 +44,6 @@ export function installBackgroundFlush(): () => void {
 
     try {
       await Promise.allSettled([flushOpenDocuments(), flushSettings()])
-      await flushBackup()
     } finally {
       if (backgroundTask !== null) {
         try {

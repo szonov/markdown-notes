@@ -1,7 +1,6 @@
-import { embedStatus, errorMessage, rebuildIndex } from '@reflect/core'
+import { errorMessage, rebuildIndex } from '@reflect/core'
 import { startOperation } from '@/lib/operations.ts'
 import { invalidateIndexQueries } from '@/lib/query-client.ts'
-import { backfillEmbeddingsVisibly } from '@/lib/semantic.ts'
 
 let inFlight: { generation: number; promise: Promise<void> } | null = null
 
@@ -61,11 +60,4 @@ async function runRebuild(generation: number): Promise<void> {
   // the caches), so cached note lists, backlinks, and tags would otherwise
   // show pre-rebuild rows until some unrelated change invalidated them.
   invalidateIndexQueries()
-  // index_clear wiped the embedding tables with everything else — rebuild
-  // them too, or semantic search stays silently empty until some other
-  // trigger re-embeds.
-  const embed = await embedStatus()
-  if (embed.status === 'ready') {
-    await backfillEmbeddingsVisibly({ generation, modelId: embed.model })
-  }
 }

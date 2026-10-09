@@ -427,7 +427,7 @@ pub(crate) fn build_secondary_window(
     Ok(note_window)
 }
 
-/// Open (or focus) a secondary window on a `reflect://` route link.
+/// Open (or focus) a secondary window on a `reflect-local://` route link.
 ///
 /// Requires an open graph: a note window can only *adopt* the main window's
 /// session, so with nothing open there is nothing to show. Async on purpose —
@@ -442,9 +442,9 @@ pub async fn open_note_window(
     init: State<'_, WindowInit>,
     quit: State<'_, QuitState>,
 ) -> AppResult<()> {
-    if !deep_link.starts_with("reflect://") {
+    if !deep_link.starts_with("reflect-local://") {
         return Err(AppError::parse(format!(
-            "not a reflect:// link: {deep_link}"
+            "not a reflect-local:// link: {deep_link}"
         )));
     }
     let issued_generation = fs::current_graph_info(&graph)?.generation;
@@ -546,7 +546,7 @@ pub struct WindowBootstrap {
     /// The open index session's generation, or null when the main window's
     /// index failed to open (the note window then boots without index reads).
     pub index_generation: Option<u64>,
-    /// The `reflect://` link this window was opened for — one-shot, absent on
+    /// The `reflect-local://` link this window was opened for — one-shot, absent on
     /// a reload (the router simply stays where the reloaded window was).
     pub initial_deep_link: Option<String>,
 }
@@ -662,9 +662,9 @@ mod tests {
 
     #[test]
     fn labels_are_stable_per_target_and_distinct_across_targets() {
-        let a1 = note_window_label("reflect://note/notes/a.md");
-        let a2 = note_window_label("reflect://note/notes/a.md");
-        let b = note_window_label("reflect://note/notes/b.md");
+        let a1 = note_window_label("reflect-local://note/notes/a.md");
+        let a2 = note_window_label("reflect-local://note/notes/a.md");
+        let b = note_window_label("reflect-local://note/notes/b.md");
         assert_eq!(a1, a2);
         assert_ne!(a1, b);
         assert!(a1.starts_with(NOTE_WINDOW_PREFIX));
@@ -672,7 +672,7 @@ mod tests {
 
     #[test]
     fn invoking_window_is_replaced_as_the_preferred_target_destination() {
-        let deep_link = "reflect://note/notes/a.md";
+        let deep_link = "reflect-local://note/notes/a.md";
         let mut registry = WindowRegistry::default();
         let mut live_labels = HashSet::from([MAIN_WINDOW_LABEL.to_owned()]);
 
@@ -702,7 +702,7 @@ mod tests {
 
     #[test]
     fn repeated_same_target_creations_share_the_reserved_label() {
-        let deep_link = "reflect://note/notes/a.md";
+        let deep_link = "reflect-local://note/notes/a.md";
         let mut registry = WindowRegistry::default();
         let live_labels = HashSet::from([MAIN_WINDOW_LABEL.to_owned()]);
 

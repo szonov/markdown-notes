@@ -55,7 +55,7 @@ function Harness({ showHost = true }: { readonly showHost?: boolean }): ReactEle
   )
 }
 
-function modifierClick(href = 'reflect://note/older'): void {
+function modifierClick(href = 'reflect-local://note/older'): void {
   followDeepLink?.({ href, openInNewWindow: true })
 }
 
@@ -78,7 +78,9 @@ describe('useFollowDeepLink', () => {
 
     modifierClick()
 
-    await vi.waitFor(() => expect(dispatchDeepLink).toHaveBeenCalledWith('reflect://note/older'))
+    await vi.waitFor(() =>
+      expect(dispatchDeepLink).toHaveBeenCalledWith('reflect-local://note/older'),
+    )
   })
 
   it('falls back to in-window dispatch when the window open rejects', async () => {
@@ -87,7 +89,9 @@ describe('useFollowDeepLink', () => {
 
     modifierClick()
 
-    await vi.waitFor(() => expect(dispatchDeepLink).toHaveBeenCalledWith('reflect://note/older'))
+    await vi.waitFor(() =>
+      expect(dispatchDeepLink).toHaveBeenCalledWith('reflect-local://note/older'),
+    )
   })
 
   it('drops a failed fallback after a newer router navigation', async () => {
@@ -100,7 +104,7 @@ describe('useFollowDeepLink', () => {
     const view = await render(<Harness />)
 
     modifierClick()
-    expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect://note/older')
+    expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect-local://note/older')
     await view.getByRole('button', { name: 'Navigate away' }).click()
     finishOpen(false)
     await settle()
@@ -118,7 +122,7 @@ describe('useFollowDeepLink', () => {
     const view = await render(<Harness />)
 
     modifierClick()
-    expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect://note/older')
+    expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect-local://note/older')
     await view.getByRole('button', { name: 'Open newer note link' }).click({
       modifiers: ['ControlOrMeta'],
     })
@@ -139,7 +143,7 @@ describe('useFollowDeepLink', () => {
     const view = await render(<Harness />)
 
     modifierClick()
-    expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect://note/older')
+    expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect-local://note/older')
     await view.getByRole('button', { name: 'Open newer note link' }).click({
       modifiers: ['ControlOrMeta'],
     })
@@ -151,9 +155,9 @@ describe('useFollowDeepLink', () => {
   })
 
   it.each([
-    'reflect://append?text=captured',
-    'reflect://task?text=captured',
-    'reflect://edit-notes?content=invalid',
+    'reflect-local://append?text=captured',
+    'reflect-local://task?text=captured',
+    'reflect-local://edit-notes?content=invalid',
   ])('does not cancel a pending failed fallback for non-address URL %s', async (url) => {
     let finishOpen: (opened: boolean) => void = () => {}
     openDeepLinkInNewWindow.mockReturnValue(
@@ -164,16 +168,16 @@ describe('useFollowDeepLink', () => {
     await render(<Harness />)
 
     modifierClick()
-    expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect://note/older')
+    expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect-local://note/older')
     followDeepLink?.({ href: url, openInNewWindow: true })
     finishOpen(false)
     await settle()
 
     expect(openDeepLinkInNewWindow).toHaveBeenCalledTimes(1)
-    expect(dispatchDeepLink.mock.calls).toEqual([[url], ['reflect://note/older']])
+    expect(dispatchDeepLink.mock.calls).toEqual([[url], ['reflect-local://note/older']])
   })
 
-  it.each(['reflect://today', 'reflect://note/newer'])(
+  it.each(['reflect-local://today', 'reflect-local://note/newer'])(
     'cancels a pending failed fallback for newer address URL %s',
     async (url) => {
       let finishOpen: (opened: boolean) => void = () => {}
@@ -185,7 +189,7 @@ describe('useFollowDeepLink', () => {
       await render(<Harness />)
 
       modifierClick()
-      expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect://note/older')
+      expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect-local://note/older')
       followDeepLink?.({ href: url, openInNewWindow: false })
       finishOpen(false)
       await settle()
@@ -205,7 +209,7 @@ describe('useFollowDeepLink', () => {
     const view = await render(<Harness />)
 
     modifierClick()
-    expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect://note/older')
+    expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect-local://note/older')
     await view.rerender(<Harness showHost={false} />)
     finishOpen(false)
     await settle()

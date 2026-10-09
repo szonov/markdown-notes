@@ -5,7 +5,6 @@ import {
   listAttachments,
   getConflictedNotes,
   getDuplicateNoteIds,
-  listChatConversations,
   listTemplates,
   loadSettings,
   saveSettings,
@@ -55,14 +54,6 @@ export function createAttachmentCatalogQueryOptions(generation: number) {
     queryKey: queryKeys.attachments.catalog(generation),
     queryFn: async () => createAttachmentCatalog(await listAttachments(generation)),
     staleTime: Infinity,
-  })
-}
-
-/** Persisted chat conversations shared by desktop and mobile history menus. */
-export function createChatConversationsQueryOptions(root: string | undefined) {
-  return queryOptions({
-    queryKey: queryKeys.chat.conversations(root),
-    queryFn: () => listChatConversations(),
   })
 }
 

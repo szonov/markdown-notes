@@ -1,11 +1,10 @@
 import { useDeferredValue, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { parseSearchQuery, retrieve, searchWithFilters, suggestWikiTargets } from '@reflect/core'
+import { parseSearchQuery, searchWithFilters, suggestWikiTargets } from '@reflect/core'
 import { useBridgeReady } from '@/hooks/use-bridge-ready.ts'
 import { listCommands } from '@/lib/commands/registry.ts'
 import { todayIso } from '@/lib/dates.ts'
 import { queryKeys } from '@/lib/query-client.ts'
-import { useEmbedStatus } from '@/lib/use-embed-status.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
 import { useSettings } from '@/providers/settings-provider.tsx'
 import { buildPaletteSections, type PaletteSections } from './entries.ts'
@@ -28,14 +27,7 @@ export interface PaletteResults {
 
 export function usePaletteResults(open: boolean, query: string): PaletteResults {
   const { graph } = useGraph()
-  // Hybrid needs both halves of the opt-in: the setting on *and* the model
-  // ready. The setting gate makes disabling immediate — the model stays loaded
-  // for the session, but its results must not. Plain-text queries blend
-  // semantic hits via RRF and degrade invisibly to lexical without either.
-  // Filtered queries stay constraint-based — filters are exact by nature.
   const { settings } = useSettings()
-  const embed = useEmbedStatus()
-  const hybrid = settings.semanticSearchEnabled && embed.status === 'ready'
 
   // Defer the query the index sees: fast typing coalesces (the plan's
   // debounce) while the input itself stays perfectly responsive.
@@ -71,28 +63,13 @@ export function usePaletteResults(open: boolean, query: string): PaletteResults 
       }),
     enabled: searching && !parsed.filtered,
   })
-  const useHybrid = hybrid && !parsed.filtered
   const {
     data: hits,
     isLoading: hitsLoading,
     isError: hitsError,
   } = useQuery({
-    queryKey: queryKeys.index.paletteSearch(graph?.root, useHybrid ? 'hybrid' : 'lexical', trimmed),
-    queryFn: async () => {
-      if (!useHybrid) {
-        return await searchWithFilters(parsed)
-      }
-      // Adapt RetrievalHit → PaletteHit: semantic chunk text rides in
-      // the snippet slot (dailies fall back to their ISO-titled row — the
-      // retrieval contract doesn't carry dailyDate).
-      const hits = await retrieve(trimmed, { mode: 'hybrid' })
-      return hits.map((hit) => ({
-        path: hit.path,
-        title: hit.title,
-        dailyDate: null,
-        snippet: hit.snippet === '' ? null : hit.snippet,
-      }))
-    },
+    queryKey: queryKeys.index.paletteSearch(graph?.root, 'lexical', trimmed),
+    queryFn: () => searchWithFilters(parsed),
     enabled: searching && trimmed !== '',
   })
 

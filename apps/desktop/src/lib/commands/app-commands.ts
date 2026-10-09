@@ -2,7 +2,6 @@ import { randomNotePath, toggleDevtools, untitledNotePath } from '@reflect/core'
 import { attachFilesToNote } from '@/lib/attach-files.ts'
 import { runCopyNotePath } from '@/lib/note-copy-path.ts'
 import { runCopyDeepLink } from '@/lib/note-deep-link.ts'
-import { runGistPublish } from '@/lib/note-gist.ts'
 import { isNativeShell } from '@/lib/platform.ts'
 import { rebuildIndexVisibly } from '@/lib/rebuild-index.ts'
 import { openRouteInNewWindow } from '@/lib/windows/open-in-new-window.ts'
@@ -124,25 +123,6 @@ const APP_COMMANDS: AppCommand[] = [
     run: (context) => context.findPreviousInNote(),
   },
   {
-    id: 'chat.open',
-    title: 'Chat',
-    keywords: ['ai', 'assistant', 'copilot', 'ask'],
-    keybinding: 'Mod-j',
-    run: (context) => context.navigate({ kind: 'chat' }),
-  },
-  {
-    id: 'chat.new',
-    title: 'New chat',
-    keywords: ['ai', 'assistant', 'copilot', 'conversation'],
-    keybinding: 'Mod-Shift-n',
-    run: (context) => {
-      if (context.route().kind !== 'chat') {
-        return
-      }
-      context.newChat()
-    },
-  },
-  {
     id: 'history.back',
     title: 'Back',
     keybinding: 'Mod-[',
@@ -172,34 +152,6 @@ const APP_COMMANDS: AppCommand[] = [
     run: (context) => context.togglePin(),
   },
   {
-    id: 'note.togglePrivate',
-    title: 'Mark or un-mark note as private',
-    keywords: ['privacy', 'lock', 'secret', 'hide', 'ai'],
-    // Flips the `private` frontmatter flag — the hard block on sending the
-    // note's content to AI or any other external service — of the note the
-    // current route edits. No default keybinding: the palette keeps it
-    // keyboard-reachable without spending a shortcut.
-    run: (context) => context.togglePrivate(),
-  },
-  {
-    id: 'note.publishGist',
-    title: 'Share with private link',
-    keywords: ['gist', 'github', 'share', 'publish', 'private link', 'export'],
-    // Publishes the body of the note the current route edits to a secret
-    // GitHub gist (republishing to the same gist thereafter) and copies the
-    // link. No default keybinding: the palette keeps it keyboard-reachable
-    // without spending a shortcut. `runGistPublish` owns all feedback — the
-    // progress line, the failure surface, and the "link copied" confirmation.
-    run: async (context) => {
-      const generation = context.generation()
-      const path = context.notePath()
-      if (generation === null || path === null) {
-        return
-      }
-      await runGistPublish(path, generation)
-    },
-  },
-  {
     id: 'note.attachFile',
     title: 'Attach file…',
     keywords: ['upload', 'attachment', 'import', 'pdf', 'document', 'insert'],
@@ -212,8 +164,8 @@ const APP_COMMANDS: AppCommand[] = [
   {
     id: 'note.copyDeepLink',
     title: 'Copy deep link',
-    keywords: ['url', 'share', 'clipboard', 'reflect://', 'address'],
-    // The original app's copy-link shortcut. Copies a `reflect://` address for
+    keywords: ['url', 'share', 'clipboard', 'reflect-local://', 'address'],
+    // The original app's copy-link shortcut. Copies a `reflect-local://` address for
     // the note the current route edits — id-shaped so it survives renames,
     // minting the frontmatter id on first copy. `runCopyDeepLink` owns all
     // feedback (the "Deep link copied" status line and failure surfaces).
@@ -233,7 +185,7 @@ const APP_COMMANDS: AppCommand[] = [
     keywords: ['file', 'absolute', 'filesystem', 'clipboard', 'location'],
     // The OS-path sibling of "Copy deep link": copies the note's absolute
     // file path (Finder's Copy-as-Pathname chord) for use outside Reflect,
-    // where a reflect:// address cannot resolve. `runCopyNotePath` owns all
+    // where a reflect-local:// address cannot resolve. `runCopyNotePath` owns all
     // feedback (the "Note path copied" status line and failure surfaces).
     keybinding: 'Alt-Mod-c',
     run: async (context) => {
@@ -254,34 +206,6 @@ const APP_COMMANDS: AppCommand[] = [
         context.navigate({ kind: 'note', path })
       }
     },
-  },
-  {
-    id: 'template.insert',
-    title: 'Insert template…',
-    keywords: ['snippet', 'boilerplate', 'stamp'],
-    // Inserts into the note the current route edits (the focused stream day on
-    // daily views); on screens with no note there is nothing to insert into.
-    // The picker itself carries the empty state — a "New template" row — so
-    // the command stays discoverable before any template exists.
-    run: (context) => {
-      if (context.notePath() === null) {
-        return
-      }
-      context.openTemplatePicker()
-    },
-  },
-  {
-    id: 'template.new',
-    title: 'New template',
-    keywords: ['template', 'snippet', 'boilerplate', 'create'],
-    run: (context) => context.openTemplateCreate(),
-  },
-  {
-    id: 'audioMemo.toggle',
-    title: 'Record audio memo',
-    keywords: ['voice', 'mic', 'dictate', 'transcribe', 'speech', 'capture'],
-    keybinding: 'Mod-Shift-r',
-    run: (context) => context.toggleAudioMemo(),
   },
   {
     id: 'theme.toggle',
@@ -309,17 +233,6 @@ const APP_COMMANDS: AppCommand[] = [
     keywords: ['cheat', 'sheet', 'keys', 'bindings', 'hotkeys', 'help'],
     keybinding: 'Mod-/',
     run: (context) => context.openShortcuts(),
-  },
-  {
-    id: 'semantic.enable',
-    title: 'Enable semantic search',
-    keywords: ['embeddings', 'ai', 'similar', 'model'],
-    // Downloads the local model (~90MB) — deliberately opt-in, never
-    // automatic: the first network fetch is the user's call. Persisting the
-    // setting is the entire command — EmbeddingsSync loads the model when the
-    // flag flips on and backfills once it's `ready`; later launches load from
-    // cache without asking again.
-    run: (context) => context.enableSemanticSearch(),
   },
   {
     id: 'index.rebuild',

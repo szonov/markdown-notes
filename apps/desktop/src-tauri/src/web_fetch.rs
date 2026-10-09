@@ -421,11 +421,6 @@ async fn fetch_bytes(
     .await
 }
 
-/// Fetch capture HTML while preserving capture's existing intranet behavior.
-pub(crate) async fn fetch_capture_html(value: &str) -> AppResult<FetchResponse> {
-    fetch_html(value, NetworkScope::AnyHttp).await
-}
-
 /// Fetch a bounded HTTPS JSON response without following redirects.
 pub(crate) async fn fetch_capture_json(value: &str, max_bytes: usize) -> AppResult<FetchResponse> {
     let url = parse_http_url(value)?;

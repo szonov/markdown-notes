@@ -144,7 +144,7 @@ describe('NoteActionsSection pin toggle', () => {
       expect(view.client.getQueryData<PinnedNote[]>(queryKey)?.map((note) => note.title)).toEqual([
         'Zeta',
         'Alpha',
-        'Mid',
+        'mid',
       ]),
     )
     await view.unmount()
@@ -168,64 +168,6 @@ describe('NoteActionsSection pin toggle', () => {
     await expect.element(view.getByText('Pin this note', { exact: true })).toBeInTheDocument()
     await vi.waitFor(() => expect(getPinnedNotes).toHaveBeenCalledTimes(2))
     expect(startOperation).toHaveBeenCalledWith('Updating pin')
-    expect(operationFail).toHaveBeenCalled()
-    await view.unmount()
-  })
-})
-
-describe('NoteActionsSection private toggle', () => {
-  it('offers Lock note and toggles on click', async () => {
-    const view = await renderSection('notes/a.md')
-    await userEvent.click(view.getByRole('button', { name: /Lock note/ }))
-    expect(commitNoteFrontmatter).toHaveBeenCalledWith('notes/a.md', { private: true }, 7)
-    await view.unmount()
-  })
-
-  it('offers Unlock note when the index reports the note private', async () => {
-    getNote.mockResolvedValue(noteRow('daily/2026-06-10.md', true))
-    noteSource.value = '---\nprivate: true\n---\n# A\n'
-    const view = await renderSection('daily/2026-06-10.md')
-    await expect.element(view.getByText('Unlock note')).toBeInTheDocument()
-    await userEvent.click(view.getByRole('button', { name: /Unlock note/ }))
-    expect(commitNoteFrontmatter).toHaveBeenCalledWith('daily/2026-06-10.md', { private: false }, 7)
-    await view.unmount()
-  })
-
-  it('flips the label from the toggle result before the index catches up', async () => {
-    const view = await renderSection('notes/a.md')
-    await userEvent.click(view.getByRole('button', { name: /Lock note/ }))
-    await expect.element(view.getByText('Unlock note')).toBeInTheDocument()
-    noteSource.value = '---\nprivate: true\n---\n# A\n'
-    await userEvent.click(view.getByRole('button', { name: /Unlock note/ }))
-    await expect.element(view.getByText('Lock note', { exact: true })).toBeInTheDocument()
-    expect(commitNoteFrontmatter).toHaveBeenCalledTimes(2)
-    await view.unmount()
-  })
-
-  it('shares an externally triggered privacy toggle with the button while saving', async () => {
-    const { toggleNotePrivate } = await import('@/lib/note-private.ts')
-    const write = Promise.withResolvers<void>()
-    commitNoteFrontmatter.mockReturnValueOnce(write.promise)
-    const view = await renderSection('notes/a.md')
-    await vi.waitFor(() => expect(getNote).toHaveBeenCalledOnce())
-    const action = toggleNotePrivate({
-      queryClient: view.client,
-      root: '/g',
-      generation: 7,
-      path: 'notes/a.md',
-    })
-    await expect.element(view.getByText('Unlock note')).toBeInTheDocument()
-    write.resolve()
-    await action
-    await view.unmount()
-  })
-
-  it('restores the private label when a write fails', async () => {
-    commitNoteFrontmatter.mockRejectedValueOnce({ kind: 'io', message: 'disk on fire' })
-    const view = await renderSection('notes/a.md')
-    await userEvent.click(view.getByRole('button', { name: /Lock note/ }))
-    await expect.element(view.getByText('Lock note', { exact: true })).toBeInTheDocument()
-    expect(startOperation).toHaveBeenCalledWith('Updating privacy')
     expect(operationFail).toHaveBeenCalled()
     await view.unmount()
   })

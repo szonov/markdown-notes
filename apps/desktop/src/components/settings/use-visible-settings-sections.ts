@@ -1,5 +1,4 @@
-import { useContactsAuthorization } from '@/hooks/use-contacts-authorization.ts'
-import { isMacosDesktop } from '@/lib/platform.ts'
+import { useMemo } from 'react'
 import { SETTINGS_SECTIONS } from './sections.ts'
 
 /** One registered settings section (see {@link SETTINGS_SECTIONS}). */
@@ -13,16 +12,16 @@ export type SettingsSectionEntry = (typeof SETTINGS_SECTIONS)[number]
  * directly.
  */
 export function useVisibleSettingsSections(): readonly SettingsSectionEntry[] {
-  const authorization = useContactsAuthorization()
-  const hasAppleIntegrations =
-    isMacosDesktop || (authorization !== null && authorization !== 'unavailable')
-  return SETTINGS_SECTIONS.filter((section) => {
-    if (section.id === 'integrations') {
-      return hasAppleIntegrations
-    }
-    if (section.id === 'agents') {
-      return isMacosDesktop
-    }
-    return true
-  })
+  return useMemo(() => {
+    const visible = new Set([
+      'appearance',
+      'editor',
+      'date-time',
+      'all-notes',
+      'search',
+      'about',
+      'destructive',
+    ])
+    return SETTINGS_SECTIONS.filter((section) => visible.has(section.id))
+  }, [])
 }

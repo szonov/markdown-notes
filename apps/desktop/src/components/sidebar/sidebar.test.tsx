@@ -12,13 +12,11 @@ import {
 import type { CommandContext } from '@/lib/commands/types.ts'
 import type { NoteRoute, Route } from '@/routing/route.ts'
 import { TooltipProvider } from '@/components/ui/tooltip.tsx'
-import { UpdateProvider } from '@/providers/update-provider.tsx'
 import { RouterProvider } from '@/routing/router.tsx'
 import { expectLocatorToHaveCount } from '@/test-utils/expect.ts'
 
 const getPinnedNotes = vi.hoisted(() => vi.fn<() => Promise<PinnedNote[]>>(async () => []))
 const revealItemInDir = vi.hoisted(() => vi.fn<(path: string) => Promise<void>>(async () => {}))
-const openUrl = vi.hoisted(() => vi.fn<(url: string) => Promise<void>>(async () => {}))
 const openRouteInNewWindow = vi.hoisted(() => vi.fn<(route: NoteRoute) => Promise<boolean>>())
 const openRecent = vi.hoisted(() => vi.fn())
 const pickAndOpen = vi.hoisted(() => vi.fn())
@@ -57,7 +55,7 @@ vi.mock('@reflect/core', async (importOriginal) => ({
   hasBridge: () => true,
   getPinnedNotes,
 }))
-vi.mock('@tauri-apps/plugin-opener', () => ({ revealItemInDir, openUrl }))
+vi.mock('@tauri-apps/plugin-opener', () => ({ revealItemInDir }))
 vi.mock('@/lib/windows/open-in-new-window.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/windows/open-in-new-window.ts')>()),
   openRouteInNewWindow,
@@ -84,34 +82,6 @@ vi.mock('@/providers/settings-provider.tsx', () => ({
     updateSettingsWith,
   }),
 }))
-vi.mock('@/providers/sync-provider.tsx', () => ({
-  useSync: () => ({
-    backup: { phase: 'disconnected' },
-    connectNewRepo: async () => {},
-    connectExistingRepo: async () => 'connected',
-    disconnectGraph: async () => {},
-    signOut: async () => {},
-    backUpNow: async () => {},
-  }),
-}))
-
-const audioMemo = vi.hoisted(() => ({
-  phase: 'idle' as const,
-  elapsedMs: 0,
-  stream: null,
-  available: true,
-  unavailableReason: null as string | null,
-  error: null,
-  canRetry: false,
-  toggle: vi.fn(),
-  cancel: vi.fn(),
-  retry: vi.fn(),
-  discard: vi.fn(),
-}))
-vi.mock('@/providers/audio-memo-provider.tsx', () => ({
-  useAudioMemo: () => audioMemo,
-}))
-
 const GRAPH: GraphInfo = { root: '/notes', name: 'Notes', generation: 1 }
 
 // Import after the core mock so the command registry sees the mocked module.
@@ -120,14 +90,8 @@ const { registerAppCommands } = await import('@/lib/commands/app-commands.ts')
 registerAppCommands()
 
 beforeEach(() => {
-  // The hoisted mock is shared module state — restore it so mic-related cases
-  // can't inherit mutations from earlier tests.
   getPinnedNotes.mockReset().mockResolvedValue([])
-  audioMemo.available = true
-  audioMemo.unavailableReason = null
-  audioMemo.toggle.mockReset()
   revealItemInDir.mockClear()
-  openUrl.mockClear()
   openRouteInNewWindow.mockReset().mockResolvedValue(true)
   openRecent.mockClear()
   pickAndOpen.mockClear()
@@ -165,7 +129,6 @@ async function renderSidebar(overrides?: Partial<CommandContext>, initialRoute?:
     openShortcuts: vi.fn(),
     openTemplatePicker: vi.fn(),
     openTemplateCreate: vi.fn(),
-    enableSemanticSearch: vi.fn(),
     ...overrides,
   }
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -175,11 +138,9 @@ async function renderSidebar(overrides?: Partial<CommandContext>, initialRoute?:
     <div style={{ width: 260, height: 560 }}>
       <TooltipProvider>
         <QueryClientProvider client={client}>
-          <UpdateProvider autoCheck={false}>
-            <RouterProvider initialRoute={initialRoute}>
-              <Sidebar graph={GRAPH} context={context} />
-            </RouterProvider>
-          </UpdateProvider>
+          <RouterProvider initialRoute={initialRoute}>
+            <Sidebar graph={GRAPH} context={context} />
+          </RouterProvider>
         </QueryClientProvider>
       </TooltipProvider>
     </div>,
@@ -201,9 +162,6 @@ describe('Sidebar', () => {
 
     await view.getByRole('button', { name: /settings/i }).click()
     await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith({ kind: 'settings' }))
-
-    await view.getByRole('button', { name: /chat/i }).click()
-    await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith({ kind: 'chat' }))
   })
 
   it('New note runs its command and shows active while the placeholder note is open', async () => {
@@ -256,24 +214,6 @@ describe('Sidebar', () => {
     const { view, openPalette } = await renderSidebar()
     await view.getByRole('button', { name: /search anything/i }).click()
     expect(openPalette).toHaveBeenCalled()
-  })
-
-  it('the mic button starts an audio memo', async () => {
-    const { view } = await renderSidebar()
-    await view.getByRole('button', { name: /record audio memo/i }).click()
-    expect(audioMemo.toggle).toHaveBeenCalled()
-  })
-
-  it('the mic button disables (without vanishing) when no provider can transcribe', async () => {
-    audioMemo.available = false
-    audioMemo.unavailableReason = 'Add an OpenAI or Gemini model in Settings to record audio memos'
-    const { view } = await renderSidebar()
-    const micButton = view.getByRole('button', { name: /record audio memo/i })
-    await expect.element(micButton).toHaveAttribute('aria-disabled', 'true')
-    // `aria-disabled` fails Playwright's enabled actionability check, but the
-    // element still receives real clicks — force past the check.
-    await micButton.click({ force: true })
-    expect(audioMemo.toggle).not.toHaveBeenCalled()
   })
 
   it('pinned notes render their own section', async () => {
@@ -429,52 +369,6 @@ describe('Sidebar', () => {
     await page.getByRole('menuitem', { name: 'Preferences' }).click()
 
     await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith({ kind: 'settings' }))
-  })
-
-  it('the graph menu offers the iOS app and browser extension in their stores', async () => {
-    const { view } = await renderSidebar()
-
-    await view.getByRole('button', { name: /Notes/ }).click()
-    await page.getByRole('menuitem', { name: 'Get Reflect apps…' }).click()
-
-    const dialog = page.getByRole('dialog', { name: 'Take Reflect with you' })
-    await expect.element(dialog).toBeVisible()
-    await expect.element(page.getByRole('menu')).not.toBeInTheDocument()
-
-    await dialog.getByRole('button', { name: 'Get iOS app' }).click()
-    expect(openUrl).toHaveBeenNthCalledWith(
-      1,
-      'https://apps.apple.com/us/app/reflect-open/id6787385615',
-    )
-    await dialog.getByRole('button', { name: 'Get Chrome extension' }).click()
-    expect(openUrl).toHaveBeenNthCalledWith(
-      2,
-      'https://chromewebstore.google.com/detail/reflect-capture/ccabifmooehighoonjeiololjfofkhkd',
-    )
-
-    await dialog.getByRole('button', { name: 'Close', exact: true }).click()
-    await expect.element(dialog).not.toBeInTheDocument()
-  })
-
-  it('opens the apps dialog from the keyboard and restores graph focus on Escape', async () => {
-    const { view } = await renderSidebar()
-    const graphTrigger = view.getByRole('button', { name: /Notes/ })
-    graphTrigger.element().focus()
-    await userEvent.keyboard('{Enter}')
-    await userEvent.keyboard('Get Reflect apps')
-    await expect.element(page.getByRole('menuitem', { name: 'Get Reflect apps…' })).toHaveFocus()
-    await userEvent.keyboard('{Enter}')
-
-    const dialog = page.getByRole('dialog', { name: 'Take Reflect with you' })
-    await expect.element(dialog).toBeVisible()
-    await vi.waitFor(() => expect(dialog.element().contains(document.activeElement)).toBe(true))
-
-    await userEvent.keyboard('{Escape}')
-    await expect.element(dialog).not.toBeInTheDocument()
-    await expect.element(graphTrigger).toHaveFocus()
-
-    await userEvent.keyboard('{Enter}')
-    await expect.element(page.getByRole('menuitem', { name: 'Get Reflect apps…' })).toBeVisible()
   })
 
   it('the graph footer opens the current graph in the system file manager', async () => {

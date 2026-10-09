@@ -1,37 +1,19 @@
 import type { ReactElement } from 'react'
-import { Button } from '@/components/ui/button.tsx'
 import { useAppVersion } from '@/hooks/use-app-version.ts'
-import { useCrashTest, useDebugUnlockTap } from '@/hooks/use-debug-unlock.ts'
-import { useUpdate } from '@/providers/update-provider.tsx'
 import { SettingsSection } from './section.tsx'
-import { UpdateField } from './update-field.tsx'
 
 export function AboutSection(): ReactElement {
   const version = useAppVersion()
-  const { unlocked: debugUnlocked, tap: versionTap } = useDebugUnlockTap()
-  const crashTest = useCrashTest()
-  const { supported } = useUpdate()
   return (
     <SettingsSection id="about">
       <div className="flex items-center justify-between gap-4 px-4 py-3.5">
         <div className="min-w-0">
-          <div className="text-sm font-medium text-text">Reflect Open</div>
+          <div className="text-sm font-medium text-text">Markdown Notes</div>
         </div>
-        <span onClick={versionTap} className="shrink-0 text-sm text-text-secondary">
+        <span className="shrink-0 text-sm text-text-secondary">
           {version !== null ? `v${version}` : '—'}
         </span>
       </div>
-      {debugUnlocked ? (
-        <div className="flex items-center justify-between gap-4 px-4 py-3.5">
-          <div className="min-w-0">
-            <div className="text-sm font-medium text-text">Debug</div>
-          </div>
-          <Button variant="destructive" size="sm" onClick={crashTest}>
-            Trigger test error
-          </Button>
-        </div>
-      ) : null}
-      {supported ? <UpdateField /> : null}
     </SettingsSection>
   )
 }

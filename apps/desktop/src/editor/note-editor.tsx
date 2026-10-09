@@ -3,6 +3,7 @@ import { FormattingToolbarBridge } from '@/editor/formatting-toolbar-bridge.tsx'
 import { MediaLightbox } from '@/editor/media-lightbox.tsx'
 import { isOpenableExternalUrl } from '@/editor/open-external-link.ts'
 import { resolveWikilink } from '@/editor/resolve-wikilink.ts'
+import { WikilinkEditDialog } from '@/editor/wikilink-edit-dialog.tsx'
 import { useXPostResolver, X_MEDIA_URL_PROTOCOLS } from '@/editor/use-x-post-resolver.ts'
 import { lightboxItemFromXPostMedia } from '@/editor/x-post-media-lightbox-item.ts'
 import { resolveYouTubeVideo } from '@/editor/youtube-video-resolver.ts'
@@ -383,7 +384,7 @@ export function NoteEditor({
         })
         return
       }
-      // A `reflect://` link routes through the in-app deep-link pipeline —
+      // A `reflect-local://` link routes through the in-app deep-link pipeline —
       // the OS opener would deny the scheme (and a round-trip could land on
       // another installed flavor). ⌘-click or a spare-`mod` keyboard follow sends an
       // *addressing* link to a new window instead; a declined open (capture link, browser dev)
@@ -523,6 +524,7 @@ export function NoteEditor({
         onExitBoundary={handleExitBoundary}
       >
         <EditorInputTraits />
+        <WikilinkEditDialog />
         {/* Only a pane that persists files gets the toolbar's attach button;
             `handleFilePaste` is the same handler meowdown pastes through. */}
         <FormattingToolbarBridge

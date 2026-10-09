@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { EmbedStatus } from '@reflect/core'
 import { notePathForRoute, type Route } from '@/routing/route.ts'
 import type { NavigateOptions } from '@/routing/router.tsx'
 import { resetOperations } from '@/lib/operations.ts'
@@ -9,10 +8,6 @@ const TODAY = '2026-06-09'
 
 const randomNotePath = vi.hoisted(() => vi.fn())
 const rebuildIndex = vi.hoisted(() => vi.fn())
-const embedStatus = vi.hoisted(() =>
-  vi.fn<() => Promise<EmbedStatus>>(async () => ({ status: 'uninitialized' })),
-)
-const backfillEmbeddingsVisibly = vi.hoisted(() => vi.fn(async () => 'completed'))
 const runCopyDeepLink = vi.hoisted(() => vi.fn(async () => undefined))
 const runCopyNotePath = vi.hoisted(() => vi.fn(async () => undefined))
 const isNativeShell = vi.hoisted(() => vi.fn(() => true))
@@ -22,10 +17,6 @@ const operationFail = vi.hoisted(() => vi.fn())
 const startOperation = vi.hoisted(() =>
   vi.fn(() => ({ progress: vi.fn(), done: vi.fn(), fail: operationFail })),
 )
-vi.mock('@/lib/semantic.ts', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/semantic.ts')>()),
-  backfillEmbeddingsVisibly,
-}))
 vi.mock('@/lib/note-deep-link.ts', () => ({ runCopyDeepLink }))
 vi.mock('@/lib/note-copy-path.ts', () => ({ runCopyNotePath }))
 vi.mock('@/lib/platform.ts', async (importOriginal) => ({
@@ -41,7 +32,6 @@ vi.mock('@reflect/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@reflect/core')>()),
   randomNotePath,
   rebuildIndex,
-  embedStatus,
   toggleDevtools,
 }))
 
@@ -88,7 +78,6 @@ function fakeContext(overrides?: Partial<CommandContext>) {
     openShortcuts: vi.fn(),
     openTemplatePicker: vi.fn(),
     openTemplateCreate: vi.fn(),
-    enableSemanticSearch: vi.fn(),
     ...overrides,
   }
   return { context, navigated, navigateOptions }
@@ -104,10 +93,6 @@ describe('keybindingFor', () => {
   it('returns null for unbound commands and unknown ids', () => {
     expect(keybindingFor('theme.toggle')).toBeNull() // a real command, no binding
     expect(keybindingFor('no.such.command')).toBeNull()
-  })
-
-  it('audioMemo.toggle is bound to Mod-Shift-r', () => {
-    expect(keybindingFor('audioMemo.toggle')).toBe('Mod-Shift-r')
   })
 
   it('dev.toggleDevtools is bound to Mod-Shift-i', () => {
@@ -150,8 +135,6 @@ describe('app commands', () => {
     expect(context.toggleTheme).toHaveBeenCalled()
     await command('sidebar.toggle').run(context)
     expect(context.toggleSidebar).toHaveBeenCalled()
-    await command('audioMemo.toggle').run(context)
-    expect(context.toggleAudioMemo).toHaveBeenCalled()
   })
 
   it('settings.open navigates to the settings screen', async () => {
@@ -176,34 +159,6 @@ describe('app commands', () => {
     await command('shortcuts.show').run(context)
     expect(context.openShortcuts).toHaveBeenCalledTimes(1)
     expect(keybindingFor('shortcuts.show')).toBe('Mod-/')
-  })
-
-  it('template.insert opens the picker only where a note is being edited', async () => {
-    const { context } = fakeContext({ route: () => ({ kind: 'note', path: 'notes/a.md' }) })
-    await command('template.insert').run(context)
-    expect(context.openTemplatePicker).toHaveBeenCalledTimes(1)
-
-    // Settings edits no note — there is nothing to insert into.
-    const { context: noNote } = fakeContext({ route: () => ({ kind: 'settings' }) })
-    await command('template.insert').run(noNote)
-    expect(noNote.openTemplatePicker).not.toHaveBeenCalled()
-  })
-
-  it('template.new opens the name dialog through the context capability', async () => {
-    const { context } = fakeContext()
-    await command('template.new').run(context)
-    expect(context.openTemplateCreate).toHaveBeenCalledTimes(1)
-  })
-
-  it('chat.new starts a fresh conversation only from the chat route', async () => {
-    const { context } = fakeContext({ route: () => ({ kind: 'chat' }) })
-    await command('chat.new').run(context)
-    expect(context.newChat).toHaveBeenCalledTimes(1)
-    expect(keybindingFor('chat.new')).toBe('Mod-Shift-n')
-
-    const { context: outsideChat } = fakeContext()
-    await command('chat.new').run(outsideChat)
-    expect(outsideChat.newChat).not.toHaveBeenCalled()
   })
 
   it('graph switch commands select their recent graph position', async () => {
@@ -278,12 +233,6 @@ describe('app commands', () => {
     expect(context.togglePin).toHaveBeenCalledOnce()
   })
 
-  it('note.togglePrivate delegates to the shared privacy capability', async () => {
-    const { context } = fakeContext()
-    await command('note.togglePrivate').run(context)
-    expect(context.togglePrivate).toHaveBeenCalledOnce()
-  })
-
   it('note.copyDeepLink copies the route note through the keyboard command', async () => {
     runCopyDeepLink.mockClear()
     const { context } = fakeContext({ route: () => ({ kind: 'note', path: 'notes/a.md' }) })
@@ -341,13 +290,6 @@ describe('app commands', () => {
     isNativeShell.mockReturnValue(true)
   })
 
-  it('semantic.enable persists the opt-in through the context capability', async () => {
-    const { context } = fakeContext()
-    await command('semantic.enable').run(context)
-    // EmbeddingsSync owns the download reaction; the command only opts in.
-    expect(context.enableSemanticSearch).toHaveBeenCalled()
-  })
-
   it('index.rebuild runs at the open generation and reports as an operation', async () => {
     try {
       rebuildIndex.mockResolvedValueOnce(undefined)
@@ -362,22 +304,6 @@ describe('app commands', () => {
       const { context: noGraph } = fakeContext({ generation: () => null })
       await command('index.rebuild').run(noGraph)
       expect(rebuildIndex).not.toHaveBeenCalled()
-    } finally {
-      resetOperations()
-    }
-  })
-
-  it('index.rebuild re-runs the embedding backfill when the model is ready', async () => {
-    try {
-      rebuildIndex.mockResolvedValueOnce(undefined)
-      embedStatus.mockResolvedValueOnce({ status: 'ready', model: 'all-MiniLM-L6-v2' })
-      const { context } = fakeContext()
-      await command('index.rebuild').run(context)
-      // index_clear wiped the embedding tables; rebuild must repopulate them.
-      expect(backfillEmbeddingsVisibly).toHaveBeenCalledWith({
-        generation: 7,
-        modelId: 'all-MiniLM-L6-v2',
-      })
     } finally {
       resetOperations()
     }

@@ -9,10 +9,6 @@ const MobileAllNotes = lazy(async () => {
   const { MobileAllNotes } = await import('@/mobile/screens/all-notes.tsx')
   return { default: MobileAllNotes }
 })
-const MobileChat = lazy(async () => {
-  const { MobileChat } = await import('@/mobile/screens/chat.tsx')
-  return { default: MobileChat }
-})
 const MobileGraphs = lazy(async () => {
   const { MobileGraphs } = await import('@/mobile/screens/graphs.tsx')
   return { default: MobileGraphs }
@@ -90,8 +86,6 @@ export function MobileScreen({
       )
     case 'tasks':
       return <MobileTasks key="tasks" />
-    case 'chat':
-      return <MobileChat key="chat" />
     case 'settings':
       return <MobileSettings key="settings" />
     case 'graphs':

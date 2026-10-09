@@ -8,16 +8,13 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { homeDir, join } from '@tauri-apps/api/path'
 import { open } from '@tauri-apps/plugin-dialog'
 import {
   deleteGraph as deleteGraphCommand,
   errorMessage,
   forgetRecent,
   hasBridge,
-  icloudRequestDownloads,
   isMobilePlatform,
-  createGraph,
   openGraph,
   recentGraphs,
   subscribeReconcileRequests,
@@ -30,11 +27,7 @@ import { reloadOpenDocuments } from '@/editor/open-documents.ts'
 import { resetNoteRowOverlays } from '@/hooks/note-row-overlay.ts'
 import { useBridgeReady } from '@/hooks/use-bridge-ready.ts'
 import { setIndexProgress } from '@/lib/index-progress.ts'
-import {
-  dropIcloudStatusQuery,
-  dropSimilarNotesQueries,
-  throttledInvalidateIndexQueries,
-} from '@/lib/query-client.ts'
+import { throttledInvalidateIndexQueries } from '@/lib/query-client.ts'
 import { ensureWelcomeNote } from '@/lib/welcome-note.ts'
 import { closeSecondaryWindows } from '@/lib/windows/close-secondary-windows.ts'
 import { isMainWindow, requireMainWindow } from '@/lib/windows/window-role.ts'
@@ -75,12 +68,6 @@ interface GraphContextValue extends MobileGraphBoot {
   pickAndOpen: () => Promise<void>
   /** Close the active graph and show the desktop graph chooser. */
   chooseGraph: () => Promise<void>
-  /**
-   * Create (and open) a graph at an app-chosen absolute path — desktop
-   * onboarding's iCloud path names the folder inside the container instead
-   * of showing a picker. Resolves true only on a confirmed open.
-   */
-  createAt: (root: string) => Promise<boolean>
   /** Open a graph by its root path. Resolves true only when it reached 'ready'. */
   openRecent: (root: string) => Promise<boolean>
   /** Drop a graph from the recents list. */
@@ -101,28 +88,6 @@ interface GraphContextValue extends MobileGraphBoot {
 }
 
 const GraphContext = createContext<GraphContextValue | null>(null)
-
-/**
- * On a macOS first run (no recents yet), start the folder picker in iCloud
- * Drive — the recommended home for a graph (Plan 21): notes back up
- * automatically and the iOS app's container lives there too. Suggestion
- * only: the user can navigate anywhere, and once they have a graph the
- * picker reverts to the OS default (their last-used location). Best-effort —
- * a resolution failure (or a signed-out account's missing folder, which the
- * open panel falls back from on its own) must never block picking.
- */
-async function pickerDefaultPath(hasRecents: boolean): Promise<{ defaultPath: string } | null> {
-  if (hasRecents || import.meta.env.TAURI_ENV_PLATFORM !== 'darwin') {
-    return null
-  }
-  try {
-    const home = await homeDir()
-    return { defaultPath: await join(home, 'Library', 'Mobile Documents', 'com~apple~CloudDocs') }
-  } catch (err) {
-    console.warn('iCloud Drive picker suggestion failed:', errorMessage(err))
-    return null
-  }
-}
 
 /**
  * Owns the active graph and the open/choose flow. On mount it auto-opens the
@@ -181,16 +146,6 @@ export function GraphProvider({
       // External renames healed by id follow through to sessions and routes,
       // exactly as for an in-app rename (Plan 17).
       onMoved: followHealedMove,
-      // iCloud-evicted notes whose content the index lacks (never indexed
-      // here, or remote-edited while evicted): request exactly those
-      // downloads; the materialized files index via ordinary watcher
-      // upserts. Non-iCloud graphs never list placeholders, so this never
-      // fires for them. Rust resolves against the active root itself.
-      onStalePlaceholders: (paths) => {
-        icloudRequestDownloads(paths).catch((err: unknown) => {
-          console.error('iCloud download request failed:', errorMessage(err))
-        })
-      },
       // `visibilitychange` below performs the active teardown; this dynamic
       // guard also closes the launch race where the first sync is scheduled
       // after iOS has already hidden the webview.
@@ -283,7 +238,6 @@ export function GraphProvider({
           // here (scoped by generation / graph root), so this is memory
           // hygiene, not correctness.
           resetNoteRowOverlays()
-          dropSimilarNotesQueries()
           // Open the index *before* 'ready' so reads can't hit the previous
           // graph's index. Best-effort: an index failure doesn't block editing.
           const generation = await index.open()
@@ -383,31 +337,6 @@ export function GraphProvider({
     onChoose: useCallback(() => setStatus('choosing'), []),
   })
 
-  /**
-   * Create (and open) a graph at an app-chosen path — desktop onboarding's
-   * iCloud path, where the app names the folder inside the container rather
-   * than showing a picker. Same serialized open flow as `openRecent`;
-   * `createGraph` bootstraps the directory first (idempotent when it exists).
-   */
-  const createAt = useCallback(
-    async (root: string): Promise<boolean> => {
-      // Guarded BEFORE createGraph: graph_create activates the shared Rust
-      // session, so off-main it would re-root every window even though the
-      // openRecent below refuses.
-      if (!requireMainWindow('creating a graph')) {
-        return false
-      }
-      try {
-        await createGraph(root)
-      } catch (err) {
-        setError(errorMessage(err))
-        return false
-      }
-      return await openRecent(root)
-    },
-    [openRecent],
-  )
-
   const pickAndOpen = useCallback(async (): Promise<void> => {
     let selected: string | null = null
     try {
@@ -415,7 +344,6 @@ export function GraphProvider({
         directory: true,
         multiple: false,
         title: 'Choose a graph folder',
-        ...(await pickerDefaultPath(recents.length > 0)),
       })
       selected = typeof result === 'string' ? result : null
     } catch (err) {
@@ -425,7 +353,7 @@ export function GraphProvider({
     if (selected) {
       await openRecent(selected)
     }
-  }, [openRecent, recents])
+  }, [openRecent])
 
   const closeActiveGraph = useCallback(async (): Promise<void> => {
     ++openSeq.current
@@ -490,10 +418,6 @@ export function GraphProvider({
       }
       throw err
     }
-    // The delete trashed a directory the chooser may list — drop the cached
-    // iCloud listing so the chooser refetches it rather than showing the
-    // deleted graph (queries never go stale on their own, see query-client).
-    dropIcloudStatusQuery()
     if (seq === openSeq.current) {
       await closeActiveGraph()
     }
@@ -546,7 +470,6 @@ export function GraphProvider({
       error,
       pickAndOpen,
       chooseGraph,
-      createAt,
       openRecent,
       forget,
       deleteGraph,
@@ -567,7 +490,6 @@ export function GraphProvider({
       error,
       pickAndOpen,
       chooseGraph,
-      createAt,
       openRecent,
       forget,
       deleteGraph,

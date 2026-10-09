@@ -74,6 +74,18 @@ pub fn menu_install_paste_and_match_style(app: tauri::AppHandle) {
     let _ = app;
 }
 
+/// Add the standard macOS spelling actions to the custom Edit menu. Their nil
+/// target lets the responder chain deliver them to the focused WKWebView.
+#[tauri::command]
+pub fn menu_install_spelling(app: tauri::AppHandle) {
+    #[cfg(target_os = "macos")]
+    if let Err(error) = app.run_on_main_thread(install_spelling_menu) {
+        tracing::warn!(%error, "Spelling menu install could not reach the main thread");
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = app;
+}
+
 #[cfg(target_os = "macos")]
 fn install_paste_and_match_style() {
     let Some(mtm) = MainThreadMarker::new() else {
@@ -108,6 +120,66 @@ fn install_paste_and_match_style() {
         None => edit.addItem(&item),
     }
     tracing::info!("added Paste and Match Style to the Edit menu");
+}
+
+#[cfg(target_os = "macos")]
+fn install_spelling_menu() {
+    let Some(mtm) = MainThreadMarker::new() else {
+        tracing::warn!("Spelling menu skipped: not on the main thread");
+        return;
+    };
+    let Some(main_menu) = NSApplication::sharedApplication(mtm).mainMenu() else {
+        tracing::warn!("Spelling menu skipped: no app menu installed");
+        return;
+    };
+    let Some(edit) = find_edit_menu(&main_menu) else {
+        tracing::warn!("Spelling menu skipped: no Edit menu found");
+        return;
+    };
+    if (0..edit.numberOfItems()).any(|index| {
+        edit.itemAtIndex(index)
+            .is_some_and(|item| item.title().to_string() == "Spelling and Grammar")
+    }) {
+        return;
+    }
+
+    let submenu = NSMenu::new(mtm);
+    submenu.setTitle(ns_string!("Spelling and Grammar"));
+    add_action_item(
+        &submenu,
+        mtm,
+        "Show Spelling and Grammar",
+        sel!(showGuessPanel:),
+    );
+    add_action_item(&submenu, mtm, "Check Document Now", sel!(checkSpelling:));
+    submenu.addItem(&NSMenuItem::separatorItem(mtm));
+    add_action_item(
+        &submenu,
+        mtm,
+        "Check Spelling While Typing",
+        sel!(toggleContinuousSpellChecking:),
+    );
+
+    let item = NSMenuItem::new(mtm);
+    item.setTitle(ns_string!("Spelling and Grammar"));
+    item.setSubmenu(Some(&submenu));
+    edit.addItem(&NSMenuItem::separatorItem(mtm));
+    edit.addItem(&item);
+    tracing::info!("added Spelling and Grammar to the Edit menu");
+}
+
+#[cfg(target_os = "macos")]
+fn add_action_item(menu: &NSMenu, mtm: MainThreadMarker, title: &str, action: Sel) {
+    use objc2_foundation::NSString;
+
+    let item = NSMenuItem::new(mtm);
+    let title = NSString::from_str(title);
+    item.setTitle(&title);
+    // SAFETY: these are WKWebView/AppKit text-system selectors. A nil target
+    // routes through the responder chain and AppKit disables unavailable
+    // actions automatically.
+    unsafe { item.setAction(Some(action)) };
+    menu.addItem(&item);
 }
 
 /// Index of the first item in `menu` whose action is `action`.

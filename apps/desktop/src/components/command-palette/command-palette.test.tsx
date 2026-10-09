@@ -13,7 +13,6 @@ import { PaletteProvider, usePalette } from './palette-provider.tsx'
 
 const suggestWikiTargets = vi.hoisted(() => vi.fn())
 const searchWithFilters = vi.hoisted(() => vi.fn())
-const retrieve = vi.hoisted(() => vi.fn())
 const readNote = vi.hoisted(() => vi.fn<(path: string) => Promise<string>>())
 const openRouteInNewWindow = vi.hoisted(() => vi.fn<(route: NoteRoute) => Promise<boolean>>())
 vi.mock('@reflect/core', async (importOriginal) => ({
@@ -21,7 +20,6 @@ vi.mock('@reflect/core', async (importOriginal) => ({
   hasBridge: () => true,
   suggestWikiTargets,
   searchWithFilters,
-  retrieve,
   readNote,
 }))
 // The preview keeps the stub from the route-content tests: hosting the real
@@ -35,18 +33,9 @@ vi.mock('@/lib/windows/open-in-new-window.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/windows/open-in-new-window.ts')>()),
   openRouteInNewWindow,
 }))
-// The model is absent by default: the palette is exactly the lexical surface
-// it was before Plan 09 (hybrid mode is additive). The gating tests flip both
-// halves of the hybrid opt-in.
-const embedReady = vi.hoisted(() => ({ value: false }))
-vi.mock('@/lib/use-embed-status.ts', () => ({
-  useEmbedStatus: () =>
-    embedReady.value ? { status: 'ready', model: 'all-MiniLM-L6-v2' } : { status: 'uninitialized' },
-}))
-const semanticSetting = vi.hoisted(() => ({ enabled: false }))
 vi.mock('@/providers/settings-provider.tsx', () => ({
   useSettings: () => ({
-    settings: { semanticSearchEnabled: semanticSetting.enabled, dateFormat: 'mdy' },
+    settings: { dateFormat: 'mdy' },
     updateSettings: () => {},
   }),
 }))
@@ -58,8 +47,6 @@ const { registerAppCommands } = await import('@/lib/commands/app-commands.ts')
 registerAppCommands()
 
 beforeEach(() => {
-  embedReady.value = false
-  semanticSetting.enabled = false
   readNote.mockReset().mockResolvedValue('')
   openRouteInNewWindow.mockReset().mockResolvedValue(true)
 })
@@ -102,7 +89,6 @@ async function renderPalette(query: string, context?: Partial<CommandContext>) {
     openShortcuts: vi.fn(),
     openTemplatePicker: vi.fn(),
     openTemplateCreate: vi.fn(),
-    enableSemanticSearch: vi.fn(),
     ...context,
   }
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -302,37 +288,6 @@ describe('CommandPalette', () => {
 
     await userEvent.keyboard('{Enter}')
     await expect.element(view.getByTestId('route')).toMatchTextContent('2026-06-08')
-  })
-
-  it('stays lexical when the model is ready but semantic search is disabled', async () => {
-    embedReady.value = true
-    semanticSetting.enabled = false
-    suggestWikiTargets.mockResolvedValue([])
-    searchWithFilters.mockClear().mockResolvedValue([])
-    retrieve.mockClear()
-    await renderPalette('rust')
-    // Disabling must bite immediately, even while the model is still loaded.
-    await vi.waitFor(() => expect(searchWithFilters).toHaveBeenCalled())
-    expect(retrieve).not.toHaveBeenCalled()
-  })
-
-  it('blends semantic hits once enabled and the model is ready', async () => {
-    embedReady.value = true
-    semanticSetting.enabled = true
-    suggestWikiTargets.mockResolvedValue([])
-    retrieve.mockClear().mockResolvedValue([
-      {
-        path: 'notes/rust.md',
-        title: 'Rust Notes',
-        score: 0.9,
-        snippet: 'borrow checker notes',
-        heading: null,
-        isPrivate: false,
-      },
-    ])
-    const { view } = await renderPalette('rust')
-    await expect.element(view.getByText('Rust Notes')).toBeInTheDocument()
-    expect(retrieve).toHaveBeenCalledWith('rust', { mode: 'hybrid' })
   })
 
   it('previews the highlighted note and follows arrow-key selection', async () => {

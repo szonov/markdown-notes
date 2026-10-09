@@ -5,16 +5,10 @@
       "path": "./apps/desktop/tsconfig.json"
     },
     {
-      "path": "./apps/extension/tsconfig.json"
-    },
-    {
       "path": "./packages/core/tsconfig.json"
     },
     {
       "path": "./packages/db/tsconfig.json"
-    },
-    {
-      "path": "./packages/modules/tsconfig.json"
     },
     {
       "path": "./packages/utils/tsconfig.json"

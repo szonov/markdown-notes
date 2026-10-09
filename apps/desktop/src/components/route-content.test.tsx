@@ -25,6 +25,7 @@ const editorProbe = vi.hoisted(() => ({
   focusCalls: [] as string[],
   hoverRenderer: null as boolean | null,
 }))
+const settingsState = vi.hoisted(() => ({ dailyNotesView: 'pages' as 'stream' | 'pages' }))
 
 vi.mock('@/editor/note-editor.tsx', async () => {
   const { useEffect, useRef } = await import('react')
@@ -106,13 +107,11 @@ vi.mock('@/providers/settings-provider.tsx', () => ({
       defaultAiProviderId: null,
       chatSystemPrompt: '',
       aiPrompts: [],
+      dailyNotesView: settingsState.dailyNotesView,
     },
     updateSettings: async () => {},
     updateSettingsWith: () => {},
   }),
-}))
-vi.mock('@/components/daily-stream.tsx', () => ({
-  DailyStream: () => <div data-testid="daily-stream" />,
 }))
 vi.mock('@/components/settings-screen.tsx', () => ({
   SettingsScreen: () => <div data-testid="settings-screen" />,
@@ -135,6 +134,7 @@ setBridge({
 })
 
 beforeEach(() => {
+  settingsState.dailyNotesView = 'pages'
   files = {}
   writes = []
   editorProbe.onChange = null
@@ -187,15 +187,24 @@ function renderRoute(route: Route) {
 }
 
 describe('RouteContent', () => {
-  it('renders the daily stream for the today route', async () => {
+  it('renders today as one daily-note page', async () => {
+    const view = await renderRoute({ kind: 'today' })
+    await expect.element(page.getByLabelText(/Editing daily\/.+\.md/)).toBeVisible()
+    await expect.element(page.getByTestId('daily-stream')).not.toBeInTheDocument()
+    await view.unmount()
+  })
+
+  it('renders the original continuous stream when configured', async () => {
+    settingsState.dailyNotesView = 'stream'
     const view = await renderRoute({ kind: 'today' })
     await expect.element(page.getByTestId('daily-stream')).toBeInTheDocument()
     await view.unmount()
   })
 
-  it('renders the daily stream for a daily route, surviving a malformed date', async () => {
-    const view = await renderRoute({ kind: 'daily', date: '2026-02-31' })
-    await expect.element(page.getByTestId('daily-stream')).toBeInTheDocument()
+  it('renders a selected day as one daily-note page', async () => {
+    const view = await renderRoute({ kind: 'daily', date: '2026-02-28' })
+    await expect.element(page.getByLabelText('Editing daily/2026-02-28.md')).toBeVisible()
+    await expect.element(page.getByTestId('daily-stream')).not.toBeInTheDocument()
     await view.unmount()
   })
 
@@ -304,9 +313,9 @@ describe('RouteContent', () => {
     await view.unmount()
   })
 
-  it('renders the chat screen for the chat route, not the stream', async () => {
+  it('falls back to today for the removed chat route', async () => {
     const view = await renderRoute({ kind: 'chat' })
-    await expect.element(page.getByTestId('chat-screen')).toBeInTheDocument()
+    await expect.element(page.getByLabelText(/Editing daily\/.+\.md/)).toBeVisible()
     await expect.element(page.getByTestId('daily-stream')).not.toBeInTheDocument()
     await view.unmount()
   })
@@ -323,9 +332,10 @@ describe('RouteContent', () => {
     await view.unmount()
   })
 
-  it('arriving on a search route opens the palette pre-filled over the stream', async () => {
+  it('arriving on a search route opens the palette pre-filled over today', async () => {
     const view = await renderRoute({ kind: 'search', query: 'roadmap' })
-    await expect.element(page.getByTestId('daily-stream')).toBeInTheDocument()
+    await expect.element(page.getByLabelText(/Editing daily\/.+\.md/)).toBeVisible()
+    await expect.element(page.getByTestId('daily-stream')).not.toBeInTheDocument()
     await vi.waitFor(() =>
       expect(JSON.parse(page.getByTestId('palette').element().textContent ?? '')).toEqual({
         open: true,

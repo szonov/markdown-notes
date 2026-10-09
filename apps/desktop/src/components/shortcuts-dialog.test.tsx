@@ -58,23 +58,6 @@ describe('ShortcutsDialog', () => {
       .toBeInTheDocument()
   })
 
-  it('lists the AI menu shortcut with the Apple command chord', async () => {
-    isApplePlatform.mockReturnValue(true)
-    await renderDialog()
-    await openDialog()
-
-    const row = page.getByText('Open the AI menu on the selection').element().closest('li')
-
-    if (row === null) {
-      throw new Error('AI menu shortcut row was not rendered')
-    }
-    expect([...row.querySelectorAll('kbd')].map((keycap) => keycap.textContent)).toEqual([
-      '⌘',
-      '⇧',
-      'J',
-    ])
-  })
-
   it('keeps the sheet within the viewport and scrolls the shortcut rows', async () => {
     await renderDialog()
     const dialog = await openDialog()

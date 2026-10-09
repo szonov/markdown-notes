@@ -16,6 +16,8 @@ interface SingleNoteViewProps {
    * window's day label, standing in for the title a daily doesn't carry.
    */
   heading?: ReactNode
+  /** Where autofocus places the caret when this page opens. */
+  autoFocusSelection?: 'start' | 'end'
 }
 
 /**
@@ -27,7 +29,12 @@ interface SingleNoteViewProps {
  * padding, so clicking anywhere in the note body (blank side margins
  * included) focuses it.
  */
-export function SingleNoteView({ path, dailyDate, heading }: SingleNoteViewProps): ReactElement {
+export function SingleNoteView({
+  path,
+  dailyDate,
+  heading,
+  autoFocusSelection = 'start',
+}: SingleNoteViewProps): ReactElement {
   return (
     <ScrollRestored className="h-full overflow-auto px-0">
       <div className="mx-auto flex min-h-full w-full max-w-full flex-col py-8">
@@ -37,6 +44,7 @@ export function SingleNoteView({ path, dailyDate, heading }: SingleNoteViewProps
           {...(dailyDate !== undefined ? { dailyDate } : {})}
           lazy
           autoFocus
+          autoFocusSelection={autoFocusSelection}
           className="flex grow flex-col"
           gutterClassName="reflect-content-gutter"
           editorClassName="grow"

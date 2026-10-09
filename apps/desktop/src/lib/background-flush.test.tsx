@@ -3,11 +3,8 @@ import { installBackgroundFlush } from './background-flush.ts'
 
 /**
  * The Plan 19 decision-6 contract: backgrounding the app mid-edit (inside the
- * save debounce) must land the buffers on disk and then make a local backup
- * commit — that sequence is what makes "kill the app from the switcher,
- * relaunch, the edit is there" hold. These tests pin the trigger (hidden, not
- * visible), the ordering (commit only after buffers/settings settle), and the
- * never-blocks guarantees (a failed flush still commits).
+ * save debounce) must land note and settings buffers on disk before iOS can
+ * suspend the process.
  */
 
 const seams = vi.hoisted(() => ({
@@ -15,7 +12,6 @@ const seams = vi.hoisted(() => ({
   endBackgroundTask: vi.fn<(token: string) => Promise<void>>(async () => {}),
   flushOpenDocuments: vi.fn<() => Promise<void>>(async () => {}),
   flushSettings: vi.fn<() => Promise<void>>(async () => {}),
-  flushBackup: vi.fn<() => Promise<void>>(async () => {}),
 }))
 vi.mock('@reflect/core', () => ({
   beginBackgroundTask: seams.beginBackgroundTask,
@@ -23,7 +19,6 @@ vi.mock('@reflect/core', () => ({
 }))
 vi.mock('@/editor/open-documents.ts', () => ({ flushOpenDocuments: seams.flushOpenDocuments }))
 vi.mock('@/lib/settings-flush.ts', () => ({ flushSettings: seams.flushSettings }))
-vi.mock('@/lib/backup-flush.ts', () => ({ flushBackup: seams.flushBackup }))
 
 let visibility: DocumentVisibilityState
 let dispose: (() => void) | null = null
@@ -45,7 +40,6 @@ beforeEach(() => {
   seams.endBackgroundTask.mockClear().mockImplementation(async () => {})
   seams.flushOpenDocuments.mockClear().mockImplementation(async () => {})
   seams.flushSettings.mockClear().mockImplementation(async () => {})
-  seams.flushBackup.mockClear().mockImplementation(async () => {})
 })
 
 afterEach(() => {
@@ -64,7 +58,7 @@ function goVisible(): void {
 }
 
 describe('installBackgroundFlush', () => {
-  it('protects documents, settings, and the commit with one balanced assertion', async () => {
+  it('protects documents and settings with one balanced assertion', async () => {
     dispose = installBackgroundFlush()
 
     goHidden()
@@ -73,17 +67,16 @@ describe('installBackgroundFlush', () => {
     expect(seams.beginBackgroundTask).toHaveBeenCalledTimes(1)
     expect(seams.flushOpenDocuments).toHaveBeenCalledTimes(1)
     expect(seams.flushSettings).toHaveBeenCalledTimes(1)
-    expect(seams.flushBackup).toHaveBeenCalledTimes(1)
     expect(seams.endBackgroundTask).toHaveBeenCalledWith('background-task-1')
     expect(seams.beginBackgroundTask.mock.invocationCallOrder[0]).toBeLessThan(
       seams.flushOpenDocuments.mock.invocationCallOrder[0] ?? 0,
     )
-    expect(seams.flushBackup.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(seams.flushSettings.mock.invocationCallOrder[0]).toBeLessThan(
       seams.endBackgroundTask.mock.invocationCallOrder[0] ?? 0,
     )
   })
 
-  it('commits only after the buffers have landed (the mid-debounce edit)', async () => {
+  it('keeps the assertion open until buffers have landed', async () => {
     let landBuffers: () => void = () => {}
     seams.flushOpenDocuments.mockImplementation(
       () =>
@@ -95,15 +88,14 @@ describe('installBackgroundFlush', () => {
 
     goHidden()
     await settleMicrotasks()
-    // The note write is still in flight — a commit now would miss the edit.
-    expect(seams.flushBackup).not.toHaveBeenCalled()
+    expect(seams.endBackgroundTask).not.toHaveBeenCalled()
 
     landBuffers()
     await settleMicrotasks()
-    expect(seams.flushBackup).toHaveBeenCalledTimes(1)
+    expect(seams.endBackgroundTask).toHaveBeenCalledTimes(1)
   })
 
-  it('still commits when a buffer flush fails (backgrounding never blocks)', async () => {
+  it('still ends the assertion when a buffer flush fails', async () => {
     seams.flushOpenDocuments.mockImplementation(async () => {
       throw new Error('disk full')
     })
@@ -112,12 +104,11 @@ describe('installBackgroundFlush', () => {
     goHidden()
     await settleMicrotasks()
 
-    expect(seams.flushBackup).toHaveBeenCalledTimes(1)
     expect(seams.endBackgroundTask).toHaveBeenCalledTimes(1)
   })
 
-  it('ends the assertion even when a flush step unexpectedly rejects', async () => {
-    seams.flushBackup.mockRejectedValueOnce(new Error('commit failed'))
+  it('ends the assertion even when settings unexpectedly reject', async () => {
+    seams.flushSettings.mockRejectedValueOnce(new Error('settings failed'))
     dispose = installBackgroundFlush()
 
     goHidden()
@@ -134,7 +125,6 @@ describe('installBackgroundFlush', () => {
     await settleMicrotasks()
 
     expect(seams.flushOpenDocuments).toHaveBeenCalledTimes(1)
-    expect(seams.flushBackup).toHaveBeenCalledTimes(1)
     expect(seams.endBackgroundTask).not.toHaveBeenCalled()
   })
 
@@ -146,7 +136,6 @@ describe('installBackgroundFlush', () => {
     await settleMicrotasks()
 
     expect(seams.flushOpenDocuments).toHaveBeenCalledTimes(1)
-    expect(seams.flushBackup).toHaveBeenCalledTimes(1)
     expect(seams.endBackgroundTask).not.toHaveBeenCalled()
   })
 
@@ -157,7 +146,6 @@ describe('installBackgroundFlush', () => {
     await settleMicrotasks()
 
     expect(seams.flushOpenDocuments).not.toHaveBeenCalled()
-    expect(seams.flushBackup).not.toHaveBeenCalled()
   })
 
   it('also flushes on pagehide (webview teardown)', async () => {
@@ -167,7 +155,6 @@ describe('installBackgroundFlush', () => {
     await settleMicrotasks()
 
     expect(seams.flushOpenDocuments).toHaveBeenCalledTimes(1)
-    expect(seams.flushBackup).toHaveBeenCalledTimes(1)
   })
 
   it('coalesces visibilitychange and pagehide from one background transition', async () => {
@@ -186,12 +173,10 @@ describe('installBackgroundFlush', () => {
     await settleMicrotasks()
     // Only the first chain is running — nothing concurrent.
     expect(seams.flushOpenDocuments).toHaveBeenCalledTimes(1)
-    expect(seams.flushBackup).not.toHaveBeenCalled()
 
     landBuffers()
     await settleMicrotasks()
     expect(seams.flushOpenDocuments).toHaveBeenCalledTimes(1)
-    expect(seams.flushBackup).toHaveBeenCalledTimes(1)
     expect(seams.beginBackgroundTask).toHaveBeenCalledTimes(1)
   })
 
@@ -217,7 +202,6 @@ describe('installBackgroundFlush', () => {
     await settleMicrotasks()
     await settleMicrotasks()
     expect(seams.flushOpenDocuments).toHaveBeenCalledTimes(2)
-    expect(seams.flushBackup).toHaveBeenCalledTimes(2)
     expect(seams.beginBackgroundTask).toHaveBeenCalledTimes(2)
   })
 
@@ -231,6 +215,5 @@ describe('installBackgroundFlush', () => {
     await settleMicrotasks()
 
     expect(seams.flushOpenDocuments).not.toHaveBeenCalled()
-    expect(seams.flushBackup).not.toHaveBeenCalled()
   })
 })

@@ -11,7 +11,9 @@
 //! the `chat_*` tables ([`chat_write`]) hold durable chat history — deleting
 //! the file loses those.
 
+#[cfg(test)]
 mod chat_write;
+#[cfg(test)]
 mod embed_write;
 mod migrations;
 mod query;
@@ -30,7 +32,9 @@ use crate::background_task::{self, BackgroundTaskState};
 use crate::error::{AppError, AppResult};
 use crate::fs::GraphState;
 
+#[cfg(test)]
 pub use chat_write::{ChatConversation, ChatMessageRow};
+#[cfg(test)]
 pub use embed_write::EmbeddedChunk;
 pub use write::IndexedNote;
 
@@ -256,12 +260,8 @@ pub fn index_remove<R: tauri::Runtime>(
             return Ok(());
         }
         let conn = state.conn.as_mut().ok_or_else(AppError::no_graph)?;
-        // One transaction: a half-removed note (row gone, chunks left) would let
-        // a later note at the same path surface stale chunk text in semantic
-        // search until a re-embed.
         let tx = conn.transaction()?;
         write::remove_note(&tx, &path)?;
-        embed_write::remove_chunks(&tx, &path)?;
         tx.commit()?;
     }
     emit_index_written(&app);
@@ -527,6 +527,7 @@ pub fn index_clear<R: tauri::Runtime>(
 /// Stale-generation writes are dropped like every other index write — a turn
 /// detached by a graph switch must not land in the new graph's history.
 #[tauri::command]
+#[cfg(test)]
 pub fn chat_message_save(
     conversation: ChatConversation,
     message: ChatMessageRow,
@@ -548,6 +549,7 @@ pub fn chat_message_save(
 
 /// Delete a conversation and (via cascade) its messages (no-op if stale).
 #[tauri::command]
+#[cfg(test)]
 pub fn chat_conversation_delete(
     id: String,
     generation: u64,
@@ -566,6 +568,7 @@ pub fn chat_conversation_delete(
 /// Replace a note's embedding chunk set (diff applied in one transaction;
 /// no-op if stale). Unchanged chunks keep their vectors — the hash-skip.
 #[tauri::command]
+#[cfg(test)]
 pub fn embed_apply(
     path: String,
     chunks: Vec<EmbeddedChunk>,
@@ -587,6 +590,7 @@ pub fn embed_apply(
 
 /// Drop a deleted note's chunks + vectors (no-op if stale).
 #[tauri::command]
+#[cfg(test)]
 pub fn embed_remove(
     path: String,
     generation: u64,

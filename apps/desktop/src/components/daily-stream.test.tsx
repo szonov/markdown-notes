@@ -35,7 +35,6 @@ vi.mock('@/providers/settings-provider.tsx', () => ({
     settings: {
       dateFormat: 'mdy',
       editorMarkdownSyntax: 'hide',
-      editorSpellCheck: true,
       aiProviders: [],
       defaultAiProviderId: null,
       chatSystemPrompt: '',

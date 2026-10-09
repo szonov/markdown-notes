@@ -32,7 +32,7 @@ import { useNoteWindowBoot } from './use-note-window-boot.ts'
 const BOOT: WindowBootstrap = {
   graph: { root: '/g', name: 'g', generation: 3 },
   indexGeneration: 5,
-  initialDeepLink: 'reflect://note/notes%2Ffoo.md',
+  initialDeepLink: 'reflect-local://note/notes%2Ffoo.md',
 }
 
 async function mount() {
@@ -75,12 +75,12 @@ describe('useNoteWindowBoot', () => {
   it('falls back to the intake for a target only the index can answer', async () => {
     windowBootstrap.mockResolvedValue({
       ...BOOT,
-      initialDeepLink: 'reflect://note/Meeting%20Notes',
+      initialDeepLink: 'reflect-local://note/Meeting%20Notes',
     })
     const { onAdopted } = await mount()
     await vi.waitFor(() => expect(onAdopted).toHaveBeenCalled())
     expect(getInitialWindowRoute()).toBeNull()
-    expect(dispatchDeepLink).toHaveBeenCalledWith('reflect://note/Meeting%20Notes')
+    expect(dispatchDeepLink).toHaveBeenCalledWith('reflect-local://note/Meeting%20Notes')
   })
 
   it('skips the deep-link dispatch when none is pending (a reload)', async () => {

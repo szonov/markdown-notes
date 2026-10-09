@@ -1,9 +1,8 @@
-import { useRef, useState, type ReactElement } from 'react'
+import { useRef, type ReactElement } from 'react'
 import type { GraphInfo } from '@reflect/core'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
-import { FolderOpen, GraduationCap, LocateFixed, PanelsTopLeft, Settings } from 'lucide-react'
+import { FolderOpen, LocateFixed, Settings } from 'lucide-react'
 import { GraphSwatch } from '@/components/graph-swatch.tsx'
-import { ReflectAppsDialog } from '@/components/reflect-apps-dialog.tsx'
 import { ShortcutKeys } from '@/components/shortcut-keys.tsx'
 import { GraphMenuItem } from '@/components/sidebar/graph-menu-item.tsx'
 import { Button } from '@/components/ui/button.tsx'
@@ -19,11 +18,9 @@ import { useGraphColors } from '@/hooks/use-graph-colors.ts'
 import { keybindingFor } from '@/lib/commands/app-commands.ts'
 import { runCommand } from '@/lib/commands/registry.ts'
 import type { CommandContext } from '@/lib/commands/types.ts'
-import { openUrlSync } from '@/lib/open-url.ts'
 import { cn } from '@/lib/utils.ts'
 import { isMainWindow } from '@/lib/windows/window-role.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
-import { useSync, type BackupState } from '@/providers/sync-provider.tsx'
 import { useRouter } from '@/routing/router.tsx'
 
 const MENU_ITEM_CLASS = 'h-8 gap-2 px-2 py-0 text-[13px] text-text-secondary'
@@ -39,20 +36,6 @@ function graphSwitchBindingFor(index: number): string | null {
  * pulsing accent dot while backing up, amber when offline with queued
  * changes, red when backup needs attention. Detail lives in Settings.
  */
-function backupDot(backup: BackupState): { className: string; label: string } | null {
-  if (backup.phase !== 'connected' || backup.status.state === 'idle') {
-    return null
-  }
-  switch (backup.status.state) {
-    case 'syncing':
-      return { className: 'bg-accent motion-safe:animate-pulse', label: 'Backing up' }
-    case 'offline':
-      return { className: 'bg-amber-500', label: 'Backup waiting for a connection' }
-    case 'error':
-      return { className: 'bg-red-500', label: 'Backup failed — see Settings' }
-  }
-}
-
 interface GraphFooterProps {
   graph: GraphInfo
   /** Commands run with this — the same context the palette/shortcuts use. */
@@ -66,13 +49,10 @@ interface GraphFooterProps {
  * Menu content matches the trigger width to stay inset from the sidebar edges.
  */
 export function GraphFooter({ graph, context }: GraphFooterProps): ReactElement {
-  const [appsOpen, setAppsOpen] = useState(false)
   const graphTriggerRef = useRef<HTMLButtonElement>(null)
   const { recents, indexing, openRecent, chooseGraph } = useGraph()
   const { colorFor } = useGraphColors()
-  const { backup } = useSync()
   const { route } = useRouter()
-  const dot = backupDot(backup)
   const settingsActive = route.kind === 'settings'
 
   return (
@@ -97,17 +77,6 @@ export function GraphFooter({ graph, context }: GraphFooterProps): ReactElement 
                     <span className="min-w-0 truncate text-xs font-medium text-text-secondary transition-colors duration-100 group-hover:text-text">
                       {graph.name}
                     </span>
-                    {dot !== null ? (
-                      <>
-                        <span
-                          aria-hidden
-                          className={cn('h-1.5 w-1.5 flex-none rounded-full', dot.className)}
-                        />
-                        <span role="status" className="sr-only">
-                          {dot.label}
-                        </span>
-                      </>
-                    ) : null}
                     {indexing ? (
                       <span role="status" className="sr-only">
                         Indexing
@@ -164,18 +133,6 @@ export function GraphFooter({ graph, context }: GraphFooterProps): ReactElement 
               <ShortcutKeys binding={SETTINGS_BINDING} className="text-[10px]" />
             )}
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setAppsOpen(true)} className={MENU_ITEM_CLASS}>
-            <PanelsTopLeft aria-hidden strokeWidth={1.75} className="size-3.5 shrink-0" />
-            <span className="min-w-0 flex-1 truncate">Get Reflect apps…</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => openUrlSync('https://reflect.academy')}
-            className={MENU_ITEM_CLASS}
-          >
-            <GraduationCap aria-hidden strokeWidth={1.75} className="size-3.5 shrink-0" />
-            <span className="min-w-0 flex-1 truncate">Reflect Academy</span>
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <Tooltip>
@@ -203,7 +160,6 @@ export function GraphFooter({ graph, context }: GraphFooterProps): ReactElement 
           Settings {SETTINGS_BINDING && <ShortcutKeys binding={SETTINGS_BINDING} />}
         </TooltipContent>
       </Tooltip>
-      <ReflectAppsDialog open={appsOpen} onOpenChange={setAppsOpen} finalFocus={graphTriggerRef} />
     </div>
   )
 }

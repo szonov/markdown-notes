@@ -1,4 +1,4 @@
-import type { GraphInfo, NoteRow, PinnedNote } from '@reflect/core'
+import type { GraphInfo, PinnedNote } from '@reflect/core'
 import { queryKeys } from '@/lib/query-client.ts'
 import {
   FocusedDailyProvider,
@@ -12,7 +12,6 @@ import { renderHook } from 'vitest-browser-react'
 import { PaletteProvider, usePalette } from '@/components/command-palette/palette-provider.tsx'
 import { listRegisteredBindings } from '@/editor/keymap.ts'
 import { registerAppCommands } from '@/lib/commands/app-commands.ts'
-import { NoteTemplatesProvider } from '@/providers/note-templates-provider.tsx'
 import { ShortcutsProvider, useShortcuts } from '@/providers/shortcuts-provider.tsx'
 import { SidebarProvider, useSidebar } from '@/providers/sidebar-provider.tsx'
 import { MOD_KEY, NON_MOD_KEY } from '@/test-utils/mod-key.ts'
@@ -28,7 +27,6 @@ vi.mock('@/lib/note-frontmatter.ts', () => ({
   readNoteSource: async () => '# A\n',
 }))
 
-const newChat = vi.hoisted(() => vi.fn())
 const openRecent = vi.hoisted(() => vi.fn())
 const openRouteInNewWindow = vi.hoisted(() => vi.fn(async () => true))
 
@@ -76,10 +74,6 @@ vi.mock('@/providers/settings-provider.tsx', () => ({
 vi.mock('@/providers/audio-memo-provider.tsx', () => ({
   useAudioMemo: () => ({ toggle: vi.fn() }),
 }))
-vi.mock('@/providers/chat-provider.tsx', () => ({
-  useChatSession: () => ({ newChat }),
-}))
-
 registerAppCommands() // production does this in main.tsx
 
 beforeEach(() => {
@@ -111,11 +105,9 @@ function shortcutsHook(client = new QueryClient()) {
           <RouterProvider>
             <PaletteProvider>
               <ShortcutsProvider>
-                <NoteTemplatesProvider>
-                  <SidebarProvider>
-                    <FocusedDailyProvider>{children}</FocusedDailyProvider>
-                  </SidebarProvider>
-                </NoteTemplatesProvider>
+                <SidebarProvider>
+                  <FocusedDailyProvider>{children}</FocusedDailyProvider>
+                </SidebarProvider>
               </ShortcutsProvider>
             </PaletteProvider>
           </RouterProvider>
@@ -175,55 +167,12 @@ describe('app shortcuts', () => {
     ).toBe('2026-09-07')
   })
 
-  it('palette privacy updates the focused daily note cache before the write resolves', async () => {
-    const client = new QueryClient()
-    const queryKey = queryKeys.index.note('/g', 'daily/2026-09-07.md')
-    client.setQueryData<NoteRow>(queryKey, {
-      path: 'daily/2026-09-07.md',
-      title: 'Daily',
-      dailyDate: '2026-09-07',
-      isPrivate: false,
-      hasConflict: false,
-      gistUrl: null,
-      gistStale: false,
-    })
-    const write = Promise.withResolvers<void>()
-    commitNoteFrontmatter.mockReturnValueOnce(write.promise)
-    const { result, act } = await shortcutsHook(client)
-    await act(() => result.current.router.navigate({ kind: 'daily', date: '2026-09-08' }))
-    await act(() => result.current.setFocusedDailyDate('2026-09-07'))
-    const action = result.current.context.togglePrivate()
-    await vi.waitFor(() =>
-      expect(commitNoteFrontmatter).toHaveBeenCalledWith(
-        'daily/2026-09-07.md',
-        { private: true },
-        1,
-      ),
-    )
-    expect(client.getQueryData<NoteRow>(queryKey)?.isPrivate).toBe(true)
-    write.resolve()
-    await action
-  })
-
-  it('pin and privacy no-op on note-less routes and without a graph', async () => {
-    const { result, act } = await shortcutsHook()
-    await act(() => result.current.router.navigate({ kind: 'settings' }))
-    await act(() => press('o'))
-    await act(() => result.current.context.togglePrivate())
-    graphState.graph = null
-    await act(() => result.current.router.navigate({ kind: 'note', path: 'notes/a.md' }))
-    await act(() => press('o'))
-    await act(() => result.current.context.togglePrivate())
-    expect(commitNoteFrontmatter).not.toHaveBeenCalled()
-  })
-
   it('registers the command keybindings in the central keymap registry', () => {
     const bindings = listRegisteredBindings()
     for (const key of [
       'Mod-d',
       'Mod-Shift-a',
       'Mod-n',
-      'Mod-Shift-n',
       'Mod-Shift-o',
       'Mod-[',
       'Mod-]',
@@ -374,26 +323,6 @@ describe('app shortcuts', () => {
 
     await act(() => press('a', { shiftKey: true }))
     expect(result.current.router.route).toEqual({ kind: 'allNotes', tag: null })
-  })
-
-  it('⌘⇧N starts a fresh chat when the chat route is active', async () => {
-    newChat.mockClear()
-    const { result, act } = await shortcutsHook()
-
-    await act(() => press('j'))
-    expect(result.current.router.route).toEqual({ kind: 'chat' })
-
-    await act(() => press('n', { shiftKey: true }))
-    expect(newChat).toHaveBeenCalledTimes(1)
-  })
-
-  it('⌘⇧N is inert outside the chat route', async () => {
-    newChat.mockClear()
-    const { result, act } = await shortcutsHook()
-
-    await act(() => press('n', { shiftKey: true }))
-    expect(result.current.router.route).toEqual({ kind: 'today' })
-    expect(newChat).not.toHaveBeenCalled()
   })
 
   it('⌘number switches to the matching recent graph', async () => {

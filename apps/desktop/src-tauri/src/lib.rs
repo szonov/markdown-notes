@@ -16,25 +16,17 @@
 
 mod background_task;
 mod blocking;
-mod calendar;
-mod capture;
 mod conflict;
-mod contacts;
 mod db;
 mod devtools;
 mod editor_link_preview;
 mod error;
 mod fs;
-mod git;
 mod graph_gitignore;
-mod icloud;
-mod link_preview;
 mod menu;
 mod quit;
 mod recents;
-mod secrets;
 mod settings;
-mod skill;
 #[cfg(target_os = "macos")]
 mod wake;
 mod web_fetch;
@@ -43,11 +35,6 @@ mod windows;
 // The watcher and the embedding runtime are desktop capabilities (Plan 19):
 // mobile swaps in stand-ins with the identical command surface, so the
 // `invoke_handler` list below needs no platform branches.
-#[cfg(desktop)]
-mod embed;
-#[cfg(mobile)]
-#[path = "embed_mobile.rs"]
-mod embed;
 #[cfg(desktop)]
 mod watcher;
 #[cfg(mobile)]
@@ -63,6 +50,12 @@ use tauri::{Emitter, Manager};
 #[tauri::command]
 fn app_version<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> String {
     app.package_info().version.to_string()
+}
+
+#[tauri::command]
+async fn capture_oembed_fetch(url: String) -> crate::error::AppResult<String> {
+    let bytes = web_fetch::fetch_capture_json(&url, 64 * 1024).await?.body;
+    String::from_utf8(bytes).map_err(|error| crate::error::AppError::parse(error.to_string()))
 }
 
 /// Builds the HTTP User-Agent from the same resolved version shown in the UI.
@@ -119,7 +112,7 @@ pub fn run() {
 
     // Single-instance must be the first plugin so a second launch is caught
     // before any other state spins up: its `deep-link` feature hands the
-    // launching instance's `reflect://` URL to the deep-link plugin, and the
+    // launching instance's `reflect-local://` URL to the deep-link plugin, and the
     // callback re-focuses the running window. macOS delivers scheme opens to
     // the running app natively; this is the Windows/Linux equivalent.
     #[cfg(desktop)]
@@ -129,10 +122,9 @@ pub fn run() {
 
     let builder = builder
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_http::init());
+        .plugin(tauri_plugin_dialog::init());
 
-    // Deep links (`reflect://`) are desktop-only for now: the scheme is
+    // Deep links (`reflect-local://`) are desktop-only for now: the scheme is
     // registered at bundle time (`plugins.deep-link` in tauri.conf.json) and
     // the frontend consumes URLs through `onOpenUrl`.
     #[cfg(desktop)]
@@ -177,18 +169,15 @@ pub fn run() {
     // before the window becomes visible — otherwise WKWebView flashes its
     // default white backing between show() and the first HTML paint.
     #[cfg(desktop)]
-    let builder = builder
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init())
-        .plugin(
-            // Note windows are excluded from state tracking: they cascade
-            // fresh from their opener, and their content-hashed labels would
-            // otherwise accrete in the state file forever.
-            tauri_plugin_window_state::Builder::default()
-                .with_state_flags(windows::restorable_window_state_flags())
-                .with_filter(|label| !label.starts_with(windows::NOTE_WINDOW_PREFIX))
-                .build(),
-        );
+    let builder = builder.plugin(
+        // Note windows are excluded from state tracking: they cascade
+        // fresh from their opener, and their content-hashed labels would
+        // otherwise accrete in the state file forever.
+        tauri_plugin_window_state::Builder::default()
+            .with_state_flags(windows::restorable_window_state_flags())
+            .with_filter(|label| !label.starts_with(windows::NOTE_WINDOW_PREFIX))
+            .build(),
+    );
 
     // Reveal the main window on `PageLoadEvent::Finished`, not on
     // `RunEvent::Ready`. Ready only guarantees plugin init + window-state
@@ -223,35 +212,6 @@ pub fn run() {
     // The keyboard bridge (Plan 19, decision 8) is mobile-only: desktop has
     // no software keyboard to track. (Sharing uses the webview's Web Share
     // API, so it needs no native plugin.)
-    #[cfg(mobile)]
-    let builder = builder.plugin(tauri_plugin_keyboard::init());
-
-    // Haptics are mobile-only too: WKWebView has no `navigator.vibrate`, so
-    // taps reach `UIImpactFeedbackGenerator` through this plugin's
-    // `impact_light` command.
-    #[cfg(mobile)]
-    let builder = builder.plugin(tauri_plugin_mobile_haptics::init());
-
-    // The native audio-memo recorder is mobile-only too: desktop records
-    // through the webview's MediaRecorder (`use-audio-recorder.ts`), while
-    // mobile capture must survive the webview (interruptions, backgrounding),
-    // so it runs on AVAudioRecorder behind this plugin.
-    #[cfg(mobile)]
-    let builder = builder.plugin(tauri_plugin_recording::init());
-
-    #[cfg(target_os = "ios")]
-    let builder = builder.plugin(tauri_plugin_iap::init());
-
-    // TestFlight and the App Store install the same binary, so only a
-    // runtime probe (StoreKit 2's `AppTransaction.environment`) can tell
-    // the channels apart, e.g. for the paywall gate.
-    #[cfg(target_os = "ios")]
-    let builder = builder.plugin(tauri_plugin_app_store::init());
-
-    // OAuth-style sign-in in an in-app browser sheet (ASWebAuthenticationSession).
-    #[cfg(target_os = "ios")]
-    let builder = builder.plugin(tauri_plugin_web_auth::init());
-
     builder
         // Serves note images (`assets/…`) to the webview. Registered as an
         // *asynchronous* protocol on purpose: WebKit delivers custom-scheme
@@ -271,26 +231,16 @@ pub fn run() {
         .manage(watcher::WatcherState::default())
         .manage(quit::QuitState::default())
         .manage(windows::WindowInit::default())
-        .manage(embed::EmbedState::default())
         .invoke_handler(tauri::generate_handler![
             fs::x_archive::x_archive_write,
             fs::x_archive::x_archive_resolve,
             fs::x_archive::x_archive_owners,
             fs::x_syndication::x_syndication_fetch,
             app_version,
+            capture_oembed_fetch,
             background_task::background_task_begin,
             background_task::background_task_end,
-            icloud::storage::mobile_storage,
-            icloud::storage::mobile_storage_local,
-            icloud::storage::icloud_download_pending,
-            icloud::storage::icloud_pending_count,
-            icloud::storage::icloud_request_downloads,
-            icloud::storage::icloud_status,
-            icloud::storage::icloud_adopt_graph,
-            icloud::sweep::icloud_conflicts_scan,
             conflict::conflict_merge_text,
-            icloud::watch::icloud_watch_start,
-            icloud::watch::icloud_watch_stop,
             fs::graph_open,
             fs::graph_create,
             fs::graph_delete,
@@ -325,12 +275,6 @@ pub fn run() {
             recents::forget_recent,
             settings::settings_load,
             settings::settings_save,
-            skill::skill_status,
-            skill::skill_install,
-            skill::skill_uninstall,
-            secrets::secret_set,
-            secrets::secret_get,
-            secrets::secret_delete,
             db::index_open,
             db::index_apply,
             db::index_apply_batch,
@@ -342,45 +286,12 @@ pub fn run() {
             db::note_move_indexed,
             db::index_meta_set,
             db::db_query,
-            db::chat_message_save,
-            db::chat_conversation_delete,
-            db::embed_apply,
-            db::embed_remove,
-            embed::embed_status,
-            embed::embed_ensure,
-            embed::embed_texts,
             watcher::watch_start,
             watcher::watch_stop,
             menu::menu_install_paste_and_match_style,
-            calendar::calendar_authorization_status,
-            calendar::calendar_request_access,
-            calendar::calendar_list_calendars,
-            calendar::calendar_list_events,
-            contacts::contacts_authorization_status,
-            contacts::contacts_request_access,
-            contacts::contacts_lookup_by_email,
-            contacts::contacts_lookup_by_name,
-            capture::capture_host_register,
-            capture::capture_inbox_list,
-            capture::capture_inbox_spool,
-            capture::capture_inbox_read,
-            capture::capture_inbox_remove,
-            capture::capture_inbox_reject,
-            capture::capture_shared_inbox_relay,
-            capture::capture_screenshot_promote,
-            capture::capture_link_preview,
-            capture::capture_meta_fetch,
-            capture::capture_oembed_fetch,
+            menu::menu_install_spelling,
             editor_link_preview::link_preview_fetch_html,
             editor_link_preview::link_preview_fetch_icon,
-            git::git_status,
-            git::git_setup,
-            git::git_disconnect,
-            git::git_clone,
-            git::git_commit_all,
-            git::git_fetch,
-            git::git_merge_remote,
-            git::git_push,
             quit::quit_confirm,
             windows::open_note_window,
             windows::window_bootstrap,
@@ -422,40 +333,10 @@ pub fn run() {
                 ..
             } => {
                 if !*has_visible_windows
-                    || app
-                        .get_webview_window(windows::MAIN_WINDOW_LABEL)
-                        .is_none()
+                    || app.get_webview_window(windows::MAIN_WINDOW_LABEL).is_none()
                 {
                     windows::reopen_main_window(app);
                 }
-            }
-            // The lock-screen widget opens `reflect://record-audio`; hand it
-            // to the recording plugin's persisted action queue (the V1
-            // handshake) so the request survives webview churn and cold
-            // starts. Desktop scheme opens flow through
-            // tauri-plugin-deep-link to the frontend instead.
-            #[cfg(any(target_os = "macos", target_os = "ios"))]
-            tauri::RunEvent::Opened { urls } => {
-                #[cfg(mobile)]
-                for url in urls {
-                    if url.scheme() == "reflect" && url.host_str() == Some("record-audio") {
-                        // This callback runs on the main thread, and
-                        // `run_mobile_plugin` blocks its caller until the
-                        // Swift command resolves — which `queueAction` does
-                        // from the main queue. Calling it inline deadlocks
-                        // the main thread (the watchdog then kills the app),
-                        // so queue from a worker thread instead.
-                        let app = app.clone();
-                        tauri::async_runtime::spawn_blocking(move || {
-                            use tauri_plugin_recording::RecordingExt;
-                            if let Err(err) = app.recording().queue_action("recordAudio") {
-                                tracing::warn!(error = %err, "queueing the record-audio action failed");
-                            }
-                        });
-                    }
-                }
-                #[cfg(not(mobile))]
-                let _ = urls;
             }
             tauri::RunEvent::ExitRequested { code, api, .. } => {
                 // A user/OS-initiated quit (⌘Q — no exit code) with live

@@ -19,7 +19,6 @@
 //! discovery, archiving, applying results) lives in [`crate::icloud`] and the
 //! sweep.
 
-pub mod archive;
 mod frontmatter;
 pub mod ladder;
 pub mod markers;

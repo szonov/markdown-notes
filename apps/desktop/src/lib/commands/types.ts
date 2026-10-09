@@ -21,7 +21,7 @@ export interface CommandContext {
   notePath: () => string | null
   /** Toggle the focused note pin with immediate shared feedback. */
   togglePin: () => Promise<void>
-  /** Toggle the focused note privacy with immediate shared feedback. */
+  /** Legacy capability retained for compatibility with older command contexts. */
   togglePrivate: () => Promise<void>
   back: () => void
   forward: () => void
@@ -30,7 +30,7 @@ export interface CommandContext {
   toggleTheme: () => void
   /** Collapse/expand the workspace and contextual sidebars. */
   toggleSidebar: () => void
-  /** Start a fresh chat conversation. */
+  /** Legacy capability retained for compatibility with older command contexts. */
   newChat: () => void
   /** Open Find for the note currently targeted by {@link notePath}. */
   openNoteFind: () => void
@@ -40,7 +40,7 @@ export interface CommandContext {
   findPreviousInNote: () => void
   /** Switch to a recent graph by zero-based position in the graph switcher. */
   switchGraph: (index: number) => void
-  /** Start an audio memo, or stop-and-save the one recording. */
+  /** Legacy capability retained for compatibility with older command contexts. */
   toggleAudioMemo: () => void
   /**
    * The open **index session** generation (`index_open`), or null when none —
@@ -54,16 +54,11 @@ export interface CommandContext {
   openPalette: (query?: string) => void
   /** Open the ⌘/ shortcuts cheat-sheet. */
   openShortcuts: () => void
-  /** Open the "Insert template…" picker (inserts into {@link notePath}'s editor). */
+  /** Legacy capability retained for compatibility with older command contexts. */
   openTemplatePicker: () => void
-  /** Open the "New template" name dialog. */
+  /** Legacy capability retained for compatibility with older command contexts. */
   openTemplateCreate: () => void
-  /**
-   * Persist the semantic-search opt-in (`semanticSearchEnabled`).
-   * EmbeddingsSync reacts to the setting by loading — first time:
-   * downloading — the model, so flipping the flag is the whole command.
-   */
-  enableSemanticSearch: () => void
+  /** Legacy capability retained for compatibility with older command contexts. */
 }
 
 export interface AppCommand {

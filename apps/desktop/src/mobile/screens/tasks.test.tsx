@@ -42,7 +42,6 @@ vi.mock('@/providers/settings-provider.tsx', () => ({
       dateFormat: 'mdy',
       weekStartDay: 'monday',
       editorMarkdownSyntax: 'hide',
-      editorSpellCheck: false,
     },
   }),
 }))

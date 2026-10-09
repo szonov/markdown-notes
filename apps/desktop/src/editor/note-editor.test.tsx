@@ -146,6 +146,27 @@ describe('NoteEditor wiki-link chips', () => {
       openInNewWindow: false,
     })
   })
+
+  it('edits a selected wiki link without converting it to a Markdown link', async () => {
+    const handleRef = createRef<NoteEditorHandle>()
+    await render(<NoteEditor initialContent="[[Wife]]" handleRef={handleRef} />)
+
+    await pmRoot.click()
+    await userEvent.keyboard('{Meta>}a{/Meta}')
+    await userEvent.keyboard('{Meta>}k{/Meta}')
+
+    const dialog = page.getByTestId('wikilink-edit-dialog')
+    await expect.element(dialog).toBeVisible()
+    await expect.element(page.getByTestId('wikilink-target-input')).toHaveValue('Wife')
+    await expect.element(page.getByTestId('wikilink-text-input')).toHaveValue('Wife')
+
+    await page.getByTestId('wikilink-text-input').fill('Beloved wife')
+    await page.getByTestId('wikilink-save').click()
+
+    await vi.waitFor(() => {
+      expect(handleRef.current?.getMarkdown()).toBe('[[Wife|Beloved wife]]\n')
+    })
+  })
 })
 
 describe('NoteEditor link preview', () => {
@@ -552,34 +573,34 @@ describe('NoteEditor link opening', () => {
     expect(openUrl).not.toHaveBeenCalled()
   })
 
-  it('routes a reflect:// link through the in-app deep-link intake, not the URL opener', async () => {
-    await render(<NoteEditor initialContent="[note](reflect://note/abc123) here" />)
+  it('routes a reflect-local:// link through the in-app deep-link intake, not the URL opener', async () => {
+    await render(<NoteEditor initialContent="[note](reflect-local://note/abc123) here" />)
 
     await pmRoot.getByRole('link').click()
     await vi.waitFor(() => {
-      expect(dispatchDeepLink).toHaveBeenCalledWith('reflect://note/abc123')
+      expect(dispatchDeepLink).toHaveBeenCalledWith('reflect-local://note/abc123')
     })
     expect(openUrl).not.toHaveBeenCalled()
   })
 
-  it('⌘-click sends a reflect:// link to a new window instead of dispatching', async () => {
+  it('⌘-click sends a reflect-local:// link to a new window instead of dispatching', async () => {
     openDeepLinkInNewWindow.mockResolvedValue(true)
-    await render(<NoteEditor initialContent="[note](reflect://note/abc123) here" />)
+    await render(<NoteEditor initialContent="[note](reflect-local://note/abc123) here" />)
 
     await pmRoot.getByRole('link').click({ modifiers: ['ControlOrMeta'] })
     await vi.waitFor(() => {
-      expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect://note/abc123')
+      expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect-local://note/abc123')
     })
     expect(dispatchDeepLink).not.toHaveBeenCalled()
   })
 
   it('a declined ⌘-click open degrades to the normal deep-link dispatch', async () => {
     openDeepLinkInNewWindow.mockResolvedValue(false)
-    await render(<NoteEditor initialContent="[append](reflect://append?text=hi) here" />)
+    await render(<NoteEditor initialContent="[append](reflect-local://append?text=hi) here" />)
 
     await pmRoot.getByRole('link').click({ modifiers: ['ControlOrMeta'] })
     await vi.waitFor(() => {
-      expect(dispatchDeepLink).toHaveBeenCalledWith('reflect://append?text=hi')
+      expect(dispatchDeepLink).toHaveBeenCalledWith('reflect-local://append?text=hi')
     })
   })
 })

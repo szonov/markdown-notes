@@ -7,7 +7,6 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/query-client.ts'
 import { registerAppCommands } from '@/lib/commands/app-commands.ts'
 import { installNativeMenu } from '@/lib/native-menu/menu.ts'
-import { getExceptionReactRootOptions } from '@/lib/exception-telemetry.ts'
 import { PlatformRoot, warmPlatformRoot } from '@platform-root'
 import { EditorFullWidthEffect } from '@/providers/editor-full-width.tsx'
 import { EditorTextSizeEffect } from '@/providers/editor-text-size.tsx'
@@ -28,12 +27,10 @@ if (!rootElement) {
   throw new Error('Root element #root was not found')
 }
 
-const reactRootOptions = getExceptionReactRootOptions()
-
 // Platform-neutral providers only — everything desktop- or mobile-specific
 // (update checks, drag region, graph bootstrap mode) lives inside the
 // platform root (Plan 19).
-createRoot(rootElement, reactRootOptions).render(
+createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <SettingsProvider>

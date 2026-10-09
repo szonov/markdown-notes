@@ -170,7 +170,8 @@ describe('installNativeMenu', () => {
     expect(dispatch).toHaveBeenCalledWith('sidebar.toggle')
     expect(menuNew).toHaveBeenCalledTimes(1)
     expect(setAsAppMenu).toHaveBeenCalledTimes(1)
-    expect(invoke).toHaveBeenCalledExactlyOnceWith('menu_install_paste_and_match_style')
+    expect(invoke).toHaveBeenNthCalledWith(1, 'menu_install_paste_and_match_style')
+    expect(invoke).toHaveBeenNthCalledWith(2, 'menu_install_spelling')
     // The item lands in the installed menu, so the command must run after
     // setAsAppMenu and the NSApp role assignments (menu.ts explains why).
     const firstCall = (mocked: { mock: { invocationCallOrder: number[] } }) =>
@@ -206,7 +207,7 @@ describe('focused note menu dispatch', () => {
     await vi.waitFor(() => {
       expect(emitTo).toHaveBeenCalledWith(
         { kind: 'WebviewWindow', label: 'note-1' },
-        'reflect://focused-note-menu-command',
+        'reflect-local://focused-note-menu-command',
         'note.find',
       )
     })
@@ -226,7 +227,7 @@ describe('focused note menu dispatch', () => {
     await vi.waitFor(() => {
       expect(emitTo).toHaveBeenCalledWith(
         { kind: 'WebviewWindow', label: 'note-1' },
-        'reflect://focused-note-menu-command',
+        'reflect-local://focused-note-menu-command',
         'note.findNext',
       )
     })

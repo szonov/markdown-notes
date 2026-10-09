@@ -15,10 +15,6 @@
       "allow": [{ "url": "x-apple.systempreferences:*" }, { "url": "*://*" }],
       "deny": [{ "url": "file://*" }]
     },
-    "dialog:default",
-    {
-      "identifier": "http:default",
-      "allow": [{ "url": "https://*:*" }, { "url": "http://*:*" }]
-    }
+    "dialog:default"
   ]
 }

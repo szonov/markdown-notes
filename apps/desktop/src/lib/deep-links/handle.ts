@@ -1,9 +1,4 @@
-import {
-  captureInboxSpool,
-  errorMessage,
-  resolveNoteTarget,
-  textCaptureEnvelopeSchema,
-} from '@reflect/core'
+import { errorMessage, resolveNoteTarget } from '@reflect/core'
 import { startOperation } from '@/lib/operations.ts'
 import { routeForPath, type Route } from '@/routing/route.ts'
 import { parseDeepLink } from '@/lib/deep-links/parse.ts'
@@ -25,7 +20,7 @@ export interface DeepLinkIo {
 }
 
 /**
- * Act on one incoming `reflect://` URL: navigation links navigate (a note
+ * Act on one incoming `reflect-local://` URL: navigation links navigate (a note
  * target resolving through the index first), capture links spool an envelope
  * into `.reflect/inbox/` for the watcher-triggered drain to materialize.
  * Every outcome that isn't a navigation surfaces on the operations status
@@ -61,32 +56,6 @@ export async function handleDeepLink(url: string, io: DeepLinkIo): Promise<void>
       }
       io.navigate(routeForPath(path))
       return
-    }
-    case 'capture': {
-      const label =
-        link.capture === 'task'
-          ? 'Task added to today'
-          : link.capture === 'checkbox'
-            ? 'Checkbox added to today'
-            : 'Added to today'
-      try {
-        // The URL parser enforces the same text constraints, so this parse is
-        // belt-and-braces — but it is fallible, and a schema tightening must
-        // surface like every other failure here, not escape the handler.
-        const envelope = textCaptureEnvelopeSchema.parse({
-          version: 1,
-          id: crypto.randomUUID(),
-          kind: link.capture,
-          text: link.text,
-          capturedAt: new Date().toISOString(),
-          source: 'deep-link',
-        })
-        await captureInboxSpool(`${envelope.id}.json`, JSON.stringify(envelope), io.generation)
-      } catch (cause) {
-        startOperation('Saving capture').fail(errorMessage(cause))
-        return
-      }
-      startOperation(label).done()
     }
   }
 }

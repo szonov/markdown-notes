@@ -4,18 +4,7 @@
 # never skew.
 [workspace]
 resolver = "2"
-members = [
-  "apps/cli",
-  "apps/desktop/src-tauri",
-  "apps/native-host",
-  "crates/graph-paths",
-  "crates/index-schema",
-  "plugins/tauri-plugin-app-store",
-  "plugins/tauri-plugin-keyboard",
-  "plugins/tauri-plugin-mobile-haptics",
-  "plugins/tauri-plugin-recording",
-  "plugins/tauri-plugin-web-auth",
-]
+members = ["apps/desktop/src-tauri", "crates/graph-paths", "crates/index-schema"]
 
 [workspace.dependencies]
 rusqlite = { version = "0.40.2", features = ["bundled"] }

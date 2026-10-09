@@ -13,10 +13,7 @@ import { NoteLoading } from '@/components/note-loading.tsx'
 import { NoteOpenError } from '@/components/note-open-error.tsx'
 import { NoteSaveAlerts } from '@/components/note-save-alerts.tsx'
 import { ProtectedNoteView } from '@/components/protected-note-view.tsx'
-import { SuggestedContactCard } from '@/components/suggested-contact-card.tsx'
 import { SyncConflictNotice } from '@/components/sync-conflict-notice.tsx'
-import { EditorAiKeymap } from '@/editor/ai-menu/editor-ai-keymap.tsx'
-import { useEditorAiMenu } from '@/editor/ai-menu/use-editor-ai-menu.tsx'
 import { editorBodyWithDefaultBullet } from '@/editor/default-bullet.ts'
 import {
   registerNoteEditorHandle,
@@ -28,7 +25,6 @@ import { useAssetPersistence } from '@/editor/use-asset-persistence.ts'
 import { useEditorAutocomplete } from '@/editor/use-editor-autocomplete.ts'
 import { useNoteDocument } from '@/editor/use-note-document.ts'
 import { useTagNavigation } from '@/editor/use-tag-navigation.ts'
-import { useTemplateSlashItems } from '@/editor/use-template-slash-items.ts'
 import { useMarkdownLinkNavigation } from '@/editor/use-markdown-link-navigation.ts'
 import { useLinkPreview } from '@/editor/use-link-preview.ts'
 import { useWikiLinkNavigation } from '@/editor/use-wiki-link-navigation.ts'
@@ -201,7 +197,6 @@ export function NotePaneComponent({
   const resolveLinkPreview = useLinkPreview(linkPreviewSession)
 
   const bindEditor = document.bindEditor
-  const aiEditorRef = useRef<NoteEditorHandle | null>(null)
   // Find is one session per window: only the targeted note gets a query, and
   // only its status reaches the Find bar.
   const searchQuery = useNoteSearchQuery(path)
@@ -213,16 +208,9 @@ export function NotePaneComponent({
   // The registry entry this pane made, so unmount removes exactly it (a
   // remount of the same path may already have re-registered).
   const registeredHandle = useRef<{ path: string; handle: NoteEditorHandle } | null>(null)
-  // The `/` menu's template rows insert into this pane's own editor, read
-  // through the registry ref at select time (a late resolve after the pane
-  // unmounted must insert nowhere rather than somewhere stale).
-  const onSlashMenuSearch = useTemplateSlashItems(
-    useCallback(() => registeredHandle.current?.handle ?? null, []),
-  )
   const handleRef = useCallback(
     (handle: NoteEditorHandle | null) => {
       bindEditor(handle)
-      aiEditorRef.current = handle
       if (handle === null) {
         if (registeredHandle.current !== null) {
           unregisterNoteEditorHandle(registeredHandle.current.path, registeredHandle.current.handle)
@@ -248,12 +236,6 @@ export function NotePaneComponent({
     },
     [bindEditor, path, dailyDate, registerHandle, autoFocus, autoFocusSelection, onAutoFocused],
   )
-
-  const aiMenu = useEditorAiMenu({
-    path,
-    sessionEpoch: document.sessionEpoch,
-    editorRef: aiEditorRef,
-  })
 
   const handleExitBoundary: ExitBoundaryHandler | undefined = useMemo(() => {
     if (!dailyDate || !onExitBoundary) {
@@ -317,12 +299,6 @@ export function NotePaneComponent({
         <NoteSaveAlerts document={document} assetSaveError={saveError} />
 
         <SyncConflictNotice path={path} className="mb-4" />
-
-        {/* Daily notes are date-titled, so a contact can never match one —
-            the hook gates on it, and skipping the mount keeps the stream lean.
-            Keyed by path: a note switch must not carry one card's busy/error
-            state into the next note's card. */}
-        {!dailyNote ? <SuggestedContactCard key={path} path={path} /> : null}
       </div>
 
       <NoteEditor
@@ -333,7 +309,6 @@ export function NotePaneComponent({
         initialContent={editorSeed}
         onChange={document.onEditorChange}
         markMode={markModeFromSyntax(settings.editorMarkdownSyntax)}
-        spellCheck={settings.editorSpellCheck}
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
         smoothCaretAnimation={settings.editorSmoothCaretAnimation}
@@ -358,12 +333,6 @@ export function NotePaneComponent({
         onTagClick={onTagClick}
         onWikilinkSearch={onWikilinkSearch}
         onTagSearch={onTagSearch}
-        {...(aiMenu.onSelectionMenuSearch !== undefined
-          ? { onSelectionMenuSearch: aiMenu.onSelectionMenuSearch }
-          : {})}
-        pendingReplacementActions={aiMenu.pendingReplacementActions}
-        onPendingReplacementResolve={aiMenu.onPendingReplacementResolve}
-        onSlashMenuSearch={onSlashMenuSearch}
         // Daily notes carry no title semantics (the date is their subject),
         // so an empty leading H1 there is just an empty heading.
         {...(dailyNote ? {} : { titlePlaceholder: 'Untitled' })}
@@ -373,9 +342,7 @@ export function NotePaneComponent({
         className={cn('reflect-note-surface', gutterClassName, editorClassName)}
         handleRef={handleRef}
         onExitBoundary={handleExitBoundary}
-      >
-        <EditorAiKeymap onTrigger={aiMenu.openMenu} />
-      </NoteEditor>
+      />
 
       {showBacklinks ? (
         <div className={gutterClassName}>

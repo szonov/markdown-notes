@@ -1,7 +1,6 @@
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { confirmQuit, subscribeQuitRequested } from '@reflect/core'
 import { flushOpenDocuments } from '@/editor/open-documents.ts'
-import { flushBackup } from '@/lib/backup-flush.ts'
 import { isMacosDesktop, isNativeShell } from '@/lib/platform.ts'
 import { flushSettings } from '@/lib/settings-flush.ts'
 import { trackSubscriptions } from '@/lib/subscriptions.ts'
@@ -39,8 +38,6 @@ export function installQuitFlush(): () => void {
   const subscriptions = trackSubscriptions()
   const currentWindow = getCurrentWindow()
 
-  // Note buffers land first, then the backup commit captures them (a local
-  // git commit only — pushing on the way out could stall the quit).
   void subscriptions.add(
     currentWindow.onCloseRequested(async (event) => {
       const shouldHide = isMacosDesktop && isMainWindow()
@@ -50,7 +47,6 @@ export function installQuitFlush(): () => void {
         event.preventDefault()
       }
       await Promise.allSettled([flushOpenDocuments(), flushSettings()])
-      await flushBackup()
       if (shouldHide) {
         await currentWindow.hide()
       }
@@ -59,18 +55,15 @@ export function installQuitFlush(): () => void {
 
   void subscriptions.add(
     subscribeQuitRequested(() => {
-      void Promise.allSettled([flushOpenDocuments(), flushSettings()])
-        .then(() => flushBackup())
-        .then(() => {
-          void confirmQuit()
-        })
+      void Promise.allSettled([flushOpenDocuments(), flushSettings()]).then(() => {
+        void confirmQuit()
+      })
     }),
   )
 
   const onBeforeUnload = (): void => {
     void flushOpenDocuments()
     void flushSettings()
-    void flushBackup()
   }
   window.addEventListener('beforeunload', onBeforeUnload)
   subscriptions.track(() => window.removeEventListener('beforeunload', onBeforeUnload))

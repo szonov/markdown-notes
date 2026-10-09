@@ -253,7 +253,10 @@ html:root {
   --meowdown-mark: var(--text-muted);
   --meowdown-bullet: var(--text-muted); /* resting bullet dot; collapsed stays themed */
   --meowdown-border: var(--border);
-  --meowdown-code-bg: var(--surface-sunken, rgb(0 0 0 / 5%));
+  /* Code needs a little more separation than the sidebar's near-white sunken
+     surface. Mixing from the live text/surface tokens keeps the same quiet
+     treatment in both themes while making the block clearly readable. */
+  --meowdown-code-bg: color-mix(in srgb, var(--text) 5%, var(--surface));
   --meowdown-font-mono: var(--font-mono, monospace);
   /* Selection: meowdown defaults warm; Reflect keeps its blue-violet accent. */
   --meowdown-node-outline: var(--accent);
@@ -309,6 +312,10 @@ html:root {
    compact sizes. */
 .reflect-note-surface {
   font-size: var(--editor-font-size, var(--text-base));
+  /* Inter is variable, so 450 is available without synthesising a face. It
+     gives prose a firmer native-app reading weight without looking medium or
+     changing compact previews and application chrome. */
+  font-weight: 450;
 }
 
 :root[data-editor-full-width='true'] {
@@ -563,9 +570,20 @@ html:root {
    `--meowdown-code-bg` surface we map below), so it needs no override. The code
    block keeps Reflect's radius/padding and its block margin. */
 .reflect-editor pre {
+  border: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
   border-radius: var(--radius-md, 6px);
   margin: 0.6em 0;
   padding: 0.75em 1em;
+}
+
+/* Meowdown deliberately reduces code to .9em and leaves it at the surrounding
+   400 weight. On a Retina display that makes monospace strokes look faint next
+   to Inter. Keep the compact size, but give both inline and block code a clear,
+   consistent weight and neutral tracking. */
+.reflect-note-surface code,
+.reflect-note-surface pre {
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 /* Inline images: meowdown renders `![alt](src)` through a mark view

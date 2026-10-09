@@ -33,9 +33,9 @@ const HEADER_BUTTON_CLASS =
 /**
  * Compact month calendar in the old app's visual idiom: weeks start per the
  * week-start setting, the selected day sits on a 32px inverse square (today
- * on a grey one), and days that already have a daily note carry a dot marker
- * revealed while the pointer is over the calendar (an indexed `dailyDate`
- * row — daily files exist only once written, so a row means real content).
+ * on a grey one), and days that already have a daily note always carry a dot
+ * marker (an indexed `dailyDate` row — daily files exist only once written,
+ * so a row means real content).
  * Clicking a day navigates to it; modifier-clicking opens that daily note in
  * a secondary window. The month view follows the selected day, and the
  * calendar glyph between the month arrows jumps back to today.
@@ -88,7 +88,10 @@ export function DayCalendar({ selectedDate, today }: DayCalendarProps): ReactEle
                 <button
                   type="button"
                   aria-label="Jump to today"
-                  onClick={() => navigate({ kind: 'today' })}
+                  onClick={() => {
+                    setMonth(monthOf(today))
+                    navigate({ kind: 'today' })
+                  }}
                   className={HEADER_BUTTON_CLASS}
                 >
                   <CalendarIcon />
@@ -160,7 +163,7 @@ export function DayCalendar({ selectedDate, today }: DayCalendarProps): ReactEle
                       <span
                         aria-hidden
                         data-testid={`note-dot-${cell.date}`}
-                        className="pointer-events-none absolute bottom-1 left-1/2 -ml-0.5 h-1 w-1 rounded-full bg-surface-inverse/50 opacity-0 transition-opacity group-hover:opacity-100 dark:bg-white/50"
+                        className="pointer-events-none absolute bottom-1 left-1/2 -ml-0.5 h-1 w-1 rounded-full bg-surface-inverse/50 dark:bg-white/50"
                       />
                     ) : null}
 

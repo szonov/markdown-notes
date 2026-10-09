@@ -14,11 +14,6 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn() }))
 let invokeLog: Array<[string, Record<string, unknown>]>
 let recents: Array<{ root: string; name: string; openedMs: number }>
 let storedSettings: Record<string, unknown>
-let icloudStatusResponse: {
-  available: boolean
-  documentsRoot: string | null
-  existingGraphRoots: string[]
-}
 let queryClient: QueryClient
 
 // Mirrors the main.tsx provider order: settings above the graph lifecycle.
@@ -40,7 +35,6 @@ beforeEach(() => {
     { root: '/graphs/personal', name: 'personal', openedMs: 1 },
   ]
   storedSettings = {}
-  icloudStatusResponse = { available: false, documentsRoot: null, existingGraphRoots: [] }
   queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   })
@@ -54,10 +48,7 @@ beforeEach(() => {
           recents = recents.filter((recent) => recent.root !== args['root'])
           return null
         case 'graph_open':
-        case 'graph_create':
           return { root: String(args['path']), name: 'work', generation: 1 }
-        case 'icloud_status':
-          return icloudStatusResponse
         case 'index_open':
           return 1
         case 'list_files':
@@ -83,113 +74,6 @@ afterEach(async () => {
 })
 
 describe('GraphChooser', () => {
-  it('leads with iCloud (recommended) beside the pick-a-folder path', async () => {
-    icloudStatusResponse = {
-      available: true,
-      documentsRoot: '/icloud/Documents',
-      existingGraphRoots: [],
-    }
-    await render(<GraphChooser />, { wrapper })
-
-    await expect.element(page.getByRole('heading', { name: 'iCloud' })).toBeVisible()
-    await expect.element(page.getByText('Recommended')).toBeVisible()
-    await expect.element(page.getByText(/Open an existing folder/)).toBeVisible()
-    await expect.element(page.getByRole('heading', { name: 'A folder you choose' })).toBeVisible()
-    await expect.element(page.getByRole('button', { name: /Choose a folder/ })).toBeVisible()
-    await expect.element(page.getByText(/Reflect keeps its files where they are/)).toBeVisible()
-  })
-
-  it('creates an iCloud graph from the typed name', async () => {
-    icloudStatusResponse = {
-      available: true,
-      documentsRoot: '/icloud/Documents',
-      existingGraphRoots: [],
-    }
-    await render(<GraphChooser />, { wrapper })
-
-    const nameInput = page.getByRole('textbox', { name: 'Name' })
-    // The input starts disabled until `icloud_status` resolves; typing into it
-    // before then throws on slower engines (WebKit).
-    await expect.element(nameInput).toBeEnabled()
-    await userEvent.clear(nameInput)
-    await userEvent.type(nameInput, 'My Notes')
-    await userEvent.click(page.getByRole('button', { name: 'Create' }))
-
-    await vi.waitFor(() =>
-      expect(invokeLog).toContainEqual(['graph_create', { path: '/icloud/Documents/My Notes' }]),
-    )
-  })
-
-  it('lists every graph already in the container and opens the clicked one', async () => {
-    icloudStatusResponse = {
-      available: true,
-      documentsRoot: '/icloud/Documents',
-      existingGraphRoots: ['/icloud/Documents/Notes', '/icloud/Documents/Work'],
-    }
-    await render(<GraphChooser />, { wrapper })
-
-    await expect.element(page.getByRole('button', { name: 'Notes' })).toBeVisible()
-    await expect.element(page.getByText('Open an existing graph from iCloud Drive.')).toBeVisible()
-    await expect.element(page.getByText('or create new graph')).toBeVisible()
-    await userEvent.click(page.getByRole('button', { name: 'Work', exact: true }))
-
-    await vi.waitFor(() =>
-      expect(invokeLog).toContainEqual(['graph_open', { path: '/icloud/Documents/Work' }]),
-    )
-  })
-
-  it('creates a new graph alongside existing ones, refusing taken names', async () => {
-    icloudStatusResponse = {
-      available: true,
-      documentsRoot: '/icloud/Documents',
-      existingGraphRoots: ['/icloud/Documents/Notes'],
-    }
-    await render(<GraphChooser />, { wrapper })
-
-    // Wait for the status to land (the existing graph is listed) so the
-    // compact create row — not the pre-status empty-container form — is the
-    // input under test. Next to an existing list the row starts empty.
-    await expect.element(page.getByRole('button', { name: 'Notes' })).toBeVisible()
-    const nameInput = page.getByRole('textbox', { name: 'Name' })
-    await expect.element(nameInput).toHaveValue('')
-    await expect.element(page.getByRole('button', { name: 'Create' })).toBeDisabled()
-
-    // "notes" collides (case-insensitively) with the existing graph —
-    // creating it would land inside that folder, so Create refuses and the
-    // field says why.
-    await userEvent.type(nameInput, 'notes')
-    await expect.element(nameInput).toHaveAttribute('aria-invalid', 'true')
-    await expect.element(page.getByText('That name already exists in iCloud Drive.')).toBeVisible()
-    await expect.element(page.getByRole('button', { name: 'Create' })).toBeDisabled()
-
-    await userEvent.clear(nameInput)
-    await userEvent.type(nameInput, 'Journal')
-    await expect
-      .element(page.getByText('That name already exists in iCloud Drive.'))
-      .not.toBeInTheDocument()
-    await userEvent.click(page.getByRole('button', { name: 'Create' }))
-
-    await vi.waitFor(() =>
-      expect(invokeLog).toContainEqual(['graph_create', { path: '/icloud/Documents/Journal' }]),
-    )
-  })
-
-  it('explains itself when iCloud is unreachable and disables Create', async () => {
-    await render(<GraphChooser />, { wrapper })
-
-    await expect.element(page.getByText(/Sign in to iCloud on this Mac/)).toBeVisible()
-    await expect.element(page.getByRole('button', { name: 'Create' })).toBeDisabled()
-  })
-
-  it('hides the iCloud card outside macOS builds and drops the Mac-specific copy', async () => {
-    vi.stubEnv('TAURI_ENV_PLATFORM', 'windows')
-    await render(<GraphChooser />, { wrapper })
-
-    await expect.element(page.getByRole('heading', { name: 'A folder you choose' })).toBeVisible()
-    await expect.element(page.getByRole('heading', { name: 'iCloud' })).not.toBeInTheDocument()
-    await expect.element(page.getByText(/existing Markdown folder on this computer/)).toBeVisible()
-  })
-
   // The provider auto-opens the most recent graph on mount, so the chooser's
   // own flows are exercised after that first open settles.
   it('lists recent graphs and reopens one on click', async () => {

@@ -375,10 +375,6 @@ export function throttledInvalidateIndexQueries(): void {
  * the key so stale rows could never be *read* after a switch, but these entries
  * are kept for the whole session and would otherwise never be collected.
  */
-export function dropSimilarNotesQueries(): void {
-  queryClient.removeQueries({ queryKey: queryKeys.similar.all })
-}
-
 /**
  * Forget the cached iCloud container listing after its contents change (a
  * graph delete trashes a container directory). Removal rather than
