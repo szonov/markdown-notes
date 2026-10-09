@@ -180,7 +180,7 @@ export function TaskRow({
           aria-pressed={selected}
           onKeyDown={selectFromKeyboard}
           className={cn(
-            'min-w-0 flex-1 break-words text-left text-sm leading-6 text-text focus-visible:outline-none',
+            'min-w-0 flex-1 break-words text-left text-[13px] font-medium leading-6 text-text focus-visible:outline-none',
             task.checked && 'text-text-muted line-through',
           )}
         >
@@ -195,7 +195,7 @@ export function TaskRow({
             event.stopPropagation()
             onOpen(task.notePath, event)
           }}
-          className="flex h-6 shrink-0 items-center whitespace-nowrap text-xs text-text-muted transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+          className="flex h-6 shrink-0 items-center whitespace-nowrap text-[13px] text-text-secondary transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
         >
           {task.dailyDate !== null
             ? formatDayLabel(task.dailyDate, settings.dateFormat)
