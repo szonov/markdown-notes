@@ -312,10 +312,9 @@ html:root {
    compact sizes. */
 .reflect-note-surface {
   font-size: var(--editor-font-size, var(--text-base));
-  /* Inter is variable, so 450 is available without synthesising a face. It
-     gives prose a firmer native-app reading weight without looking medium or
-     changing compact previews and application chrome. */
-  font-weight: 450;
+  /* Use Inter's regular master instead of an interpolated weight: WebKit
+     renders the exact 400 instance more crisply on macOS. */
+  font-weight: 400;
 }
 
 :root[data-editor-full-width='true'] {

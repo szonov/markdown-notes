@@ -11,7 +11,7 @@
 
 /* ---- Minimal base layer ---------------------------------- */
 html {
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: auto;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
