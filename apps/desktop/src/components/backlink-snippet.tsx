@@ -50,7 +50,7 @@ export function BacklinkSnippet({
   const onTaskClick = useSnippetTaskToggle(notePath, tasks)
   const openExternalLink = useOpenExternalLink()
   return (
-    <div className="reflect-backlink-snippet select-text text-xs text-text">
+    <div className="reflect-backlink-snippet select-text text-xs font-[450] text-text">
       <MarkdownView
         resolveXPost={resolveXPost}
         resolveYouTubeVideo={resolveYouTubeVideo}

@@ -28,8 +28,9 @@
   --indigo-800: #3730a3;
   --indigo-900: #312e81;
 
-  --brand: var(--indigo-600);
-  --brand-hover: var(--indigo-500);
+  /* User accent, matched to the current Obsidian theme. */
+  --brand: #4c8ce7;
+  --brand-hover: #3f7ed7;
   --brand-foreground: #ffffff;
 
   /* ---- Marketing purple (the "deep space" glow) ---------- */
@@ -127,12 +128,12 @@
   --border-strong: rgba(255, 255, 255, 0.05);
   --input-bg: rgba(255, 255, 255, 0.05);
 
-  --accent: var(--indigo-500);
-  --accent-hover: var(--indigo-400);
+  --accent: var(--brand);
+  --accent-hover: #67a2f2;
   --accent-soft: var(--indigo-900);
   --accent-soft-text: #ffffff;
 
-  --focus-ring: var(--indigo-500);
+  --focus-ring: var(--brand);
   --border-hairline: 0 1px 0 rgba(255, 255, 255, 0.05);
   --shadow-app-input:
     0 1px 0 -1px rgba(0, 0, 0, 0.1), 0 1px 1px -1px rgba(0, 0, 0, 0.1),

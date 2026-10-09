@@ -59,7 +59,7 @@ export function IncomingBacklinkGroup({
         <button
           type="button"
           onClick={() => onOpen(source.path)}
-          className="flex min-h-11 min-w-0 flex-1 items-center text-left text-sm text-accent"
+          className="flex min-h-11 min-w-0 flex-1 items-center text-left text-sm font-medium text-accent"
         >
           <span className="truncate">{displayNoteTitle(source.title)}</span>
         </button>

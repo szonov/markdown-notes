@@ -61,7 +61,7 @@ export function IncomingBacklinks({
 
   return (
     <section aria-label="Incoming backlinks" className={cn('mt-6', className)}>
-      <h3 className="text-sm font-medium text-text-muted">
+      <h3 className="text-sm font-medium text-text-secondary">
         <button
           type="button"
           aria-expanded={expanded}

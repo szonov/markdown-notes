@@ -65,7 +65,7 @@ export function BacklinkSourceGroup({
         <button
           type="button"
           onClick={(event) => onOpen(source.path, event)}
-          className="min-w-0 cursor-pointer truncate text-left text-xs text-accent"
+          className="min-w-0 cursor-pointer truncate text-left text-xs font-medium text-accent"
         >
           {displayNoteTitle(source.title)}
         </button>

@@ -60,7 +60,7 @@ export function BacklinksPanel({ path }: BacklinksPanelProps): ReactElement | nu
 
   return (
     <section aria-label="Incoming backlinks" className="mt-8">
-      <h3 className="text-xs font-medium text-text-muted">
+      <h3 className="text-xs font-medium text-text-secondary">
         <button
           type="button"
           aria-expanded={expanded}
