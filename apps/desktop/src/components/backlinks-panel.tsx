@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 import { ChevronRight } from 'lucide-react'
+import type { DateFormat } from '@reflect/core'
 import { BacklinkLoadMore } from '@/components/backlink-load-more.tsx'
 import { BacklinkSourceGroup } from '@/components/backlink-source-group.tsx'
 import { useBacklinkNavigation } from '@/hooks/use-backlink-navigation.ts'
@@ -10,6 +11,7 @@ import { useI18n } from '@/providers/i18n-provider.tsx'
 interface BacklinksPanelProps {
   /** Graph-relative path of the note whose inbound links to show. */
   path: string
+  dateFormat: DateFormat
 }
 
 /**
@@ -28,7 +30,7 @@ interface BacklinksPanelProps {
  * Desktop chrome (hover-revealed group chevrons, hover-sized targets); the
  * mobile surfaces render `IncomingBacklinks` over the same data layer.
  */
-export function BacklinksPanel({ path }: BacklinksPanelProps): ReactElement | null {
+export function BacklinksPanel({ path, dateFormat }: BacklinksPanelProps): ReactElement | null {
   const { t } = useI18n()
   const {
     groups,
@@ -92,6 +94,7 @@ export function BacklinksPanel({ path }: BacklinksPanelProps): ReactElement | nu
             // collapsed state from one note's panel to the other's.
             key={`${path}:${group.path}`}
             source={group}
+            dateFormat={dateFormat}
             first={index === 0}
             expanded={expanded}
             onOpen={openSource}

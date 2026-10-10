@@ -1,14 +1,16 @@
 import { useState, type ReactElement } from 'react'
 import { ChevronRight } from 'lucide-react'
 import type { WikilinkClickHandler } from '@meowdown/core'
-import { displayNoteTitle } from '@reflect/core'
+import { dateFromDailyPath, displayNoteTitle, type DateFormat } from '@reflect/core'
 import { BacklinkSnippet } from '@/components/backlink-snippet.tsx'
 import type { BacklinkSource } from '@/lib/group-backlinks.ts'
+import { formatDayLabel } from '@/lib/dates.ts'
 import { useI18n } from '@/providers/i18n-provider.tsx'
 import type { ModClickEvent } from '@/lib/windows/open-in-new-window.ts'
 
 interface BacklinkSourceGroupProps {
   source: BacklinkSource
+  dateFormat: DateFormat
   /** The first group renders without the leading hairline divider. */
   first: boolean
   /**
@@ -37,6 +39,7 @@ interface BacklinkSourceGroupProps {
  */
 export function BacklinkSourceGroup({
   source,
+  dateFormat,
   first,
   expanded: expandedOverride,
   onOpen,
@@ -44,6 +47,9 @@ export function BacklinkSourceGroup({
 }: BacklinkSourceGroupProps): ReactElement {
   const { t } = useI18n()
   const [expanded, setExpanded] = useState(expandedOverride)
+  const dailyDate = dateFromDailyPath(source.path)
+  const sourceLabel =
+    dailyDate === null ? displayNoteTitle(source.title) : formatDayLabel(dailyDate, dateFormat)
 
   // Reset to the panel-level toggle whenever it changes; the group chevron can
   // then locally override again until the next panel toggle. Adjusting state
@@ -69,14 +75,14 @@ export function BacklinkSourceGroup({
           onClick={(event) => onOpen(source.path, event)}
           className="min-w-0 cursor-pointer truncate text-left text-xs font-medium text-accent"
         >
-          {displayNoteTitle(source.title)}
+          {sourceLabel}
         </button>
 
         {source.snippets.length > 0 ? (
           <button
             type="button"
             aria-expanded={expanded}
-            aria-label={`${t(expanded ? 'Collapse' : 'Expand')} ${t('references from')} ${displayNoteTitle(source.title)}`}
+            aria-label={`${t(expanded ? 'Collapse' : 'Expand')} ${t('references from')} ${sourceLabel}`}
             onClick={() => setExpanded(!expanded)}
             className="absolute inset-y-0 -left-5 flex items-center text-text-muted opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
           >

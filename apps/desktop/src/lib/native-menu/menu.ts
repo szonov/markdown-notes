@@ -65,19 +65,19 @@ function separator(): AppMenuEntry {
 export function appMenuLayout(): AppSubmenuLayout[] {
   return [
     {
-      text: 'Reflect',
+      text: 'Markdown Notes',
       entries: [
-        predefined({ About: null }, 'About Reflect'),
+        predefined({ About: null }, 'About Markdown Notes'),
         separator(),
         command('settings.open', 'Settings…'),
         separator(),
         predefined('Services'),
         separator(),
-        predefined('Hide', 'Hide Reflect'),
+        predefined('Hide', 'Hide Markdown Notes'),
         predefined('HideOthers'),
         predefined('ShowAll'),
         separator(),
-        predefined('Quit', 'Quit Reflect'),
+        predefined('Quit', 'Quit Markdown Notes'),
       ],
     },
     {

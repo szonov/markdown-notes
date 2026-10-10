@@ -370,7 +370,7 @@ pub(crate) fn build_secondary_window(
     let revealed = Arc::new(Once::new());
 
     let mut builder = WebviewWindowBuilder::new(app, label, WebviewUrl::default())
-        .title("Reflect")
+        .title("Markdown Notes")
         .inner_size(1000.0, 650.0)
         // Paint the OS-preferred theme color at build time so the note window
         // doesn't briefly flash white before its webview loads the frontend

@@ -1,8 +1,9 @@
 import { render } from 'vitest-browser-react'
 import { page } from 'vitest/browser'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { isModEvent } from '@meowdown/core'
 import type { BacklinkSource } from '@/lib/group-backlinks.ts'
+import { formatDayLabel, setDateDisplayLanguage } from '@/lib/dates.ts'
 import { BacklinkSourceGroup } from './backlink-source-group.tsx'
 
 const SOURCE: BacklinkSource = {
@@ -13,10 +14,11 @@ const SOURCE: BacklinkSource = {
 
 type OnOpen = (path: string, event?: { metaKey: boolean; ctrlKey: boolean }) => void
 
-function mount(onOpen: OnOpen) {
+function mount(onOpen: OnOpen, source: BacklinkSource = SOURCE) {
   return render(
     <BacklinkSourceGroup
-      source={SOURCE}
+      source={source}
+      dateFormat="dmy"
       first
       expanded={false}
       onOpen={onOpen}
@@ -26,6 +28,8 @@ function mount(onOpen: OnOpen) {
 }
 
 describe('BacklinkSourceGroup', () => {
+  afterEach(() => setDateDisplayLanguage('en'))
+
   it('forwards the click event so ⌘-click can open a new window', async () => {
     const onOpen = vi.fn<OnOpen>()
     await mount(onOpen)
@@ -47,5 +51,20 @@ describe('BacklinkSourceGroup', () => {
 
     const [, event] = onOpen.mock.calls[0]!
     expect(event !== undefined && isModEvent(event)).toBe(false)
+  })
+
+  it('shows a localized date for a daily note source', async () => {
+    setDateDisplayLanguage('ru')
+    const dailySource: BacklinkSource = {
+      path: 'daily/2026/2026-10-10.md',
+      title: '2026-10-10',
+      snippets: [],
+    }
+
+    await mount(vi.fn<OnOpen>(), dailySource)
+
+    await expect.element(
+      page.getByRole('button', { name: formatDayLabel('2026-10-10', 'dmy') }),
+    ).toBeVisible()
   })
 })

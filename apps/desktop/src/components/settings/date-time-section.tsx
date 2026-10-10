@@ -61,7 +61,9 @@ export function DateTimeSection(): ReactElement {
     <SettingsSection id="date-time">
       <SettingsField
         legend={t('Date format')}
-        description={t('The style for dates shown throughout Reflect, including daily note titles.')}
+        description={t(
+          'The style for dates shown throughout Markdown Notes, including daily note titles.',
+        )}
       >
         <div className="mt-3">
           <Select
@@ -113,7 +115,7 @@ export function DateTimeSection(): ReactElement {
       </SettingsField>
       <SettingsField
         legend={t('Time format')}
-        description={t('How times are shown throughout Reflect — 8:22pm or 20:22.')}
+        description={t('How times are shown throughout Markdown Notes — 8:22pm or 20:22.')}
       >
         <div className="mt-3">
           <Select

@@ -11,12 +11,11 @@ import {
 
 /**
  * The first-run seed (Plan 15 step 1): a brand-new graph gets one short,
- * pinned "How to use Reflect" note. It doubles as the optional-setup surface —
- * backup and AI keys are pointers into Settings, not a wizard — so onboarding
- * never gates the editor and "skipping" is just not reading the note.
+ * pinned "How to use Markdown Notes" note. Onboarding never gates the
+ * editor: skipping it is just not reading the note.
  */
 
-const WELCOME_TITLE = 'How to use Reflect'
+const WELCOME_TITLE = 'How to use Markdown Notes'
 
 /** Title-derived slug path, same birth rules as any titled note. */
 export const WELCOME_NOTE_PATH = notePath(slugForTitle(WELCOME_TITLE))
@@ -24,19 +23,31 @@ export const WELCOME_NOTE_PATH = notePath(slugForTitle(WELCOME_TITLE))
 /**
  * The `index_meta` key marking that onboarding was considered for this graph.
  * `index_clear` deliberately preserves `index_meta`, so the marker survives
- * index rebuilds; only deleting `.reflect/` wholesale resets it.
+ * index rebuilds; only deleting `.markdown-notes/` wholesale resets it.
  */
 export const WELCOME_SEEDED_META_KEY = 'welcomeSeeded'
 
 const WELCOME_BODY = `# ${WELCOME_TITLE}
 
-Reflect is a daily notebook: press ⌘D any time to land on today's note and write.
+Markdown Notes opens on today's note. Press ⌘D at any time to return to it.
 
-- **Link as you think.** Type \`[[\` and a title — [[Wiki Links]] connect notes. There are no folders.
-- **Find anything.** ⌘K searches your whole graph; ⌘/ lists every shortcut.
-- **Your files.** Every note is a markdown file in this folder, portable forever.
+- **Connect your notes.** Type \`[[\` and a note title to create a [[Wiki Link]].
+- **Find anything.** ⌘K searches all notes, and ⌘/ shows every keyboard shortcut.
+- **Keep your files.** Every note is stored in this folder as a regular Markdown file.
 
-This note is pinned to the sidebar — unpin it (⌘O) when you're done.
+This note is pinned to the sidebar. When you no longer need it, unpin it with ⌘O.
+
+---
+
+## На русском
+
+Markdown Notes открывается на сегодняшней заметке. Нажмите ⌘D в любой момент, чтобы вернуться к ней.
+
+- **Связывайте заметки.** Введите \`[[\` и название заметки, чтобы создать [[Wiki-ссылку]].
+- **Находите нужное.** ⌘K открывает поиск по всем заметкам, а ⌘/ показывает горячие клавиши.
+- **Работайте со своими файлами.** Все заметки хранятся в этой папке как обычные Markdown-файлы.
+
+Эта заметка закреплена в боковой панели. Когда она больше не понадобится, открепите её сочетанием ⌘O.
 `
 
 export interface EnsureWelcomeNoteOptions {

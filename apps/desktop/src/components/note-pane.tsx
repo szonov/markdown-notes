@@ -265,7 +265,7 @@ export function NotePaneComponent({
         ) : (
           <ProtectedNoteView content={document.initialContent} />
         )}
-        {showBacklinks ? <BacklinksPanel path={path} /> : null}
+        {showBacklinks ? <BacklinksPanel path={path} dateFormat={settings.dateFormat} /> : null}
       </div>
     )
   }
@@ -333,7 +333,7 @@ export function NotePaneComponent({
 
       {showBacklinks ? (
         <div className={gutterClassName}>
-          <BacklinksPanel path={path} />
+          <BacklinksPanel path={path} dateFormat={settings.dateFormat} />
         </div>
       ) : null}
     </div>

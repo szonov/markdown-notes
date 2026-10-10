@@ -125,7 +125,7 @@ export const RU_TRANSLATIONS: Readonly<Record<string, string>> = {
   'No matching tasks.': 'Подходящих задач нет.',
   'No tasks to show.': 'Нет задач для отображения.',
   'Date format': 'Формат даты',
-  'The style for dates shown throughout Reflect, including daily note titles.':
+  'The style for dates shown throughout Markdown Notes, including daily note titles.':
     'Формат дат в приложении, включая заголовки ежедневных заметок.',
   'Start week on': 'Начало недели',
   'The first day shown in calendars.': 'Первый день недели в календарях.',
@@ -133,7 +133,7 @@ export const RU_TRANSLATIONS: Readonly<Record<string, string>> = {
   Monday: 'Понедельник',
   Saturday: 'Суббота',
   'Time format': 'Формат времени',
-  'How times are shown throughout Reflect — 8:22pm or 20:22.':
+  'How times are shown throughout Markdown Notes — 8:22pm or 20:22.':
     'Формат отображения времени — 8:22pm или 20:22.',
   '12-hour': '12-часовой',
   '24-hour': '24-часовой',
