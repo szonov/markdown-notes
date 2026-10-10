@@ -8,15 +8,9 @@ import { buildIndexedNote } from './indexed-note.ts'
 import { buildFtsMatch } from './search-query.ts'
 
 /**
- * The TS side of the TS↔Rust parity contract (see `fixtures/parity/README.txt`).
- *
- * The `reflect` CLI (`apps/cli`) re-implements this package's read-side
- * contract in Rust. This test derives `fixtures/parity/expected.json` from the
- * real core pipeline and fails when the committed file drifts; the CLI's
- * `tests/parity.rs` asserts its mirror produces the same values. A behavior
- * change here therefore can't ship without regenerating the expectations
- * (`UPDATE_PARITY=1 pnpm --filter @reflect/core test --run parity`) — and the
- * regenerated file forces the Rust mirror to follow in the same PR.
+ * Golden corpus for the core Markdown/indexing behavior. Regenerate the
+ * committed expectations intentionally with
+ * `UPDATE_PARITY=1 pnpm --filter @reflect/core test --run parity`.
  */
 
 const corpusDir = join(import.meta.dirname, '..', '..', '..', '..', 'fixtures', 'parity')
@@ -45,8 +39,7 @@ interface ScalarInputs {
   ftsMatch: string[]
 }
 
-/** Graph-relative paths of every eligible fixture note, mirroring the CLI's
- * full-vault walk: any depth, gated by the shared classifier. */
+/** Graph-relative paths of every eligible fixture note. */
 function walkCorpusNotes(): string[] {
   const paths: string[] = []
   const stack = [corpusDir]

@@ -14,7 +14,7 @@ interface WikilinkDraft {
 
 /** Parse exactly one selected wiki link, including its optional display alias. */
 function parseSelectedWikilink(source: string): Pick<WikilinkDraft, 'target' | 'text'> | null {
-  const match = /^\[\[([^\]|]+?)(?:\|([^\]]+))?\]\]$/.exec(source.trim())
+  const match = /^\[\[([^\]|]+)(?:\|([^\]]+))?\]\]$/.exec(source.trim())
   if (match === null) return null
   const target = match[1]?.trim() ?? ''
   const text = match[2]?.trim() || target
@@ -67,11 +67,11 @@ export function WikilinkEditDialog(): ReactElement | null {
         close()
       }
     }
-    document.addEventListener('pointerdown', dismissOnPointerDown, true)
-    document.addEventListener('keydown', dismissOnEscape, true)
+    document.addEventListener('pointerdown', dismissOnPointerDown, { capture: true })
+    document.addEventListener('keydown', dismissOnEscape, { capture: true })
     return () => {
-      document.removeEventListener('pointerdown', dismissOnPointerDown, true)
-      document.removeEventListener('keydown', dismissOnEscape, true)
+      document.removeEventListener('pointerdown', dismissOnPointerDown, { capture: true })
+      document.removeEventListener('keydown', dismissOnEscape, { capture: true })
     }
   }, [draft, editor])
 

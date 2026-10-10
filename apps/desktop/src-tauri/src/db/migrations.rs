@@ -1,7 +1,4 @@
-//! Thin adapter over the shared `reflect-index-schema` crate, which owns the
-//! migrations + sqlite-vec registration (shared with the `reflect` CLI so the
-//! schema can never skew between writer and reader). This module only maps
-//! errors into the app's [`AppError`] contract.
+//! Thin adapter over the shared index schema and migrations.
 
 use std::path::Path;
 
@@ -24,7 +21,7 @@ pub(super) fn open_index_read_only_at(root: &Path) -> AppResult<Connection> {
     reflect_index_schema::open_index_read_only_at(root).map_err(map_err)
 }
 
-/// Opens an in-memory connection with sqlite-vec available (used by tests).
+/// Opens an in-memory connection used by tests.
 #[cfg(test)]
 pub(super) fn open_in_memory() -> AppResult<Connection> {
     reflect_index_schema::open_in_memory().map_err(map_err)

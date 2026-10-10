@@ -1,20 +1,12 @@
 //! SQLite index layer (Plan 04).
 //!
 //! The graph's rebuildable projection lives at `<graph>/.reflect/index.sqlite`,
-//! backed by the bundled SQLite (FTS5 compiled in) with sqlite-vec registered for
-//! Plan 09. Parsing/extraction happens in TS (`@reflect/core`, Plan 03); this
+//! backed by bundled SQLite with FTS5. Parsing/extraction happens in TypeScript; this
 //! module owns the schema/migrations ([`migrations`]), all writes — one
 //! transaction per batch, generation-gated here in the command layer
 //! ([`write`] holds the row logic) — plus a read-only `db_query` bridge
 //! ([`query`]) that executes the SQL the frontend builds with Kysely. The DB
-//! is *mostly* a cache: the note projection is rebuildable from markdown, but
-//! the `chat_*` tables ([`chat_write`]) hold durable chat history — deleting
-//! the file loses those.
-
-#[cfg(test)]
-mod chat_write;
-#[cfg(test)]
-mod embed_write;
+//! is entirely rebuildable from Markdown.
 mod migrations;
 mod query;
 mod scan;
@@ -32,10 +24,6 @@ use crate::background_task::{self, BackgroundTaskState};
 use crate::error::{AppError, AppResult};
 use crate::fs::GraphState;
 
-#[cfg(test)]
-pub use chat_write::{ChatConversation, ChatMessageRow};
-#[cfg(test)]
-pub use embed_write::EmbeddedChunk;
 pub use write::IndexedNote;
 
 /// The open index connection plus its monotonic generation, kept **under one
@@ -498,9 +486,7 @@ pub fn index_meta_set(
     Ok(())
 }
 
-/// Wipe all derived tables (the TS layer then re-applies every note; no-op if
-/// stale). The `chat_*` tables are deliberately untouched — chat history is
-/// durable, not a rebuildable projection.
+/// Wipe all derived tables (the TS layer then re-applies every note; no-op if stale).
 #[tauri::command]
 pub fn index_clear<R: tauri::Runtime>(
     generation: u64,
@@ -518,95 +504,6 @@ pub fn index_clear<R: tauri::Runtime>(
         write::clear_index(conn)?;
     }
     emit_index_written(&app);
-    Ok(())
-}
-
-/// Upsert one chat message and its conversation row in a single transaction
-/// (no-op if stale). Called at send time with the user half and again at
-/// settle with the full record, so a crash mid-stream keeps the user message.
-/// Stale-generation writes are dropped like every other index write — a turn
-/// detached by a graph switch must not land in the new graph's history.
-#[tauri::command]
-#[cfg(test)]
-pub fn chat_message_save(
-    conversation: ChatConversation,
-    message: ChatMessageRow,
-    generation: u64,
-    index: State<IndexState>,
-    background_tasks: State<BackgroundTaskState>,
-) -> AppResult<()> {
-    let _background_task = background_task::scoped(&background_tasks, "Reflect chat save");
-    let mut state = lock_state(&index)?;
-    if state.generation != generation {
-        return Ok(());
-    }
-    let conn = state.conn.as_mut().ok_or_else(AppError::no_graph)?;
-    let tx = conn.transaction()?;
-    chat_write::save_message(&tx, &conversation, &message)?;
-    tx.commit()?;
-    Ok(())
-}
-
-/// Delete a conversation and (via cascade) its messages (no-op if stale).
-#[tauri::command]
-#[cfg(test)]
-pub fn chat_conversation_delete(
-    id: String,
-    generation: u64,
-    index: State<IndexState>,
-    background_tasks: State<BackgroundTaskState>,
-) -> AppResult<()> {
-    let _background_task = background_task::scoped(&background_tasks, "Reflect chat delete");
-    let state = lock_state(&index)?;
-    if state.generation != generation {
-        return Ok(());
-    }
-    let conn = state.conn.as_ref().ok_or_else(AppError::no_graph)?;
-    chat_write::delete_conversation(conn, &id)
-}
-
-/// Replace a note's embedding chunk set (diff applied in one transaction;
-/// no-op if stale). Unchanged chunks keep their vectors — the hash-skip.
-#[tauri::command]
-#[cfg(test)]
-pub fn embed_apply(
-    path: String,
-    chunks: Vec<EmbeddedChunk>,
-    generation: u64,
-    index: State<IndexState>,
-    background_tasks: State<BackgroundTaskState>,
-) -> AppResult<()> {
-    let _background_task = background_task::scoped(&background_tasks, "Reflect embeddings update");
-    let mut state = lock_state(&index)?;
-    if state.generation != generation {
-        return Ok(());
-    }
-    let conn = state.conn.as_mut().ok_or_else(AppError::no_graph)?;
-    let tx = conn.transaction()?;
-    embed_write::apply_chunks(&tx, &path, &chunks)?;
-    tx.commit()?;
-    Ok(())
-}
-
-/// Drop a deleted note's chunks + vectors (no-op if stale).
-#[tauri::command]
-#[cfg(test)]
-pub fn embed_remove(
-    path: String,
-    generation: u64,
-    index: State<IndexState>,
-    background_tasks: State<BackgroundTaskState>,
-) -> AppResult<()> {
-    let _background_task = background_task::scoped(&background_tasks, "Reflect embeddings remove");
-    let mut state = lock_state(&index)?;
-    if state.generation != generation {
-        return Ok(());
-    }
-    let conn = state.conn.as_mut().ok_or_else(AppError::no_graph)?;
-    // Two DELETEs (vectors, then rows): atomic, mirroring embed_apply.
-    let tx = conn.transaction()?;
-    embed_write::remove_chunks(&tx, &path)?;
-    tx.commit()?;
     Ok(())
 }
 

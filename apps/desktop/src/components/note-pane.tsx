@@ -29,7 +29,6 @@ import { useMarkdownLinkNavigation } from '@/editor/use-markdown-link-navigation
 import { useLinkPreview } from '@/editor/use-link-preview.ts'
 import { useWikiLinkNavigation } from '@/editor/use-wiki-link-navigation.ts'
 import { useWikiLinkHoverPreview } from '@/editor/use-wiki-link-hover-preview.tsx'
-import { useXPostPreload } from '@/editor/use-x-post-preload.ts'
 import { isTouchEditorSurface } from '@/lib/platform-surface.ts'
 import { cn } from '@/lib/utils.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
@@ -246,11 +245,7 @@ export function NotePaneComponent({
     }
   }, [dailyDate, onExitBoundary])
 
-  const editorContent =
-    document.status === 'ready' && !document.protected ? document.initialContent : null
-  const xPostsReady = useXPostPreload(editorContent)
-
-  if (document.status === 'loading' || (editorContent !== null && !xPostsReady)) {
+  if (document.status === 'loading') {
     return <NoteLoading className={cn(gutterClassName, editorClassName, className)} />
   }
 
@@ -314,6 +309,7 @@ export function NotePaneComponent({
         smoothCaretAnimation={settings.editorSmoothCaretAnimation}
         timeFormat={settings.timeFormat}
         bulletAfterHeading={settings.editorBulletAfterHeading}
+        backspaceDeletesEmptyFirstBlock={dailyNote}
         // The grip drag-reorders blocks and the "+" inserts a paragraph below.
         blockHandle={true}
         resolveImageUrl={resolveImageUrl}

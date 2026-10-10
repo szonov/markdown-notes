@@ -77,18 +77,9 @@ describe('query defaults', () => {
     })
   })
 
-  it.each([
-    [queryKeys.index.note('/graph', 'notes/example.md')],
-    [queryKeys.chat.conversations('/graph')],
-  ])('keeps explicitly invalidated data fresh for %j', (queryKey) => {
+  it('keeps explicitly invalidated data fresh', () => {
+    const queryKey = queryKeys.index.note('/graph', 'notes/example.md')
     expect(queryClient.defaultQueryOptions({ queryKey }).staleTime).toBe(Infinity)
-  })
-
-  it('does not apply projection freshness to similar notes', () => {
-    expect(
-      queryClient.defaultQueryOptions({ queryKey: queryKeys.similar.note('/graph', 'note.md') })
-        .staleTime,
-    ).toBe(0)
   })
 
   it('runs mutations while the browser reports offline', () => {

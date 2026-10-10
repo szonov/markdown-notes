@@ -17,7 +17,6 @@ export type Route =
   | { kind: 'allNotes'; tag: string | null }
   | { kind: 'search'; query: string }
   | { kind: 'tasks' }
-  | { kind: 'chat' }
   | { kind: 'settings' }
   // The graph-switcher screen — a mobile settings sub-screen; desktop renders
   // it as the settings screen (its switcher lives in the sidebar footer).
@@ -34,7 +33,6 @@ export function routesEqual(a: Route, b: Route): boolean {
   switch (a.kind) {
     case 'today':
     case 'tasks':
-    case 'chat':
     case 'settings':
     case 'graphs':
       return true
@@ -63,7 +61,7 @@ export function routeForPath(path: string): NoteRoute {
 /**
  * The daily date a route is anchored on: today's date for the `today` route
  * (hence the `today` parameter), the route's own date for `daily/:date`, and
- * null for any route that isn't a daily view (notes, search, chat, settings).
+ * null for any route that isn't a daily view (notes, search, settings).
  */
 function dailyDateForRoute(route: Route, today: string): string | null {
   switch (route.kind) {
@@ -98,7 +96,7 @@ export function effectiveDailyDate(
 /**
  * The note file a route is editing — what note-scoped commands (pin, …) act
  * on: a note route's path, a daily route's file (today's for the `today`
- * route), and null for screens that edit no note (search, chat, settings).
+ * route), and null for screens that edit no note (search, settings).
  */
 export function notePathForRoute(route: Route, today: string): string | null {
   if (route.kind === 'note') {

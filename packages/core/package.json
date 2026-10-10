@@ -5,8 +5,7 @@
   "type": "module",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./x-archive": "./src/x-archive.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "test": "vitest run --config ../../vitest.config.ts --project core-browser --project core-node"
@@ -14,9 +13,6 @@
   "dependencies": {
     "@meowdown/markdown": "^0.76.0",
     "@ocavue/utils": "^1.8.0",
-    "@post-embed/exporter": "^0.5.0",
-    "@post-embed/schema": "^0.5.2",
-    "@post-embed/types": "^0.5.0",
     "@reflect/db": "workspace:*",
     "@reflect/utils": "workspace:*",
     "kysely": "^0.28.17",
@@ -28,7 +24,6 @@
     "@ocavue/tsconfig": "^0.7.1",
     "@vitest/browser-playwright": "^5.0.3",
     "playwright": "^1.63.0",
-    "sqlite-vec": "^0.1.9",
     "typescript": "~6.0.3",
     "vitest": "^5.0.3"
   }

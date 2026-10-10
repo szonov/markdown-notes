@@ -42,8 +42,8 @@ jobs:
 
       - uses: ./.github/actions/setup-node
 
-      # A prerelease version is the beta flavor. Asset names use the flavor's
-      # product name with spaces as dots, which is how GitHub stores them.
+      # Asset names use the product name with spaces as dots, which is how
+      # GitHub stores them.
       - name: Resolve release
         id: release
         run: |
@@ -52,13 +52,11 @@ jobs:
             echo "::error::tag $TAG does not match version $version in apps/desktop/package.json"
             exit 1
           fi
-          config=tauri.conf.json
           prerelease=false
           if [[ "$version" == *-* ]]; then
-            config=tauri.beta.conf.json
             prerelease=true
           fi
-          product="$(jq -r .productName "apps/desktop/src-tauri/$config")"
+          product="$(jq -r .productName apps/desktop/src-tauri/tauri.conf.json)"
           {
             echo "version=$version"
             echo "prerelease=$prerelease"

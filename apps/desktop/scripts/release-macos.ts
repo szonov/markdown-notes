@@ -8,23 +8,13 @@
 //   --no-sign               Unsigned app only, to check that it compiles and bundles
 
 import { randomBytes } from 'node:crypto'
-import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs'
+import { copyFileSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 import { apply as applyMergePatch } from 'tiny-merge-patch'
 import { exec } from 'tinyexec'
 import { z } from 'zod'
 import {
-  getFlavorConfigArgs,
-  getFlavorOverlay,
   getHostTriple,
   INHERIT,
   log,
@@ -41,21 +31,11 @@ const ARCHS: Record<string, string> = {
   'aarch64-apple-darwin': 'aarch64',
   [INTEL_TARGET]: 'x86_64',
 }
-const ONNX_RUNTIME = 'onnxruntime-osx-x86_64-1.23.2'
-const ONNX_RUNTIME_FILES = ['lib/libonnxruntime.dylib', 'LICENSE', 'ThirdPartyNotices.txt']
-const PROFILE_IDENTITY_KEYS = [
-  'com.apple.application-identifier',
-  'com.apple.developer.team-identifier',
-]
-const PlistSchema = z.record(z.string(), z.unknown())
 const TauriConfigSchema = z.object({
   productName: z.string(),
-  identifier: z.string(),
   bundle: z.object({
-    externalBin: z.array(z.string()),
     macOS: z.object({
       entitlements: z.string(),
-      files: z.record(z.string(), z.string()).default({}),
     }),
   }),
 })
@@ -63,14 +43,11 @@ const TauriConfigSchema = z.object({
 interface Bundle {
   readonly target: string
   readonly arch: string
-  readonly identifier: string
   /** The asset name prefix. GitHub rewrites spaces in asset names to dots, so do it up front. */
   readonly assetName: string
   readonly version: string
   readonly entitlements: string
-  readonly hasProfile: boolean
   readonly app: string
-  readonly sidecars: readonly string[]
   readonly dmg: string
   readonly updaterArchive: string
 }
@@ -80,14 +57,12 @@ interface Signer {
   readonly keychain: string | null
 }
 
-/** Resolves the config the way `tauri build` does: base, then platform file, then flavor overlay. */
+/** Resolves the config the way `tauri build` does: base, then platform file. */
 function readTauriConfig(): z.infer<typeof TauriConfigSchema> {
   let config: unknown = {}
-  for (const file of ['tauri.conf.json', 'tauri.macos.conf.json', getFlavorOverlay()]) {
-    if (file) {
-      const patch: unknown = JSON.parse(readFileSync(join(TAURI_SRC_DIR, file), 'utf8'))
-      config = applyMergePatch(config, patch)
-    }
+  for (const file of ['tauri.conf.json', 'tauri.macos.conf.json']) {
+    const patch: unknown = JSON.parse(readFileSync(join(TAURI_SRC_DIR, file), 'utf8'))
+    config = applyMergePatch(config, patch)
   }
   return TauriConfigSchema.parse(config)
 }
@@ -97,20 +72,17 @@ function resolveBundle(target: string): Bundle {
   if (!arch) {
     throw new Error(`unsupported target "${target}"`)
   }
-  const { productName, identifier, bundle } = readTauriConfig()
+  const { productName, bundle } = readTauriConfig()
   const version = readAppVersion()
   const bundleDir = join(TARGET_DIR, target, 'release', 'bundle')
   const app = join(bundleDir, 'macos', `${productName}.app`)
   return {
     target,
     arch,
-    identifier,
     assetName: productName.replaceAll(' ', '.'),
     version,
     entitlements: join(TAURI_SRC_DIR, bundle.macOS.entitlements),
-    hasProfile: 'embedded.provisionprofile' in bundle.macOS.files,
     app,
-    sidecars: bundle.externalBin.map((path) => join(app, 'Contents', 'MacOS', basename(path))),
     dmg: join(bundleDir, 'dmg', `${productName}_${version}_${arch}.dmg`),
     updaterArchive: `${app}.tar.gz`,
   }
@@ -129,37 +101,10 @@ function resolveNotaryArgs(identity: string, tempDir: string): string[] {
   return ['--apple-id', APPLE_ID, '--password', APPLE_PASSWORD, '--team-id', teamId]
 }
 
-/** Upstream ONNX Runtime 1.24 dropped macOS x86_64, so Intel builds bundle the 1.23 dylib. */
-async function stageIntelOnnxRuntime(): Promise<string> {
-  const resourceDir = join(TAURI_SRC_DIR, 'resources', 'onnxruntime')
-  const staged = ONNX_RUNTIME_FILES.map((file) => join(resourceDir, basename(file)))
-  if (!staged.every((path) => existsSync(path))) {
-    await runWithTempDir(async (tempDir) => {
-      const archive = join(tempDir, `${ONNX_RUNTIME}.tgz`)
-      const url = `https://github.com/microsoft/onnxruntime/releases/download/v1.23.2/${ONNX_RUNTIME}.tgz`
-      await exec('curl', ['-fL', '--retry', '3', '-o', archive, url], INHERIT)
-      await exec('tar', ['-xzf', archive, '-C', tempDir], INHERIT)
-      mkdirSync(resourceDir, { recursive: true })
-      for (const file of ONNX_RUNTIME_FILES) {
-        copyFileSync(join(tempDir, ONNX_RUNTIME, file), join(resourceDir, basename(file)))
-      }
-    })
-  }
-  const resources = {
-    'resources/onnxruntime/libonnxruntime.dylib': 'libonnxruntime.dylib',
-    'resources/onnxruntime/LICENSE': 'onnxruntime/LICENSE',
-    'resources/onnxruntime/ThirdPartyNotices.txt': 'onnxruntime/ThirdPartyNotices.txt',
-  }
-  return JSON.stringify({ bundle: { resources } })
-}
-
 async function buildApp(target: string): Promise<void> {
-  const args = ['build', '--target', target, '--bundles', 'app', ...getFlavorConfigArgs()]
-  if (target === INTEL_TARGET) {
-    args.push('--config', await stageIntelOnnxRuntime())
-  }
-  // Tauri notarizes whenever these are set, but notarization must wait until
-  // the sidecars are re-signed.
+  const args = ['build', '--target', target, '--bundles', 'app']
+  // Tauri notarizes whenever these are set; this script signs and notarizes
+  // explicitly after the bundle has been assembled.
   for (const name of ['APPLE_ID', 'APPLE_PASSWORD', 'APPLE_API_KEY', 'APPLE_API_ISSUER']) {
     delete process.env[name]
   }
@@ -231,62 +176,15 @@ async function runCodesign(signer: Signer, args: readonly string[]): Promise<voi
   await exec('codesign', [...base, ...keychain, ...args], INHERIT)
 }
 
-/** Converts plist text to JSON with `plutil`. `args` selects the conversion. */
-async function readPlist(
-  plist: string,
-  args = ['-convert', 'json'],
-): Promise<Record<string, unknown>> {
-  const { stdout } = await exec('plutil', [...args, '-o', '-', '-'], {
-    throwOnError: true,
-    stdin: plist,
-  })
-  return PlistSchema.parse(JSON.parse(stdout))
-}
-
-/**
- * The application and team identifiers from the embedded provisioning profile.
- * A Developer ID app that uses iCloud must carry them in its signature.
- */
-async function readProfileIdentity(bundle: Bundle): Promise<Record<string, string>> {
-  const profilePath = join(bundle.app, 'Contents', 'embedded.provisionprofile')
-  const profile = await exec('security', ['cms', '-D', '-i', profilePath], { throwOnError: true })
-  const entitlements = await readPlist(profile.stdout, ['-extract', 'Entitlements', 'json'])
-  const identity = z
-    .record(z.string(), z.string())
-    .parse(Object.fromEntries(PROFILE_IDENTITY_KEYS.map((key) => [key, entitlements[key]])))
-  const applicationId = identity['com.apple.application-identifier'] ?? ''
-  if (applicationId.slice(applicationId.indexOf('.') + 1) !== bundle.identifier) {
-    throw new Error(`provisioning profile is for "${applicationId}", not "${bundle.identifier}"`)
-  }
-  return identity
-}
-
-/** The entitlements file for the app: the configured one plus the profile identity. */
-async function prepareEntitlements(bundle: Bundle, tempDir: string): Promise<string> {
-  if (!bundle.hasProfile) {
-    return bundle.entitlements
-  }
-  const merged = {
-    ...(await readPlist(readFileSync(bundle.entitlements, 'utf8'))),
-    ...(await readProfileIdentity(bundle)),
-  }
-  const path = join(tempDir, 'Entitlements.plist')
-  writeFileSync(path, JSON.stringify(merged))
-  await exec('plutil', ['-convert', 'xml1', path], { throwOnError: true })
-  return path
-}
-
-/**
- * Tauri signs the sidecars with the app's entitlements. The restricted iCloud
- * entitlements have no matching profile there, so the system kills them at
- * launch. Re-sign the sidecars without entitlements, then the app around them.
- */
-async function resignApp(bundle: Bundle, signer: Signer, tempDir: string): Promise<void> {
-  for (const sidecar of bundle.sidecars) {
-    await runCodesign(signer, ['--options', 'runtime', sidecar])
-  }
-  const entitlements = await prepareEntitlements(bundle, tempDir)
-  await runCodesign(signer, ['--options', 'runtime', '--entitlements', entitlements, bundle.app])
+/** Re-sign the completed app with the minimal configured entitlements. */
+async function resignApp(bundle: Bundle, signer: Signer): Promise<void> {
+  await runCodesign(signer, [
+    '--options',
+    'runtime',
+    '--entitlements',
+    bundle.entitlements,
+    bundle.app,
+  ])
 }
 
 async function notarize(path: string, notaryArgs: readonly string[]): Promise<void> {
@@ -366,37 +264,12 @@ async function expectOutput(
   }
 }
 
-async function verifyProfileIdentity(bundle: Bundle): Promise<void> {
-  if (!bundle.hasProfile) {
-    return
-  }
-  const display = ['--display', '--entitlements', '-', '--xml', bundle.app]
-  const signed = await readPlist((await exec('codesign', display, { throwOnError: true })).stdout)
-  for (const [key, value] of Object.entries(await readProfileIdentity(bundle))) {
-    if (signed[key] !== value) {
-      throw new Error(`the signed app lost the "${key}" entitlement`)
-    }
-  }
-}
-
-/** A sidecar with a bad signature passes `codesign --verify` and dies at launch, so launch them. */
-async function verifySidecarsLaunch(bundle: Bundle): Promise<void> {
-  if (bundle.target !== INTEL_TARGET && process.arch !== 'arm64') {
-    return
-  }
-  for (const sidecar of bundle.sidecars) {
-    await expectOutput(sidecar, basename(sidecar) === 'reflect' ? ['--version'] : [], [])
-  }
-}
-
 async function verify(bundle: Bundle, notarized: boolean): Promise<void> {
   await expectOutput(
     'codesign',
     ['--verify', '--deep', '--strict', '--verbose=2', bundle.app],
     ['valid on disk', 'satisfies its Designated Requirement'],
   )
-  await verifyProfileIdentity(bundle)
-  await verifySidecarsLaunch(bundle)
   if (!notarized) {
     return
   }
@@ -452,7 +325,7 @@ async function main(): Promise<void> {
     await buildApp(bundle.target)
     await runWithSigningKeychain(tempDir, async (keychain) => {
       const signer = { identity, keychain }
-      await resignApp(bundle, signer, tempDir)
+      await resignApp(bundle, signer)
       if (notaryArgs) {
         await notarizeApp(bundle, notaryArgs, tempDir)
       }

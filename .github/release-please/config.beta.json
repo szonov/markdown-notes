@@ -18,7 +18,7 @@
       "package-name": "reflect-open",
       "component": "reflect-open-beta",
       "changelog-path": "apps/desktop/CHANGELOG.beta.md",
-      "exclude-paths": ["docs", "fixtures", ".github", "apps/extension"],
+      "exclude-paths": ["docs", "fixtures", ".github"],
       "extra-files": [
         {
           "type": "json",

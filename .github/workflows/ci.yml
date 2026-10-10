@@ -91,13 +91,6 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      # The sidecar script imports npm packages.
-      - uses: ./.github/actions/setup-node
-
-      # tauri-build requires the sidecars before the desktop crate compiles.
-      - name: Stage desktop sidecars
-        run: node apps/desktop/scripts/build-sidecar.ts
-
       - name: Format check
         run: cargo fmt --all -- --check
 
@@ -113,13 +106,6 @@ jobs:
           persist-credentials: false
 
       - uses: ./.github/actions/setup-rust
-
-      # The sidecar script imports npm packages.
-      - uses: ./.github/actions/setup-node
-
-      # tauri-build requires the sidecars before the desktop crate compiles.
-      - name: Stage desktop sidecars
-        run: node apps/desktop/scripts/build-sidecar.ts
 
       - name: Test
         run: cargo test --workspace

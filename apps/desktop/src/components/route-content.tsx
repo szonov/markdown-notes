@@ -56,8 +56,6 @@ function RouteContentBody(): ReactElement {
       return <SearchRoute query={route.query} />
     case 'tasks':
       return <TasksScreen />
-    case 'chat':
-      return daily(today, true)
     case 'graphs':
     // The graph-switcher route is a mobile settings sub-screen; on desktop
     // graph switching lives in the sidebar footer, so it renders as settings.

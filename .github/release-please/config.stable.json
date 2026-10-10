@@ -14,7 +14,7 @@
     ".": {
       "package-name": "reflect-open",
       "changelog-path": "apps/desktop/CHANGELOG.md",
-      "exclude-paths": ["docs", "fixtures", ".github", "apps/extension"],
+      "exclude-paths": ["docs", "fixtures", ".github"],
       "extra-files": [
         {
           "type": "json",

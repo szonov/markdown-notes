@@ -39,10 +39,6 @@ pub struct IndexedNote {
     pub(super) file_hash: String,
     pub(super) mtime: i64,
     pub(super) text: String,
-    /// Description text of referenced assets (Plan 20), folded into the FTS
-    /// `body` only — never `preview` or anything AI-reachable.
-    #[serde(default)]
-    pub(super) asset_text: String,
     pub(super) preview: String,
     pub(super) links: Vec<IndexedLink>,
     pub(super) tags: Vec<IndexedTag>,
@@ -240,17 +236,8 @@ pub(super) fn apply_note(conn: &Connection, note: &IndexedNote) -> AppResult<()>
             ])?;
         }
     }
-    // The FTS body carries the note text plus any referenced assets' description
-    // text (Plan 20), so a query matching a description surfaces the note. Only
-    // the search index is enriched — `preview` and the AI-reachable text above
-    // stay the note body alone.
-    let search_body = if note.asset_text.is_empty() {
-        note.text.clone()
-    } else {
-        format!("{}\n{}", note.text, note.asset_text)
-    };
     conn.prepare_cached("INSERT INTO search_fts(path, title, body) VALUES(?1, ?2, ?3)")?
-        .execute(params![note.path, note.title, search_body])?;
+        .execute(params![note.path, note.title, note.text])?;
     Ok(())
 }
 
@@ -335,8 +322,6 @@ pub(super) fn move_note(
         .execute(params![from, to])?;
     conn.prepare_cached("UPDATE tasks SET note_path = ?2 WHERE note_path = ?1")?
         .execute(params![from, to])?;
-    conn.prepare_cached("UPDATE embedding_chunks SET note_path = ?2 WHERE note_path = ?1")?
-        .execute(params![from, to])?;
     conn.prepare_cached("UPDATE search_fts SET path = ?2 WHERE path = ?1")?
         .execute(params![from, to])?;
     Ok(())
@@ -346,10 +331,7 @@ pub(super) fn move_note(
 /// cascades to every child table; `search_fts` (a virtual table, no FK) is
 /// cleared explicitly. `index_meta` is intentionally preserved across a rebuild.
 pub(super) fn clear_index(conn: &Connection) -> AppResult<()> {
-    conn.execute_batch(
-        "DELETE FROM notes; DELETE FROM search_fts;
-         DELETE FROM embedding_vectors; DELETE FROM embedding_chunks;",
-    )?;
+    conn.execute_batch("DELETE FROM notes; DELETE FROM search_fts;")?;
     Ok(())
 }
 

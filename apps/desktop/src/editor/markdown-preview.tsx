@@ -1,5 +1,3 @@
-import { useXPostResolver, X_MEDIA_URL_PROTOCOLS } from '@/editor/use-x-post-resolver.ts'
-import { resolveYouTubeVideo } from '@/editor/youtube-video-resolver.ts'
 import { useCallback, useEffect, useRef, type ReactElement } from 'react'
 import type { ImageUrlResolver, WikiEmbedResolver } from '@meowdown/core'
 import { MarkdownView } from '@meowdown/react'
@@ -43,12 +41,15 @@ interface MarkdownPreviewProps {
    * or remote embeds.
    */
   interactive?: boolean
+  /** Render the supplied Markdown as one inline paragraph. */
+  singleParagraph?: boolean
   /** Extra classes for the rendered root. */
   className?: string
 }
 
 export function MarkdownPreview({
   content,
+  singleParagraph = false,
   resolveImageUrl,
   resolveWikiEmbed,
   onWikiLinkClick,
@@ -59,7 +60,6 @@ export function MarkdownPreview({
   // The click handler is read through a ref so a changing prop never gives
   // MarkdownView a new callback identity (which would re-render its whole
   // tree).
-  const resolveXPost = useXPostResolver()
   const navigateRef = useRef(onWikiLinkClick)
   useEffect(() => {
     navigateRef.current = onWikiLinkClick
@@ -79,10 +79,8 @@ export function MarkdownPreview({
 
   return (
     <MarkdownView
-      resolveXPost={resolveXPost}
-      resolveYouTubeVideo={resolveYouTubeVideo}
-      mediaUrlProtocols={X_MEDIA_URL_PROTOCOLS}
       markdown={content}
+      singleParagraph={singleParagraph}
       markMode="hide"
       interactive={interactive}
       resolveWikilink={resolveWikilink}

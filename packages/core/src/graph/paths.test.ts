@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import {
   assetPath,
-  audioMemoPath,
   classifyGraphPath,
   dailyPath,
   dateFromDailyPath,
@@ -50,11 +49,10 @@ describe('graph paths', () => {
     expect(() => dailyPath('2026-02-31')).toThrow()
   })
 
-  it('builds note, template, asset, and recording paths', () => {
+  it('builds note, template, and asset paths', () => {
     expect(notePath('charlotte-maccaw')).toBe('notes/charlotte-maccaw.md')
     expect(templatePath('journal')).toBe('templates/journal.md')
     expect(assetPath('screenshot.png')).toBe('assets/screenshot.png')
-    expect(audioMemoPath('memo.m4a')).toBe('audio-memos/memo.m4a')
   })
 
   it('recognizes indexable Markdown anywhere outside hidden and reserved trees', () => {

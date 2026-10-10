@@ -30,35 +30,6 @@ export interface Backlinks {
   targetRaw: string | null;
 }
 
-export interface ChatConversations {
-  createdMs: number;
-  id: string;
-  title: string;
-  updatedMs: number;
-}
-
-export interface ChatMessages {
-  attachments: string;
-  conversationId: string;
-  createdMs: number;
-  id: string;
-  parts: string;
-  responseMessages: string;
-  seq: number;
-  userText: string;
-}
-
-export interface EmbeddingChunks {
-  contentHash: string;
-  heading: string | null;
-  id: Generated<number | null>;
-  modelId: string;
-  notePath: string;
-  posFrom: number;
-  posTo: number;
-  text: string;
-}
-
 export interface IndexMeta {
   key: string;
   value: string;
@@ -139,9 +110,6 @@ export interface DB {
   aliases: Aliases;
   assets: Assets;
   backlinks: Backlinks;
-  chatConversations: ChatConversations;
-  chatMessages: ChatMessages;
-  embeddingChunks: EmbeddingChunks;
   indexMeta: IndexMeta;
   links: Links;
   noteClaims: NoteClaims;

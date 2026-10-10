@@ -21,7 +21,6 @@ minimumReleaseAgeExclude:
   - '@prosekit/*'
   - '@aria-ui/*'
   - '@ocavue/*'
-  - '@post-embed/*'
   - '@prosemirror-adapter/*'
   - prosemirror-flat-list
   - prosemirror-view

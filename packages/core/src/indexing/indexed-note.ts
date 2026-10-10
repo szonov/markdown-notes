@@ -99,8 +99,10 @@ import { serializeWikiSuggestionAddress } from './suggest.ts'
  * reproject.
  * 21 - tasks are keyed by AST path (`tasks.ast_path`) and store Markdown instead
  * of plain text, so every note's tasks must reproject.
+ * 22 - task breadcrumbs start with the chain of headings above the task (the
+ * `Tasks` heading included), so every note's tasks must reproject.
  */
-export const PROJECTION_VERSION = 21
+export const PROJECTION_VERSION = 22
 
 /**
  * Precedence of the spellings a note answers to (`note_claims.tier`): the
@@ -185,7 +187,7 @@ export const indexedTaskSchema = z.object({
   astPath: z.string(),
   /** The task's first paragraph as Markdown, marker excluded. */
   markdown: z.string(),
-  /** Ancestor list items' first paragraphs as Markdown, outermost first. */
+  /** The headings above the task, then its ancestor list items' first paragraphs, as Markdown, outermost first. */
   breadcrumbs: taskBreadcrumbsSchema,
   checked: z.boolean(),
   /** Explicit due date (first `[[YYYY-MM-DD]]` in the item), or null — drives Overdue. */
@@ -222,13 +224,6 @@ export const indexedNoteSchema = z.object({
   fileHash: z.string(),
   mtime: z.number(),
   text: z.string(),
-  /**
-   * Description text of the note's referenced assets (Plan 20), folded into the
-   * FTS `body` only — not the preview or the note text AI reads (chat reaches
-   * descriptions solely via the read_assets tool and its live privacy gate).
-   * Empty when the note has no described assets.
-   */
-  assetText: z.string(),
   /** The All Notes row snippet, derived once here rather than per query. */
   preview: z.string(),
   links: z.array(indexedLinkSchema),
@@ -330,7 +325,7 @@ export function projectNoteClaims(
  */
 export function buildIndexedNote(
   parsed: ParsedNote,
-  meta: { fileHash: string; mtime: number; source: string; assetText?: string },
+  meta: { fileHash: string; mtime: number; source: string },
 ): IndexedNote {
   const wikiLinks: IndexedLink[] = parsed.wikiLinks.map((link) => {
     const reference = wikiNoteReference(link.target)
@@ -388,7 +383,6 @@ export function buildIndexedNote(
     fileHash: meta.fileHash,
     mtime: meta.mtime,
     text: body,
-    assetText: meta.assetText ?? '',
     preview: previewSnippet(parsed.displayText, parsed.title),
     hasContent: parsed.displayText !== '' || hasSearchableChar(body),
     links: [...wikiLinks, ...mdLinks],

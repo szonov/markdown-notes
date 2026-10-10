@@ -4,9 +4,6 @@ import { MediaLightbox } from '@/editor/media-lightbox.tsx'
 import { isOpenableExternalUrl } from '@/editor/open-external-link.ts'
 import { resolveWikilink } from '@/editor/resolve-wikilink.ts'
 import { WikilinkEditDialog } from '@/editor/wikilink-edit-dialog.tsx'
-import { useXPostResolver, X_MEDIA_URL_PROTOCOLS } from '@/editor/use-x-post-resolver.ts'
-import { lightboxItemFromXPostMedia } from '@/editor/x-post-media-lightbox-item.ts'
-import { resolveYouTubeVideo } from '@/editor/youtube-video-resolver.ts'
 import { isDeepLinkUrl } from '@/lib/deep-links/parse.ts'
 import { useFollowDeepLink } from '@/lib/deep-links/use-follow-deep-link.ts'
 import { openUrlSync } from '@/lib/open-url.ts'
@@ -26,8 +23,6 @@ import type {
   StartPendingReplacementOptions,
   WikiEmbedResolver,
   WikilinkHoverHit,
-  XPostMediaClickHandler,
-  YouTubeVideoClickHandler,
 } from '@meowdown/core'
 import {
   MarkdownEditor,
@@ -53,9 +48,6 @@ import {
 } from 'react'
 
 type WikilinkHoverRenderer = (hit: WikilinkHoverHit) => ReactNode | Promise<ReactNode>
-
-// See apps/youtube-relay/README.md.
-const YOUTUBE_RELAY_URL = 'https://youtube-relay-reflect.vercel.app/'
 
 /**
  * Reflect's note editor: a thin wrapper over `@meowdown/react`'s
@@ -120,6 +112,8 @@ interface NoteEditorProps {
   initialContent: string
   /** Called with the current markdown whenever the user edits the document. */
   onChange?: (markdown: string) => void
+  /** Edit one paragraph of inline Markdown, without creating block nodes. */
+  singleParagraph?: boolean
   /** How markdown syntax characters are shown. */
   markMode?: MarkMode
   /** Whether the browser underlines misspelled words (default on). */
@@ -136,6 +130,8 @@ interface NoteEditorProps {
    * (the `editorBulletAfterHeading` setting). Off by default.
    */
   bulletAfterHeading?: boolean
+  /** Delete an empty first paragraph with Backspace. */
+  backspaceDeletesEmptyFirstBlock?: boolean
   /**
    * Whether to show meowdown's per-block gutter handle: a grip to drag-reorder
    * blocks and a "+" to insert a paragraph below. Off by default. The main note
@@ -247,12 +243,14 @@ interface NoteEditorProps {
 
 export function NoteEditor({
   initialContent,
+  singleParagraph = false,
   onChange,
   markMode = 'hide',
   spellCheck = true,
   smoothCaretAnimation = true,
   timeFormat = '12h',
   bulletAfterHeading = false,
+  backspaceDeletesEmptyFirstBlock = false,
   blockHandle = false,
   resolveImageUrl,
   resolveWikiEmbed,
@@ -280,7 +278,6 @@ export function NoteEditor({
   onSearchChange,
   handleRef,
 }: NoteEditorProps): ReactElement {
-  const resolveXPost = useXPostResolver()
   const innerRef = useRef<EditorHandle>(null)
   const followDeepLink = useFollowDeepLink()
 
@@ -440,46 +437,13 @@ export function NoteEditor({
     [openLightbox],
   )
 
-  const handleXPostMediaClick: XPostMediaClickHandler = useCallback(
-    (event) => {
-      // Without this the card opens the photo URL or plays the video in place.
-      event.preventDefault()
-      setOpenLightboxImage(null)
-      openLightbox(lightboxItemFromXPostMedia(event.detail.media), event.detail.element)
-    },
-    [openLightbox],
-  )
-
-  const handleYouTubeVideoClick: YouTubeVideoClickHandler = useCallback(
-    (event) => {
-      // Without this the card plays the video in place.
-      event.preventDefault()
-      setOpenLightboxImage(null)
-      const { video, short, videoId, element } = event.detail
-      openLightbox(
-        {
-          type: 'frame',
-          src: `${YOUTUBE_RELAY_URL}#v=${videoId}`,
-          title: video.title || 'YouTube video',
-          poster: video.thumbnail_url,
-          width: short ? 9 : 16,
-          height: short ? 16 : 9,
-        },
-        element,
-      )
-    },
-    [openLightbox],
-  )
-
   return (
     <>
       <MarkdownEditor
-        resolveXPost={resolveXPost}
-        resolveYouTubeVideo={resolveYouTubeVideo}
-        mediaUrlProtocols={X_MEDIA_URL_PROTOCOLS}
         handleRef={innerRef}
         mode={markMode}
         initialMarkdown={initialContent}
+        singleParagraph={singleParagraph}
         // On the touch surface spellcheck is pinned off regardless of the
         // setting: iOS derives the keyboard's smart-quotes/smart-dashes traits
         // from it at focus time, and smart punctuation corrupts markdown
@@ -493,6 +457,7 @@ export function NoteEditor({
         timeFormat={timeFormat === '24h' ? '24' : '12'}
         caretGlide={smoothCaretAnimation}
         bulletAfterHeading={bulletAfterHeading}
+        backspaceDeletesEmptyFirstBlock={backspaceDeletesEmptyFirstBlock}
         // Pinned off on the touch surface regardless of the caller: the grip is
         // revealed on hover and drag-reorders blocks with a pointer, neither of
         // which a touch webview can express. Turning it off also drops the drop
@@ -506,8 +471,6 @@ export function NoteEditor({
         onLinkClick={handleLinkClick}
         {...(resolveLinkPreview !== undefined ? { resolveLinkPreview } : {})}
         onImageClick={handleImageClick}
-        onXPostMediaClick={handleXPostMediaClick}
-        onYouTubeVideoClick={handleYouTubeVideoClick}
         {...(onWikilinkSearch !== undefined ? { onWikilinkSearch } : {})}
         {...(onTagSearch !== undefined ? { onTagSearch } : {})}
         {...(onSelectionMenuSearch !== undefined ? { onSelectionMenuSearch } : {})}

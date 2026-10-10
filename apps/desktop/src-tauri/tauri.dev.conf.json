@@ -25,10 +25,7 @@
       "icons-dev/icon.ico"
     ],
     "macOS": {
-      "entitlements": "Entitlements.dev.plist",
-      "files": {
-        "embedded.provisionprofile": null
-      }
+      "entitlements": "Entitlements.plist"
     }
   },
   "plugins": {

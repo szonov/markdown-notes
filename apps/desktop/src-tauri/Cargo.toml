@@ -15,9 +15,9 @@ edition = "2021"
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "reflect_open_lib"
-# `staticlib` links into the iOS app as `libapp.a`; `rlib` serves the desktop
-# binary. There is no Android target, so no `cdylib`.
-crate-type = ["staticlib", "rlib"]
+# `rlib` serves the desktop binary; `cdylib` keeps the Android path available
+# for a later mobile port without carrying the removed iOS static library.
+crate-type = ["cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2.7.1", features = [] }
@@ -61,16 +61,11 @@ image = { version = "0.25.10", default-features = false, features = [
   "webp",
 ] }
 reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls"] }
-# Reflect V1 exports are zip archives of the graph-folder layout. Keep the
-# reader lean: stored entries plus the usual deflate method are enough here.
-zip = { version = "8.6.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
-
 [target.'cfg(target_os = "macos")'.dependencies]
 xattr = "1.6.1"
-# Apple Calendar read-only bridge (`src/calendar.rs`): EventKit through the
-# objc2 bindings, trimmed to the classes the modules touch. objc2-app-kit
-# backs EKCalendar's NSColor → hex conversion and the Edit menu's Paste and
-# Match Style item (`src/menu.rs`).
+# Keeps `.reflect/` out of file-sync services and backups.
+core-foundation = "0.10.1"
+# Native macOS menu integration.
 objc2 = "0.6.4"
 block2 = "0.6.2"
 objc2-foundation = { version = "0.3.2", default-features = false, features = [
@@ -96,34 +91,8 @@ objc2-app-kit = { version = "0.3.2", default-features = false, features = [
   "NSWorkspace",
 ] }
 
-# Apple Contacts integration (`contacts.rs`): live CNContactStore lookups on
-# macOS and iOS — never a mirrored copy of the address book. block2 bridges the
-# requestAccessForEntityType completion handler back into blocking Rust.
-# core-foundation backs the iCloud/backup sync-exclusion resource keys on
-# `.reflect/` and `.git/` (`fs/io.rs`), which matter on both Apple targets.
-# dispatch2 supplies MainThreadBound, keeping the iCloud metadata query's
-# non-Send Objective-C handles pinned to the main thread (`icloud/watch.rs`).
-[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
-core-foundation = "0.10.1"
-objc2 = "0.6.4"
-objc2-foundation = "0.3.2"
-block2 = "0.6.2"
-
-# Finite-length execution assertions around iOS persistence. UIKit's begin/end
-# methods keep file and SQLite locks from surviving process suspension.
-[target.'cfg(target_os = "ios")'.dependencies]
-objc2-ui-kit = { version = "0.3.2", default-features = false, features = [
-  "std",
-  "UIApplication",
-  "block2",
-] }
-
-# Desktop-only capabilities (Plan 19): auto-update (mobile updates go through
-# the app stores), window-state (no windows to restore on mobile), the file
-# watcher (nothing else writes the mobile sandbox; local writes notify
-# in-process), the embedding runtime (fastembed/ORT is not built for mobile —
-# semantic search is desktop-only in the first mobile wave), and OS-trash
-# deletes (mobile moves into the graph-local `.reflect/trash/` instead).
+# Desktop-only capabilities: window-state, filesystem watching and OS-trash
+# deletes. Android can provide mobile-specific implementations later.
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-window-state = "2.5.0"
 trash = "5.2.8"

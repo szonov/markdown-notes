@@ -9,11 +9,8 @@ export const NOTES_DIR = 'notes'
 /** Note templates — indexed as their own kind, excluded from note surfaces. */
 export const TEMPLATES_DIR = 'templates'
 export const ASSETS_DIR = 'assets'
-/** Audio-memo recordings live apart from pasted/dropped `assets/` files. */
-export const AUDIO_MEMOS_DIR = 'audio-memos'
-
 /** Root trees whose Markdown files are attachment metadata, never notes. */
-const RESERVED_NOTE_TREES = new Set([ASSETS_DIR, AUDIO_MEMOS_DIR])
+const RESERVED_NOTE_TREES = new Set([ASSETS_DIR, 'audio-memos'])
 
 /**
  * Local attachment formats Reflect can render or open: Obsidian-compatible
@@ -153,11 +150,6 @@ export function templatePath(slug: string): string {
 /** Graph-relative path to an attachment under `assets/`. */
 export function assetPath(name: string): string {
   return `${ASSETS_DIR}/${name}`
-}
-
-/** Graph-relative path to a stored recording under `audio-memos/`. */
-export function audioMemoPath(name: string): string {
-  return `${AUDIO_MEMOS_DIR}/${name}`
 }
 
 /**

@@ -1,18 +1,13 @@
 import { z } from 'zod'
 import { echoLocalWrite } from '../indexing/local-write-echo.ts'
-import { getBridge, type Unlisten } from '../ipc/bridge.ts'
 import { call } from '../ipc/invoke.ts'
 import {
   fileMetaSchema,
-  graphImportProgressSchema,
-  graphImportSummarySchema,
   graphInfoSchema,
   noteCreateOutcomeSchema,
   recentGraphSchema,
   windowBootstrapSchema,
   type FileMeta,
-  type GraphImportProgress,
-  type GraphImportSummary,
   type GraphInfo,
   type NoteCreateOutcome,
   type RecentGraph,
@@ -59,62 +54,6 @@ export async function closeNoteWindows(): Promise<void> {
 /** Create a new graph at `path` and open it. */
 export async function createGraph(path: string): Promise<GraphInfo> {
   return await call('graph_create', { path }, graphInfoSchema)
-}
-
-/**
- * Import a Reflect V1 export `.zip` into the open graph. V1 exports already use
- * Reflect Open's graph-folder layout; Rust extracts safe entries under the
- * active graph root without ever replacing an existing file (identical files
- * skip, conflicting notes rename, conflicting daily notes merge). Attachments
- * the notes link to on Firebase Storage or Reflect's asset CDN are downloaded
- * into `assets/` and the links rewritten, so the call can take a while on
- * attachment-heavy graphs — observe {@link subscribeImportProgress} and offer
- * {@link cancelReflectV1Import} while it runs.
- */
-export async function importReflectV1Zip(
-  path: string,
-  generation: number,
-): Promise<GraphImportSummary> {
-  return await call('graph_import_reflect_v1_zip', { path, generation }, graphImportSummarySchema)
-}
-
-/** Event name the running import emits {@link GraphImportProgress} ticks on. */
-export const IMPORT_PROGRESS_EVENT = 'import:progress'
-
-/** Live progress ticks of the running Reflect V1 import. */
-export function subscribeImportProgress(
-  handler: (progress: GraphImportProgress) => void,
-): Promise<Unlisten> {
-  return getBridge().listen(IMPORT_PROGRESS_EVENT, (payload) => {
-    const parsed = graphImportProgressSchema.safeParse(payload)
-    if (parsed.success) {
-      handler(parsed.data)
-    } else {
-      console.error('invalid import:progress payload:', parsed.error)
-    }
-  })
-}
-
-/**
- * Cancel the running Reflect V1 import (a no-op when none runs). The import
- * aborts before anything lands in the graph, so cancelling is always safe;
- * the pending {@link importReflectV1Zip} call rejects.
- */
-export async function cancelReflectV1Import(): Promise<void> {
-  await call('graph_import_cancel', {}, voidSchema)
-}
-
-/**
- * Mark files imported by {@link importReflectV1Zip} as this device's writes.
- * Call only after the UI confirms the imported graph is still the active graph:
- * these paths are graph-relative and the own-write channel is scoped to the
- * currently running iCloud controller.
- */
-export function markReflectV1ImportOwnWrites(summary: GraphImportSummary): void {
-  const modifiedMs = Date.now()
-  for (const changedPath of summary.changedPaths) {
-    echoLocalWrite({ path: changedPath, kind: 'upsert', modifiedMs })
-  }
 }
 
 /**
@@ -221,62 +160,6 @@ export async function readAsset(path: string, generation: number): Promise<strin
 }
 
 /**
- * {@link readAsset} without the base64 detour: the bytes come back as a raw
- * IPC response. For large reads (a meeting-length audio memo read back for
- * transcription) the base64 route would inflate the payload ~1.33× inside one
- * giant JSON string. Only on binary-capable bridges (see `hasBinaryIpc`).
- */
-export async function readAssetBinary(
-  path: string,
-  generation: number,
-): Promise<Uint8Array<ArrayBuffer>> {
-  const buffer = await call('asset_read_binary', { path, generation }, z.instanceof(ArrayBuffer))
-  return new Uint8Array(buffer)
-}
-
-/**
- * Per-segment transcript cache IO (`.reflect/transcripts/<name>`): derived
- * data outside the attachment fence, so it rides its own narrow commands.
- * The read throws `notFound` while nothing is cached.
- */
-export async function readTranscriptCache(name: string, generation: number): Promise<string> {
-  return await call('transcript_cache_read', { name, generation }, z.string())
-}
-
-export async function writeTranscriptCache(
-  name: string,
-  contents: string,
-  generation: number,
-): Promise<void> {
-  await call('transcript_cache_write', { name, contents, generation }, voidSchema)
-}
-
-/**
- * Delete one recording under `audio-memos/` — cancelling a session discards
- * its already-landed segments. Idempotent; scoped in Rust to `audio-memos/`
- * so this can never become a general file-delete IPC.
- */
-export async function deleteAudioMemo(path: string, generation: number): Promise<void> {
-  await call('audio_memo_delete', { path, generation }, voidSchema)
-}
-
-/**
- * Copy a recording from an OS path (the mobile recorder's staging directory)
- * into `audio-memos/` at an exact path. Rust copies file-to-file, so the
- * bytes never enter webview memory. Idempotent: re-importing a segment that
- * already landed is a no-op, which is what makes a re-scan after a failed
- * staged-file delete safe.
- */
-export async function importAudioMemo(
-  sourcePath: string,
-  path: string,
-  generation: number,
-): Promise<void> {
-  await call('audio_memo_import', { sourcePath, path, generation }, voidSchema)
-  echoLocalWrite({ path, kind: 'upsert', modifiedMs: Date.now() })
-}
-
-/**
  * Open an asset by graph-relative path in the system default application.
  * `generation` pins the request to the graph whose markdown produced the
  * image, so a delayed click after a graph switch cannot open another graph's
@@ -349,107 +232,6 @@ export type VaultScanStats = z.infer<typeof vaultScanStatsSchema>
  */
 export async function vaultScanStats(generation?: number): Promise<VaultScanStats> {
   return await call('vault_scan_stats', { generation }, vaultScanStatsSchema)
-}
-
-/**
- * Point the capture host at the active graph (pointer file + inbox dir) and
- * rewrite native-messaging manifests for detected browsers. Called after
- * every graph open — rewriting self-heals app moves (Plan 11).
- */
-export async function captureHostRegister(): Promise<void> {
-  await call('capture_host_register', {}, voidSchema)
-}
-
-/**
- * List the capture inbox (`.reflect/inbox/`): spooled `.json` envelopes and
- * their screenshot siblings. A missing inbox lists as empty. Pinned to
- * `generation` like every background-pass read.
- */
-export async function captureInboxList(generation: number): Promise<FileMeta[]> {
-  return await call('capture_inbox_list', { generation }, z.array(fileMetaSchema))
-}
-
-/** Read one spooled envelope's JSON text by spool filename (e.g. `<id>.json`). */
-export async function captureInboxRead(name: string, generation: number): Promise<string> {
-  return await call('capture_inbox_read', { name, generation }, z.string())
-}
-
-/**
- * Spool an envelope this app produced (deep-link text captures) into the
- * inbox, atomically — it then flows through the same watcher-triggered drain
- * as browser captures. The caller validates the envelope shape; the Rust side
- * only moves bytes (with a defensive size cap).
- */
-export async function captureInboxSpool(
-  name: string,
-  json: string,
-  generation: number,
-): Promise<void> {
-  await call('capture_inbox_spool', { name, json, generation }, voidSchema)
-}
-
-/** Remove a spool file by filename. Idempotent — crash re-drains re-remove. */
-export async function captureInboxRemove(name: string, generation: number): Promise<void> {
-  await call('capture_inbox_remove', { name, generation }, voidSchema)
-}
-
-/**
- * Relay envelopes the iOS share extension spooled into the App Group inbox
- * into the graph's capture inbox, returning how many moved. iOS-only in
- * effect (elsewhere there is no shared container and the relay is zero);
- * called by the mobile capture controller before every drain pass.
- */
-export async function captureSharedInboxRelay(generation: number): Promise<number> {
-  return await call('capture_shared_inbox_relay', { generation }, z.number())
-}
-
-/**
- * Quarantine an unparseable spool file into `.reflect/inbox-rejected/` —
- * moved, never deleted: "the raw link is never lost" holds even for an
- * envelope a newer extension wrote that this app version can't read yet.
- */
-export async function captureInboxReject(name: string, generation: number): Promise<void> {
-  await call('capture_inbox_reject', { name, generation }, voidSchema)
-}
-
-/**
- * Copy a spooled screenshot into the graph as a downscaled JPEG asset (the
- * spool file stays until the drain removes it — crash-safe copy semantics).
- */
-export async function promoteCaptureScreenshot(
-  spoolName: string,
-  assetPath: string,
-  maxDim: number,
-  generation: number,
-): Promise<void> {
-  await call('capture_screenshot_promote', { spoolName, assetPath, maxDim, generation }, voidSchema)
-}
-
-/**
- * Ask the native platform for one representative image for a captured URL.
- * Returns a base64-encoded normalized JPEG, or `null` when unavailable.
- */
-export async function captureLinkPreview(url: string): Promise<string | null> {
-  return await call('capture_link_preview', { url }, z.string().nullable())
-}
-
-/**
- * Fetch a captured page's HTML for meta-tag scraping — the Rust side caps
- * scheme/timeout/size/redirects, so arbitrary capture URLs never widen the
- * webview's own HTTP capability. The privacy gate runs before any call here.
- */
-export async function captureMetaFetch(url: string): Promise<string> {
-  return await call('capture_meta_fetch', { url }, z.string())
-}
-
-/**
- * Fetch an oEmbed endpoint's JSON answer as text. The Rust side only bounds
- * the transport (https only, JSON only, a small byte cap, no redirects);
- * which URLs are oEmbed endpoints is policy in `actions/oembed`. The privacy
- * gate runs before any call here, exactly as for {@link captureMetaFetch}.
- */
-export async function captureOEmbedFetch(url: string): Promise<string> {
-  return await call('capture_oembed_fetch', { url }, z.string())
 }
 
 /** The recently-opened graphs, newest first. */

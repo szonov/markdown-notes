@@ -8,8 +8,8 @@ import {
 } from './indexed-note.ts'
 
 describe('buildIndexedNote', () => {
-  it('carries the projection version that rebuilds tasks by AST path', () => {
-    expect(PROJECTION_VERSION).toBe(21)
+  it('carries the projection version that rebuilds heading-chain task breadcrumbs', () => {
+    expect(PROJECTION_VERSION).toBe(22)
   })
 
   it('flattens a parsed note into the index payload', () => {
@@ -137,26 +137,6 @@ describe('buildIndexedNote', () => {
     expect(indexed.tags).toEqual([{ tag: 'CAFÉ', tagKey: 'café' }])
   })
 
-  it('folds asset description text from meta, defaulting to empty', () => {
-    const source = '# Has image\n\n![p](assets/p.png)'
-    const withText = buildIndexedNote(parseNote({ path: 'notes/n.md', source }), {
-      fileHash: 'h',
-      mtime: 0,
-      source,
-      assetText: 'A flow diagram of the pipeline.',
-    })
-    expect(withText.assetText).toBe('A flow diagram of the pipeline.')
-    // Asset text enriches the FTS body only — never the All-Notes preview.
-    expect(withText.preview).not.toContain('flow diagram')
-
-    const withoutText = buildIndexedNote(parseNote({ path: 'notes/n.md', source }), {
-      fileHash: 'h',
-      mtime: 0,
-      source,
-    })
-    expect(withoutText.assetText).toBe('')
-  })
-
   it('flags a note as empty only when nothing would render', () => {
     const hasContentOf = (source: string): boolean =>
       buildIndexedNote(parseNote({ path: 'daily/2026-06-09.md', source }), {
@@ -276,8 +256,14 @@ describe('buildIndexedNote', () => {
       source,
     })
     expect(indexed.tasks).toEqual([
-      { astPath: '[1]', markdown: 'buy milk', breadcrumbs: [], checked: false, dueDate: null },
-      { astPath: '[5]', markdown: 'call mum', breadcrumbs: [], checked: true, dueDate: null },
+      {
+        astPath: '[1]',
+        markdown: 'buy milk',
+        breadcrumbs: ['Todo'],
+        checked: false,
+        dueDate: null,
+      },
+      { astPath: '[5]', markdown: 'call mum', breadcrumbs: ['Todo'], checked: true, dueDate: null },
     ])
   })
 

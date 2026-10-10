@@ -12,7 +12,6 @@ export const TARGET_DIR = join(ROOT_DIR, 'target')
 /** `tinyexec` options for a command that prints straight to the terminal. */
 export const INHERIT = { throwOnError: true, nodeOptions: { stdio: 'inherit' } } as const
 
-const BETA_OVERLAY = 'tauri.beta.conf.json'
 const PackageJsonSchema = z.object({ version: z.string().min(1) })
 
 export function log(message: string): void {
@@ -43,21 +42,6 @@ export async function runWithTempDir<Result>(
 export function readAppVersion(): string {
   const packageJson: unknown = JSON.parse(readFileSync(join(APP_DIR, 'package.json'), 'utf8'))
   return PackageJsonSchema.parse(packageJson).version
-}
-
-/**
- * The Tauri config overlay of the flavor to build, or null for the stable
- * flavor (the base config). A prerelease version builds the beta flavor, so a
- * build always matches its updater feed.
- */
-export function getFlavorOverlay(): string | null {
-  return readAppVersion().includes('-') ? BETA_OVERLAY : null
-}
-
-/** The `--config` arguments that select the flavor. */
-export function getFlavorConfigArgs(): string[] {
-  const overlay = getFlavorOverlay()
-  return overlay ? ['--config', join('src-tauri', overlay)] : []
 }
 
 /**

@@ -52,20 +52,9 @@ fn app_version<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> String {
     app.package_info().version.to_string()
 }
 
-#[tauri::command]
-async fn capture_oembed_fetch(url: String) -> crate::error::AppResult<String> {
-    let bytes = web_fetch::fetch_capture_json(&url, 64 * 1024).await?.body;
-    String::from_utf8(bytes).map_err(|error| crate::error::AppError::parse(error.to_string()))
-}
-
-/// Builds the HTTP User-Agent from the same resolved version shown in the UI.
-pub(crate) fn app_user_agent<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> String {
-    format!("Reflect/{}", app.package_info().version)
-}
-
 #[cfg(test)]
 mod app_metadata_tests {
-    use super::{app_user_agent, app_version};
+    use super::app_version;
 
     #[test]
     fn app_metadata_uses_tauri_package_info() {
@@ -76,7 +65,6 @@ mod app_metadata_tests {
             .expect("mock app");
 
         assert_eq!(app_version(app.handle().clone()), "7.8.9-beta.4");
-        assert_eq!(app_user_agent(app.handle()), "Reflect/7.8.9-beta.4");
     }
 }
 
@@ -225,37 +213,25 @@ pub fn run() {
         )
         .manage(fs::GraphState::default())
         .manage(background_task::BackgroundTaskState::default())
-        .manage(fs::ImportCancel::default())
         .manage(fs::assets::AssetUploads::default())
         .manage(db::IndexState::default())
         .manage(watcher::WatcherState::default())
         .manage(quit::QuitState::default())
         .manage(windows::WindowInit::default())
         .invoke_handler(tauri::generate_handler![
-            fs::x_archive::x_archive_write,
-            fs::x_archive::x_archive_resolve,
-            fs::x_archive::x_archive_owners,
-            fs::x_syndication::x_syndication_fetch,
             app_version,
-            capture_oembed_fetch,
             background_task::background_task_begin,
             background_task::background_task_end,
             conflict::conflict_merge_text,
             fs::graph_open,
             fs::graph_create,
             fs::graph_delete,
-            fs::graph_import_reflect_v1_zip,
-            fs::graph_import_cancel,
             fs::note_read,
             fs::note_read_local,
             fs::note_create,
             fs::note_write,
             fs::asset_write,
             fs::asset_read,
-            fs::asset_read_binary,
-            fs::audio_memo_delete,
-            fs::transcript_cache_read,
-            fs::transcript_cache_write,
             fs::asset_open,
             fs::asset_reveal,
             fs::assets::asset_upload_begin,
@@ -264,7 +240,6 @@ pub fn run() {
             fs::assets::asset_upload_commit_path,
             fs::assets::asset_upload_abort,
             fs::assets::asset_import,
-            fs::assets::audio_memo_import,
             fs::dir_list,
             fs::note_exists,
             fs::note_delete,

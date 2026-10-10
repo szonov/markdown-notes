@@ -18,15 +18,11 @@
     "fix:eslint": "eslint --cache --max-warnings 0 --fix",
     "check": "pnpm typecheck && pnpm lint",
     "tauri": "pnpm --filter @reflect/desktop tauri",
-    "release:ios": "pnpm --filter @reflect/desktop release:ios",
     "release:macos": "pnpm --filter @reflect/desktop release:macos",
     "release:manifest": "pnpm --filter @reflect/desktop release:manifest",
     "release:windows": "pnpm --filter @reflect/desktop release:windows",
     "tauri:dev": "pnpm --filter @reflect/desktop tauri:dev",
-    "tauri:ios:dev": "pnpm --filter @reflect/desktop tauri:ios:dev",
-    "tauri:ios:dev:sim": "pnpm --filter @reflect/desktop tauri:ios:dev:sim",
     "tauri:build:dev": "pnpm --filter @reflect/desktop tauri:build:dev",
-    "tauri:build:beta": "pnpm --filter @reflect/desktop tauri:build:beta",
     "postinstall": "simple-git-hooks"
   },
   "devDependencies": {

@@ -12,9 +12,6 @@ import {
   touchIndexedNotes,
   type IndexedNoteTouch,
 } from './commands.ts'
-import { assetReferencingNotePaths } from './asset-refs.ts'
-import { gatherAssetDescriptionText } from './asset-description-text.ts'
-import { emitIndexApplied } from './index-applied.ts'
 import { hashContent } from './hash.ts'
 import { buildIndexedNote, PROJECTION_VERSION, type IndexedNote } from './indexed-note.ts'
 import { detectExternalMoves } from './move-healing.ts'
@@ -70,7 +67,7 @@ export async function indexNote(
 
 /**
  * Parse `content` and flatten it into the note's index projection — the one
- * home of the parse → asset-description-gather → build step that every
+ * home of the parse → build step that every
  * indexing path (single note, rebuild, reconcile, watcher batch) shares.
  * Callers hash first: the hash gates whether this (comparatively expensive)
  * step runs at all.
@@ -81,64 +78,11 @@ export async function buildNoteProjection(
   facts: { fileHash: string; mtime: number },
 ): Promise<IndexedNote> {
   const parsed = parseNote({ path, source: content })
-  const assetText = await gatherAssetDescriptionText(parsed.assets.map((asset) => asset.path))
   return buildIndexedNote(parsed, {
     fileHash: facts.fileHash,
     mtime: facts.mtime,
     source: content,
-    assetText,
   })
-}
-
-/**
- * Re-index every note referencing any of `assetPaths` (Plan 20 search
- * integration). Asset descriptions are generated *after* their notes are
- * indexed, so when one is written the referencing notes' search rows are stale;
- * this folds the new description text into their FTS documents. `indexNote` is
- * not hash-gated, so the unchanged note files re-index unconditionally. A note
- * removed since it referenced the asset is skipped. Pinned to `generation`.
- *
- * The re-applied notes broadcast through {@link emitIndexApplied} — the same
- * post-apply signal the live indexer emits — because these writes bypass the
- * watcher pipeline entirely (`.reflect.md` files are untracked by design).
- * Without it, subscribers that follow the index (the embedding sync above
- * all, which must re-embed the notes so the new description text reaches the
- * semantic leg too) would never hear about description-driven changes.
- */
-export async function reindexNotesReferencing(
-  assetPaths: readonly string[],
-  generation: number,
-): Promise<void> {
-  const notePaths = new Set<string>()
-  for (const assetPath of assetPaths) {
-    for (const notePath of await assetReferencingNotePaths(assetPath)) {
-      notePaths.add(notePath)
-    }
-  }
-  const applied: string[] = []
-  try {
-    for (const notePath of notePaths) {
-      try {
-        await indexNote(notePath, { generation })
-        applied.push(notePath)
-      } catch (cause) {
-        if (isAppError(cause) && cause.kind === 'notFound') {
-          continue // the note was removed since it referenced the asset
-        }
-        throw cause
-      }
-    }
-  } finally {
-    // Emit even when a later note's re-index threw: whatever was applied is
-    // real, and unnotified followers would serve stale vectors until the
-    // next backfill.
-    if (applied.length > 0) {
-      emitIndexApplied(
-        applied.map((path) => ({ path, kind: 'upsert' as const })),
-        generation,
-      )
-    }
-  }
 }
 
 /** Options for the long-running index passes. */

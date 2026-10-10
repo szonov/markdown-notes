@@ -93,34 +93,6 @@ export const queryKeys = {
       return [...this.graph(root), 'mobile-note-count'] as const
     },
   },
-  similar: {
-    all: ['similar'] as const,
-    note(root: GraphRoot, path: string) {
-      return [...this.all, root, path] as const
-    },
-  },
-  xPost: {
-    all: ['x-post'] as const,
-    archive(generation: number, postId: string) {
-      return [...this.all, generation, postId] as const
-    },
-  },
-  xSyndication: {
-    post(postId: string) {
-      return ['x-syndication', postId] as const
-    },
-  },
-  youTubeVideo: {
-    video(url: string) {
-      return ['youtube-video', url] as const
-    },
-  },
-  chat: {
-    all: ['chat'] as const,
-    conversations(root: GraphRoot) {
-      return [...this.all, root, 'conversations'] as const
-    },
-  },
   attachments: {
     all: ['attachments'] as const,
     catalog(generation: number) {
@@ -314,10 +286,9 @@ export const queryClient = new QueryClient({
   },
 })
 
-// SQLite projections and chat history are refreshed by explicit invalidation.
+// SQLite projections are refreshed by explicit invalidation.
 // Settings load freshness lives with its shared query options.
 queryClient.setQueryDefaults(queryKeys.index.all, { staleTime: Infinity })
-queryClient.setQueryDefaults(queryKeys.chat.all, { staleTime: Infinity })
 
 /** Refetch all index-backed queries; called after index rows change. */
 export function invalidateIndexQueries(): void {
@@ -362,20 +333,6 @@ export function throttledInvalidateIndexQueries(): void {
 }
 
 /**
- * "Similar notes" results nest under this key — deliberately *outside*
- * `queryKeys.index`. Every other index-backed read is one cheap SQLite
- * query, so refetching the lot after any applied batch is fine; a neighbor
- * lookup is up to seventeen vector KNN queries (one per seed chunk), and under
- * the index scope it re-ran for changes it has nothing to do with — a remote
- * sync batch, a Git commit, an asset description, your own keystrokes in an
- * unrelated pane. With its own scope the panel computes once per note per
- * session, which is what it's for.
- *
- * Forget these cached neighbors on a graph switch. The graph root is part of
- * the key so stale rows could never be *read* after a switch, but these entries
- * are kept for the whole session and would otherwise never be collected.
- */
-/**
  * Forget the cached iCloud container listing after its contents change (a
  * graph delete trashes a container directory). Removal rather than
  * invalidation: with an invalidated cache the chooser would render the stale
@@ -385,20 +342,10 @@ export function dropIcloudStatusQuery(): void {
   queryClient.removeQueries({ queryKey: queryKeys.icloud.status })
 }
 
-/** Refetch chat-history queries; called after a turn save or a delete. */
-export function invalidateChatQueries(): void {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.chat.all })
-}
-
 /**
  * Re-list the vault's attachments; called when the watcher reports an
  * attachment file (or a folder) appearing, moving, or disappearing.
  */
 export function invalidateAttachmentCatalog(): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.attachments.all })
-}
-
-/** Re-read archived X posts; called after a capture pass writes archive JSON. */
-export function invalidateXPostQueries(): void {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.xPost.all })
 }

@@ -29,25 +29,6 @@ const applyBatchArgsSchema = z.object({ notes: z.array(indexedNoteSchema) })
 const settingsArgsSchema = z.object({ settings: z.record(z.string(), z.unknown()) })
 const secretNameArgsSchema = z.object({ name: z.string() })
 const secretSetArgsSchema = z.object({ name: z.string(), value: z.string() })
-const chatSaveArgsSchema = z.object({
-  conversation: z.object({
-    id: z.string(),
-    title: z.string(),
-    createdMs: z.number(),
-    updatedMs: z.number(),
-  }),
-  message: z.object({
-    id: z.string(),
-    conversationId: z.string(),
-    userText: z.string(),
-    attachments: z.string(),
-    parts: z.string(),
-    responseMessages: z.string(),
-    createdMs: z.number(),
-  }),
-})
-const chatDeleteArgsSchema = z.object({ id: z.string() })
-
 /**
  * The in-browser stand-in for the Rust shell (dev builds only): answers the
  * command surface the desktop and mobile trees exercise from an in-memory
@@ -65,8 +46,7 @@ export function createDevBridge(backend: DevBridgeBackend): IpcBridge {
   const graphInfo = { root: DEV_GRAPH_ROOT, name: 'Dev Graph', generation: 1 }
   let settingsDocument: Record<string, unknown> = { mobileOnboarded: true }
   const assets = new Map<string, string>()
-  // In-memory keychain stand-in so the AI-provider settings flow (and chat,
-  // against a CORS-permissive provider) works end-to-end in the harness.
+  // In-memory keychain stand-in for the generic secrets command contract.
   const secrets = new Map<string, string>()
 
   async function invoke(command: string, args: Record<string, unknown>): Promise<unknown> {
@@ -99,10 +79,6 @@ export function createDevBridge(backend: DevBridgeBackend): IpcBridge {
       case 'icloud_status':
         // No iCloud container in a browser; the chooser's iCloud card hides.
         return { available: false, documentsRoot: null, existingGraphRoots: [] }
-      case 'embed_status':
-        // `failed` is the designed recoverable "unavailable" state — semantic
-        // search surfaces show it honestly instead of offering a download.
-        return { status: 'failed', message: 'embeddings are unavailable in browser dev' }
       case 'vault_scan_stats':
         return { notes: files.list().length, attachments: 0, skipped: 0 }
       case 'list_attachments':
@@ -280,16 +256,6 @@ export function createDevBridge(backend: DevBridgeBackend): IpcBridge {
       case 'contacts_lookup_by_name':
         return []
 
-      case 'chat_message_save': {
-        const { conversation, message } = chatSaveArgsSchema.parse(args)
-        index.saveChatMessage(conversation, message)
-        return null
-      }
-      case 'chat_conversation_delete': {
-        index.deleteChatConversation(chatDeleteArgsSchema.parse(args).id)
-        return null
-      }
-
       default:
         console.error(`[dev-bridge] unimplemented command "${command}"`, args)
         throw new ReflectError('unknown', `dev bridge: unimplemented command "${command}"`)
@@ -298,7 +264,7 @@ export function createDevBridge(backend: DevBridgeBackend): IpcBridge {
 
   return {
     invoke,
-    // Native event streams (watcher, embeddings, EventKit) don't exist in the
+    // Native event streams (watcher and platform integrations) don't exist in the
     // browser; subscriptions succeed and simply never fire. Local writes still
     // refresh the UI through core's in-process local-write echo. Plugin event
     // registrations get the same treatment, so the keyboard and recorder

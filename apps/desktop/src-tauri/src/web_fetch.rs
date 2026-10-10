@@ -22,7 +22,6 @@ pub(crate) const USER_AGENT: &str = concat!(
 
 #[derive(Clone, Copy)]
 enum NetworkScope {
-    AnyHttp,
     PublicHttp,
 }
 
@@ -54,14 +53,6 @@ const IMAGE_PROFILE: RequestProfile = RequestProfile {
     accept: "image/webp,image/png,image/jpeg,image/gif,image/x-icon,*/*;q=0.1",
     destination: Some("image"),
     mode: Some("no-cors"),
-    site: None,
-    upgrade_insecure_requests: false,
-};
-
-const JSON_PROFILE: RequestProfile = RequestProfile {
-    accept: "application/json",
-    destination: None,
-    mode: None,
     site: None,
     upgrade_insecure_requests: false,
 };
@@ -244,13 +235,9 @@ impl Resolve for PublicDnsResolver {
 }
 
 fn client_for(scope: NetworkScope) -> AppResult<&'static Client> {
-    static CAPTURE_CLIENT: OnceLock<Client> = OnceLock::new();
     static PUBLIC_CLIENT: OnceLock<Client> = OnceLock::new();
 
-    let slot = match scope {
-        NetworkScope::AnyHttp => &CAPTURE_CLIENT,
-        NetworkScope::PublicHttp => &PUBLIC_CLIENT,
-    };
+    let slot = &PUBLIC_CLIENT;
     if let Some(client) = slot.get() {
         return Ok(client);
     }
@@ -380,15 +367,6 @@ fn validate_html_content_type(url: &str, content_type: &str) -> AppResult<()> {
     Ok(())
 }
 
-fn validate_json_content_type(url: &str, content_type: &str) -> AppResult<()> {
-    if !content_type.contains("json") {
-        return Err(AppError::parse(format!(
-            "{url} did not answer JSON ({content_type})"
-        )));
-    }
-    Ok(())
-}
-
 async fn fetch_html(value: &str, scope: NetworkScope) -> AppResult<FetchResponse> {
     fetch(
         value,
@@ -417,24 +395,6 @@ async fn fetch_bytes(
         MAX_REDIRECTS,
         LimitBehavior::Reject,
         validate_content_type,
-    )
-    .await
-}
-
-/// Fetch a bounded HTTPS JSON response without following redirects.
-pub(crate) async fn fetch_capture_json(value: &str, max_bytes: usize) -> AppResult<FetchResponse> {
-    let url = parse_http_url(value)?;
-    if url.scheme() != "https" {
-        return Err(AppError::parse(format!("not an https URL: {value}")));
-    }
-    fetch(
-        value,
-        NetworkScope::AnyHttp,
-        JSON_PROFILE,
-        max_bytes,
-        0,
-        LimitBehavior::Reject,
-        validate_json_content_type,
     )
     .await
 }
@@ -515,7 +475,6 @@ mod tests {
             redirect_url(&https, "http://example.com/other", NetworkScope::PublicHttp).is_err()
         );
         assert!(redirect_url(&https, "/other", NetworkScope::PublicHttp).is_ok());
-        assert!(redirect_url(&https, "http://example.com/other", NetworkScope::AnyHttp).is_ok());
     }
 
     #[test]

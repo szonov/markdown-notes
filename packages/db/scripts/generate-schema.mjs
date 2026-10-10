@@ -13,7 +13,6 @@ import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import Database from 'better-sqlite3'
-import * as sqliteVec from 'sqlite-vec'
 
 const require = createRequire(import.meta.url)
 const here = import.meta.dirname
@@ -27,9 +26,6 @@ const dbPath = join(tmp, 'index.sqlite')
 try {
   const db = new Database(dbPath)
   try {
-    // The 0002 migration creates a vec0 virtual table; the throwaway DB needs
-    // the sqlite-vec extension loaded just like the Rust runtime registers it.
-    sqliteVec.load(db)
     const files = readdirSync(migrationsDir)
       .filter((file) => file.endsWith('.sql'))
       .sort()
@@ -39,10 +35,6 @@ try {
     for (const file of files) {
       db.exec(readFileSync(join(migrationsDir, file), 'utf8'))
     }
-    // kysely-codegen introspects over its own connection, which has no
-    // sqlite-vec loaded — drop the vec0 table (vector reads go through raw
-    // SQL at runtime; it was never going to appear in the typed schema).
-    db.exec('DROP TABLE IF EXISTS embedding_vectors')
   } finally {
     db.close() // always close, even if a migration exec throws
   }

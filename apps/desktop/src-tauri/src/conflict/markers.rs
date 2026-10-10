@@ -22,32 +22,6 @@ pub fn contains_conflict_markers(source: &str) -> bool {
     false
 }
 
-/// Whole-note markers for **three or more** sides: the first block carries
-/// the first two, and every further side appends a block whose ours-half is
-/// empty. Mechanically compatible with the splice grammar, with the same
-/// semantics as two-way resolution: `ours` keeps the first side, `theirs`
-/// keeps every other side, `both` keeps everything — choosing a side
-/// discards the rest *by explicit user choice*, exactly like the two-way
-/// notice, and every consumed version stays in the conflict archive. (The
-/// notice pluralizes its buttons for multi-block conflicts so that choice is
-/// honest.) Used when a multi-version fold hits overlapping edits: pairwise
-/// marker output can't be folded again (nesting corrupts the grammar), and
-/// the marked file itself must carry every side.
-#[cfg(test)]
-pub(crate) fn stacked_whole_note_markers(sides: &[ConflictSide]) -> String {
-    debug_assert!(sides.len() >= 2, "stacking needs at least two sides");
-    let mut out = whole_note_markers(&sides[0], &sides[1]);
-    for side in &sides[2..] {
-        out.push_str(&format!(
-            "<<<<<<< {}\n=======\n{}\n>>>>>>> {}\n",
-            marker_label(&sides[0].label),
-            side.content.trim_end_matches('\n'),
-            marker_label(&side.label),
-        ));
-    }
-    out
-}
-
 /// A single whole-note marker block holding both sides, used when there is no
 /// base to produce hunk-level markers from. Output depends only on the
 /// (already deterministically ordered) sides, never on which device runs it.

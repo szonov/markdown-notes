@@ -54,7 +54,6 @@ export {
 } from './indexed-note.ts'
 export {
   indexNote,
-  reindexNotesReferencing,
   rebuildIndex,
   reconcileIndex,
   syncIndex,

@@ -1,7 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 import { fileURLToPath } from 'node:url'
-import { getLoadablePath as getSqliteVecPath } from 'sqlite-vec'
 import { expect } from 'vitest'
 import { resolveOrCreateNoteWithTitle } from '../graph/create-note.ts'
 import { resolveExistingWikiTarget } from '../graph/resolve-existing-wiki-target.ts'
@@ -24,11 +23,8 @@ const MIGRATIONS_DIRECTORY = fileURLToPath(
 )
 
 export function openMigratedIndex(): DatabaseSync {
-  const database = new DatabaseSync(':memory:', { allowExtension: true })
+  const database = new DatabaseSync(':memory:')
   try {
-    // Keep this an exact production migration chain: 0002/0003 create vec0
-    // tables, so their native extension must be available before replay.
-    database.loadExtension(getSqliteVecPath())
     const migrations = readdirSync(MIGRATIONS_DIRECTORY)
       .filter((filename) => filename.endsWith('.sql'))
       .sort()

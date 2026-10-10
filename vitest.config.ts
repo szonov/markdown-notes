@@ -8,7 +8,6 @@ export default defineConfig({
     fileParallelism: false,
     projects: [
       './apps/desktop/vitest.*.config.ts',
-      './apps/extension',
       './packages/core/vitest.*.config.ts',
       './packages/db',
       './packages/utils',

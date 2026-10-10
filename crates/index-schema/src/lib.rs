@@ -1,18 +1,10 @@
-//! Shared schema + migrations for `<graph>/.reflect/index.sqlite` (Plan 04/14).
-//!
-//! The desktop app (writer) and the `reflect` CLI (read-only) both depend on
-//! this crate, so the schema can never skew between them. Everything that
-//! creates or migrates the schema sits behind the `vec` feature — the vec0
-//! virtual tables (Plan 09) require the sqlite-vec extension. Read-only
-//! consumers build with `default-features = false` and get just the constants.
+//! Schema and migrations for `<graph>/.reflect/index.sqlite`.
 //!
 //! `rusqlite_migration` tracks the applied version in SQLite's `user_version`
 //! pragma. Append a new `M::up(include_str!(...))` (never edit a shipped one)
 //! as later plans add tables — and bump [`LATEST_SCHEMA_VERSION`] with it.
 //!
-//! Almost every table is a rebuildable projection of the markdown — except
-//! the `chat_*` tables (0008), which hold durable chat history. Wipe-style
-//! migrations (0004, 0006) and `index_clear` must never touch them.
+//! Every table is a rebuildable projection of the Markdown folder.
 
 /// Directory inside a graph that holds the index (and marks a dir as a graph).
 pub const REFLECT_DIR: &str = ".reflect";
@@ -29,14 +21,11 @@ pub const LATEST_SCHEMA_VERSION: usize = 23;
 /// derivation version, distinct from the schema version above).
 pub const PROJECTION_VERSION_KEY: &str = "projection_version";
 
-#[cfg(feature = "vec")]
 mod schema {
-    use std::ffi::{c_char, c_int};
     use std::fmt;
     use std::path::Path;
-    use std::sync::{LazyLock, OnceLock};
+    use std::sync::LazyLock;
 
-    use rusqlite::ffi::{sqlite3, sqlite3_api_routines};
     use rusqlite::Connection;
     use rusqlite_migration::{Migrations, M};
 
@@ -77,7 +66,6 @@ mod schema {
         Sqlite(rusqlite::Error),
         Migration(String),
         Io(std::io::Error),
-        VecRegistration(String),
     }
 
     impl fmt::Display for SchemaError {
@@ -86,7 +74,6 @@ mod schema {
                 SchemaError::Sqlite(err) => write!(formatter, "{err}"),
                 SchemaError::Migration(message) => write!(formatter, "migration failed: {message}"),
                 SchemaError::Io(err) => write!(formatter, "{err}"),
-                SchemaError::VecRegistration(message) => write!(formatter, "{message}"),
             }
         }
     }
@@ -105,44 +92,8 @@ mod schema {
         }
     }
 
-    /// Result of the one-time sqlite-vec registration; the error message is
-    /// cached so every caller surfaces it instead of panicking.
-    static VEC_INIT: OnceLock<Result<(), String>> = OnceLock::new();
-
-    /// The SQLite auto-extension entry-point signature. sqlite-vec and rusqlite
-    /// each link their own copy of the C types, so we transmute
-    /// `sqlite3_vec_init` into rusqlite's matching function-pointer type.
-    type AutoExtensionFn =
-        unsafe extern "C" fn(*mut sqlite3, *mut *mut c_char, *const sqlite3_api_routines) -> c_int;
-
-    /// Registers the sqlite-vec extension once per process, so every connection
-    /// opened afterwards exposes the `vec0` virtual table and `vec_*` functions.
-    pub fn register_sqlite_vec() -> Result<(), SchemaError> {
-        let result = VEC_INIT.get_or_init(|| {
-            // SAFETY: registering a statically-linked SQLite extension entry
-            // point before opening connections — the documented sqlite-vec pattern.
-            let rc = unsafe {
-                rusqlite::ffi::sqlite3_auto_extension(Some(std::mem::transmute::<
-                    *const (),
-                    AutoExtensionFn,
-                >(
-                    sqlite_vec::sqlite3_vec_init as *const (),
-                )))
-            };
-            if rc == rusqlite::ffi::SQLITE_OK {
-                Ok(())
-            } else {
-                Err(format!(
-                    "failed to register the sqlite-vec auto-extension (code {rc})"
-                ))
-            }
-        });
-        result.clone().map_err(SchemaError::VecRegistration)
-    }
-
-    /// Opens an in-memory connection with sqlite-vec available (used by tests).
+    /// Opens an in-memory connection used by schema tests.
     pub fn open_in_memory() -> Result<Connection, SchemaError> {
-        register_sqlite_vec()?;
         Ok(Connection::open_in_memory()?)
     }
 
@@ -163,10 +114,30 @@ mod schema {
 
     /// Open (creating if needed) and migrate `<root>/.reflect/index.sqlite`.
     pub fn open_index_at(root: &Path) -> Result<Connection, SchemaError> {
-        register_sqlite_vec()?;
         let dir = root.join(super::REFLECT_DIR);
         std::fs::create_dir_all(&dir)?;
-        let mut conn = Connection::open(dir.join(super::INDEX_FILE))?;
+        let path = dir.join(super::INDEX_FILE);
+        let mut conn = Connection::open(&path)?;
+        let has_removed_ai_tables: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE name IN ('embedding_chunks', 'embedding_vectors', 'chat_conversations', 'chat_messages'))",
+            [],
+            |row| row.get(0),
+        )?;
+        if has_removed_ai_tables {
+            drop(conn);
+            for candidate in [
+                path.clone(),
+                path.with_extension("sqlite-wal"),
+                path.with_extension("sqlite-shm"),
+            ] {
+                match std::fs::remove_file(candidate) {
+                    Ok(()) => {}
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(error) => return Err(error.into()),
+                }
+            }
+            conn = Connection::open(&path)?;
+        }
         // Another PROCESS can hold this database too — a second app flavor on
         // the same graph, or the `reflect` CLI (which sets its own timeout).
         // Wait briefly for a cross-process lock to clear instead of failing
@@ -183,7 +154,6 @@ mod schema {
     /// the writer connection (opened first via [`open_index_at`]) owns the
     /// file's existence and schema.
     pub fn open_index_read_only_at(root: &Path) -> Result<Connection, SchemaError> {
-        register_sqlite_vec()?;
         let path = root.join(super::REFLECT_DIR).join(super::INDEX_FILE);
         let conn = Connection::open_with_flags(
             path,
@@ -197,10 +167,6 @@ mod schema {
 
     /// Check the migration set itself (each `up` parses and applies in order).
     pub fn validate() -> Result<(), SchemaError> {
-        // Validation replays the migrations on its own connection; vec0 must be
-        // registered first (the auto-extension is process-global but not innate
-        // — without this the check is order-dependent on who registers first).
-        register_sqlite_vec()?;
         MIGRATIONS
             .validate()
             .map_err(|err| SchemaError::Migration(format!("invalid migration set: {err}")))
@@ -227,8 +193,7 @@ mod schema {
     }
 }
 
-#[cfg(feature = "vec")]
 pub use schema::{
-    migrate, migrate_to, open_in_memory, open_index_at, open_index_read_only_at,
-    register_sqlite_vec, validate, SchemaError,
+    migrate, migrate_to, open_in_memory, open_index_at, open_index_read_only_at, validate,
+    SchemaError,
 };

@@ -313,13 +313,6 @@ describe('RouteContent', () => {
     await view.unmount()
   })
 
-  it('falls back to today for the removed chat route', async () => {
-    const view = await renderRoute({ kind: 'chat' })
-    await expect.element(page.getByLabelText(/Editing daily\/.+\.md/)).toBeVisible()
-    await expect.element(page.getByTestId('daily-stream')).not.toBeInTheDocument()
-    await view.unmount()
-  })
-
   it('renders the All Notes screen for the allNotes route, not the stream', async () => {
     const view = await renderRoute({ kind: 'allNotes', tag: null })
     await expect.element(page.getByLabelText('All notes')).toBeVisible()

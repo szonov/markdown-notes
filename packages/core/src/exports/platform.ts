@@ -38,12 +38,10 @@ export {
   NOTES_DIR,
   TEMPLATES_DIR,
   ASSETS_DIR,
-  AUDIO_MEMOS_DIR,
   dailyPath,
   notePath,
   templatePath,
   assetPath,
-  audioMemoPath,
   descriptionPathFor,
   DESCRIPTION_SUFFIX,
   isDaily,
@@ -82,15 +80,11 @@ export {
   recentGraphSchema,
   fileMetaSchema,
   noteCreateOutcomeSchema,
-  graphImportProgressSchema,
-  graphImportSummarySchema,
   windowBootstrapSchema,
   type GraphInfo,
   type RecentGraph,
   type FileMeta,
   type NoteCreateOutcome,
-  type GraphImportProgress,
-  type GraphImportSummary,
   type WindowBootstrap,
 } from '../graph/schemas.ts'
 export {
@@ -99,10 +93,6 @@ export {
   windowBootstrap,
   closeNoteWindows,
   createGraph,
-  importReflectV1Zip,
-  subscribeImportProgress,
-  cancelReflectV1Import,
-  markReflectV1ImportOwnWrites,
   readNote,
   readNoteLocal,
   type LocalNoteRead,
@@ -123,7 +113,6 @@ export {
   forgetRecent,
   deleteGraph,
 } from '../graph/commands.ts'
-export { fetchYouTubeVideo } from '../youtube-video.ts'
 export { createAsset, importAsset } from '../graph/assets.ts'
 export { assetFileName } from '../graph/asset-names.ts'
 export {

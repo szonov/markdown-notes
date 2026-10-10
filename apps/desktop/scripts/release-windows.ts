@@ -7,19 +7,12 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { parseArgs } from 'node:util'
-import {
-  getFlavorConfigArgs,
-  getHostTriple,
-  log,
-  runTauri,
-  runWithTempDir,
-  TARGET_DIR,
-} from './helpers.ts'
+import { getHostTriple, log, runTauri, runWithTempDir, TARGET_DIR } from './helpers.ts'
 
 /** Builds the installer and returns its path. */
 async function buildInstaller(target: string, tempDir: string): Promise<string> {
   // NSIS only: WiX rejects prerelease versions such as 0.11.0-beta.
-  const args = ['build', '--target', target, '--bundles', 'nsis', ...getFlavorConfigArgs()]
+  const args = ['build', '--target', target, '--bundles', 'nsis']
   const env: NodeJS.ProcessEnv = {}
   if (process.env.TAURI_SIGNING_PRIVATE_KEY) {
     // A config file avoids quoting inline JSON through the `tauri.cmd` shim.
