@@ -2,7 +2,7 @@
 //!
 //! Pure IO — no Tauri state, no path policy (that's [`super::resolve`]). Writes
 //! are atomic (temp file + rename) so a crash mid-write can never truncate a
-//! note. Temp files are staged under `.reflect/tmp/` — the same volume, so the
+//! note. Temp files are staged under `.markdown-notes/tmp/` — the same volume, so the
 //! rename stays atomic, but excluded from cloud sync so a crash-stranded temp
 //! can never replicate to another device (Plan 21).
 
@@ -13,9 +13,9 @@ use std::os::raw::c_int;
 use std::path::Path;
 use std::time::UNIX_EPOCH;
 
-use reflect_graph_paths::{eviction_placeholder, normalize_line_endings};
 #[cfg(test)]
 use reflect_graph_paths::{evicted_logical_path, is_dataless, to_slash_lossy};
+use reflect_graph_paths::{eviction_placeholder, normalize_line_endings};
 
 use crate::error::{AppError, AppResult};
 use crate::graph_gitignore;
@@ -32,7 +32,7 @@ pub(super) struct FileCatalog {
     pub skipped: u32,
 }
 
-pub(super) const REFLECT_DIR: &str = ".reflect";
+pub(super) const APP_DATA_DIR: &str = ".markdown-notes";
 const META_SCHEMA_VERSION: u32 = 1;
 pub(super) const TOP_LEVEL_DIRS: [&str; 3] = ["daily", "notes", "assets"];
 #[cfg(any(target_os = "macos", target_os = "ios"))]
@@ -58,13 +58,13 @@ pub(super) fn bootstrap(root: &Path) -> AppResult<()> {
     Ok(())
 }
 
-/// Initialize only Reflect's rebuildable runtime state for an existing vault.
+/// Initialize only Markdown Notes' rebuildable runtime state for an existing vault.
 /// Existing Markdown folders are opened in place; user-facing directories and
 /// the root `.gitignore` remain byte-for-byte untouched.
 pub(super) fn initialize_runtime(root: &Path) -> AppResult<()> {
     ensure_runtime_directory(root)?;
     sweep_upload_staging(root);
-    mark_dir_local_only(&root.join(REFLECT_DIR));
+    mark_dir_local_only(&root.join(APP_DATA_DIR));
     ensure_runtime_gitignore(root)?;
     // A backup repo must never ride a file-sync provider: two devices' object
     // stores merging file-by-file is repository corruption (Plan 21). New
@@ -84,7 +84,7 @@ pub(super) fn initialize_runtime(root: &Path) -> AppResult<()> {
 /// would let an untrusted vault redirect cleanup and metadata writes outside
 /// its root; inspect the entry itself and fail closed on every non-directory.
 fn ensure_runtime_directory(root: &Path) -> AppResult<()> {
-    let runtime = root.join(REFLECT_DIR);
+    let runtime = root.join(APP_DATA_DIR);
     match fs::symlink_metadata(&runtime) {
         Ok(metadata) if metadata.file_type().is_dir() => Ok(()),
         Ok(_) => Err(AppError::traversal(format!(
@@ -102,18 +102,18 @@ fn ensure_runtime_directory(root: &Path) -> AppResult<()> {
     }
 }
 
-/// `*` makes `.reflect/` self-ignoring: git never shows a directory whose
+/// `*` makes `.markdown-notes/` self-ignoring: git never shows a directory whose
 /// entire contents are ignored (the pattern uv uses for `.venv/`). One file
 /// inside the directory Reflect itself creates covers plain repositories,
 /// linked worktrees, submodules, and vaults that are subdirectories of a
 /// larger repository — without ever touching `.git`.
 fn ensure_runtime_gitignore(root: &Path) -> AppResult<()> {
-    create_runtime_file(&root.join(REFLECT_DIR).join(".gitignore"), "*\n")
+    create_runtime_file(&root.join(APP_DATA_DIR).join(".gitignore"), "*\n")
 }
 
 fn ensure_runtime_meta(root: &Path) -> AppResult<()> {
     create_runtime_file(
-        &root.join(REFLECT_DIR).join("meta.json"),
+        &root.join(APP_DATA_DIR).join("meta.json"),
         &format!("{{\n  \"schemaVersion\": {META_SCHEMA_VERSION}\n}}\n"),
     )
 }
@@ -179,13 +179,13 @@ pub(super) fn read_note_no_follow(root: &Path, abs: &Path) -> std::io::Result<St
     }
 }
 
-/// Drop leftover staging files (`.reflect/tmp/`: asset uploads, `fs::assets`,
+/// Drop leftover staging files (`.markdown-notes/tmp/`: asset uploads, `fs::assets`,
 /// and atomic-write temps) — a crash mid-write strands its temp file, and
 /// nothing else ever reclaims it. Opening the graph is the natural sweep
 /// point: a generation bump rejects any commit that was still in flight, so
 /// nothing live is removed. Best-effort — a locked file must not fail the open.
 fn sweep_upload_staging(root: &Path) {
-    let staging = root.join(REFLECT_DIR).join("tmp");
+    let staging = root.join(APP_DATA_DIR).join("tmp");
     if !staging.exists() {
         return;
     }
@@ -198,7 +198,7 @@ fn sweep_upload_staging(root: &Path) {
 ///
 /// On Apple targets the `NSURL` resource keys exclude the directory from
 /// iCloud Drive sync and device backups — load-bearing once the graph lives in
-/// the iCloud container (Plan 21), where `.reflect/` (live SQLite + WAL) and
+/// the iCloud container (Plan 21), where `.markdown-notes/` (live SQLite + WAL) and
 /// `.git/` syncing would mean corruption. macOS additionally sets the
 /// provider-ignore xattrs that third-party sync clients (Dropbox, File
 /// Provider extensions) honor for graphs kept in such folders.
@@ -315,10 +315,10 @@ pub(super) fn atomic_create(
 /// stamps its rows with this so a later listing compares equal and skips the
 /// re-read.
 ///
-/// The temp file is staged under `.reflect/tmp/`, not next to `target`: the
+/// The temp file is staged under `.markdown-notes/tmp/`, not next to `target`: the
 /// note directories may live inside a file-sync folder (iCloud Drive —
 /// Plan 21), and a temp created there is synced and, after a crash, stranded
-/// on every device. `.reflect/` is excluded from sync and swept on graph open,
+/// on every device. `.markdown-notes/` is excluded from sync and swept on graph open,
 /// and it shares `target`'s volume, so the final rename stays atomic.
 pub(crate) fn atomic_write_bytes(
     root: &Path,
@@ -338,7 +338,7 @@ fn stage_bytes(root: &Path, target: &Path, contents: &[u8]) -> AppResult<tempfil
         .parent()
         .ok_or_else(|| AppError::io(format!("no parent directory for {}", target.display())))?;
     fs::create_dir_all(dir)?;
-    let staging = root.join(REFLECT_DIR).join("tmp");
+    let staging = root.join(APP_DATA_DIR).join("tmp");
     fs::create_dir_all(&staging)?;
     let mut tmp = tempfile::NamedTempFile::new_in(&staging)?;
     tmp.write_all(contents)?;
@@ -624,11 +624,11 @@ mod tests {
             assert!(dir.path().join(sub).is_dir(), "missing dir {sub}");
         }
         let gitignore = fs::read_to_string(dir.path().join(".gitignore")).unwrap();
-        assert!(gitignore.contains("/.reflect/"));
+        assert!(gitignore.contains("/.markdown-notes/"));
         assert!(gitignore.contains(".DS_Store"));
         assert!(gitignore.contains("Thumbs.db"));
         assert!(gitignore.contains("*.swp"));
-        assert!(dir.path().join(".reflect/meta.json").exists());
+        assert!(dir.path().join(".markdown-notes/meta.json").exists());
     }
 
     #[test]
@@ -639,7 +639,7 @@ mod tests {
 
         initialize_runtime(dir.path()).unwrap();
 
-        assert!(dir.path().join(".reflect/meta.json").is_file());
+        assert!(dir.path().join(".markdown-notes/meta.json").is_file());
         assert_eq!(
             fs::read_to_string(dir.path().join(".gitignore")).unwrap(),
             "node_modules/\n"
@@ -658,7 +658,7 @@ mod tests {
         let dir = tempdir().unwrap();
         initialize_runtime(dir.path()).unwrap();
         assert_eq!(
-            fs::read_to_string(dir.path().join(".reflect/.gitignore")).unwrap(),
+            fs::read_to_string(dir.path().join(".markdown-notes/.gitignore")).unwrap(),
             "*\n"
         );
     }
@@ -670,13 +670,15 @@ mod tests {
         fs::write(dir.path().join("note.md"), "# Note\n").unwrap();
 
         initialize_runtime(dir.path()).unwrap();
-        fs::write(dir.path().join(".reflect/index.sqlite"), b"db").unwrap();
+        fs::write(dir.path().join(".markdown-notes/index.sqlite"), b"db").unwrap();
 
-        // The self-ignoring `.reflect/.gitignore` makes every runtime file
+        // The self-ignoring `.markdown-notes/.gitignore` makes every runtime file
         // ignored — `git status` (CLI) shows nothing for the directory, and
         // the backup's `add_all` can never stage it.
-        assert!(repo.is_path_ignored(".reflect/index.sqlite").unwrap());
-        assert!(repo.is_path_ignored(".reflect/.gitignore").unwrap());
+        assert!(repo
+            .is_path_ignored(".markdown-notes/index.sqlite")
+            .unwrap());
+        assert!(repo.is_path_ignored(".markdown-notes/.gitignore").unwrap());
         let mut index = repo.index().unwrap();
         index
             .add_all(["*"], git2::IndexAddOption::DEFAULT, None)
@@ -687,7 +689,7 @@ mod tests {
             .collect();
         assert_eq!(staged, vec!["note.md".to_string()]);
         // (The git CLI hides a directory whose entire contents are ignored,
-        // so `git status` shows nothing for `.reflect/`. libgit2's *status
+        // so `git status` shows nothing for `.markdown-notes/`. libgit2's *status
         // listing* is known to diverge cosmetically on such directories, but
         // its ignore machinery and staging — asserted above — do not.)
     }
@@ -700,13 +702,13 @@ mod tests {
         let dir = tempdir().unwrap();
         fs::write(dir.path().join(".git"), "gitdir: /nonexistent\n").unwrap();
         initialize_runtime(dir.path()).unwrap();
-        assert!(dir.path().join(".reflect/meta.json").is_file());
+        assert!(dir.path().join(".markdown-notes/meta.json").is_file());
     }
 
     #[test]
     fn existing_non_directory_runtime_path_is_rejected_unchanged() {
         let vault = tempdir().unwrap();
-        let runtime = vault.path().join(REFLECT_DIR);
+        let runtime = vault.path().join(APP_DATA_DIR);
         fs::write(&runtime, b"not a directory").unwrap();
 
         assert!(initialize_runtime(vault.path()).is_err());
@@ -724,7 +726,7 @@ mod tests {
         fs::create_dir(outside.path().join("tmp")).unwrap();
         let sentinel = outside.path().join("tmp/keep");
         fs::write(&sentinel, b"outside").unwrap();
-        symlink(outside.path(), vault.path().join(REFLECT_DIR)).unwrap();
+        symlink(outside.path(), vault.path().join(APP_DATA_DIR)).unwrap();
 
         assert!(initialize_runtime(vault.path()).is_err());
 
@@ -739,11 +741,11 @@ mod tests {
 
         let vault = tempdir().unwrap();
         let outside = tempdir().unwrap();
-        fs::create_dir(vault.path().join(REFLECT_DIR)).unwrap();
+        fs::create_dir(vault.path().join(APP_DATA_DIR)).unwrap();
         let outside_meta = outside.path().join("meta.json");
         symlink(
             &outside_meta,
-            vault.path().join(REFLECT_DIR).join("meta.json"),
+            vault.path().join(APP_DATA_DIR).join("meta.json"),
         )
         .unwrap();
 
@@ -753,16 +755,16 @@ mod tests {
 
     #[cfg(target_os = "macos")]
     #[test]
-    fn bootstrap_marks_reflect_dir_with_provider_ignore_xattrs() {
+    fn bootstrap_marks_app_data_dir_with_provider_ignore_xattrs() {
         let dir = tempdir().unwrap();
         bootstrap(dir.path()).unwrap();
-        let reflect_dir = dir.path().join(REFLECT_DIR);
+        let app_data_dir = dir.path().join(APP_DATA_DIR);
         assert_eq!(
-            xattr::get(&reflect_dir, "com.apple.fileprovider.ignore#P").unwrap(),
+            xattr::get(&app_data_dir, "com.apple.fileprovider.ignore#P").unwrap(),
             Some(b"1".to_vec())
         );
         assert_eq!(
-            xattr::get(&reflect_dir, "com.dropbox.ignored").unwrap(),
+            xattr::get(&app_data_dir, "com.dropbox.ignored").unwrap(),
             Some(b"1".to_vec())
         );
     }
@@ -781,18 +783,18 @@ mod tests {
 
     #[cfg(target_os = "macos")]
     #[test]
-    fn apple_sync_exclusion_accepts_reflect_dir() {
+    fn apple_sync_exclusion_accepts_app_data_dir() {
         let dir = tempdir().unwrap();
-        let reflect_dir = dir.path().join(REFLECT_DIR);
-        fs::create_dir_all(&reflect_dir).unwrap();
-        assert!(set_apple_sync_exclusions(&reflect_dir).is_empty());
+        let app_data_dir = dir.path().join(APP_DATA_DIR);
+        fs::create_dir_all(&app_data_dir).unwrap();
+        assert!(set_apple_sync_exclusions(&app_data_dir).is_empty());
     }
 
     #[test]
     fn bootstrap_sweeps_stale_upload_staging() {
         let dir = tempdir().unwrap();
         bootstrap(dir.path()).unwrap();
-        let staging = dir.path().join(".reflect/tmp");
+        let staging = dir.path().join(".markdown-notes/tmp");
         fs::create_dir_all(&staging).unwrap();
         fs::write(staging.join(".tmpAbC123"), b"stranded upload").unwrap();
         // Re-opening the graph re-bootstraps; the stranded file goes away.
@@ -811,7 +813,7 @@ mod tests {
 
     #[test]
     fn atomic_write_leaves_no_temp_litter_in_the_target_dir() {
-        // Temps stage under `.reflect/tmp/` — a note directory inside a synced
+        // Temps stage under `.markdown-notes/tmp/` — a note directory inside a synced
         // folder must only ever contain the notes themselves.
         let dir = tempdir().unwrap();
         bootstrap(dir.path()).unwrap();
@@ -821,7 +823,7 @@ mod tests {
             .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
             .collect();
         assert_eq!(entries, vec!["a.md".to_string()]);
-        assert!(dir.path().join(".reflect/tmp").is_dir());
+        assert!(dir.path().join(".markdown-notes/tmp").is_dir());
     }
 
     #[test]

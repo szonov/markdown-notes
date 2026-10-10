@@ -34,8 +34,8 @@ dist-ssr
 /target
 *.tsbuildinfo
 
-# Reflect graph index + local state (rebuildable projection; never committed)
-.reflect/
+# Markdown Notes graph index + local state (rebuildable projection; never committed)
+.markdown-notes/
 
 # Claude Code session artifacts (shared hooks in settings.json stay tracked)
 .claude/*

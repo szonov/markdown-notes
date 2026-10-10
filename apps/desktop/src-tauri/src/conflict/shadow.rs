@@ -10,7 +10,7 @@ pub struct ShadowStore {
 impl ShadowStore {
     pub fn new(root: &Path) -> Self {
         Self {
-            dir: root.join(".reflect").join("sync-base"),
+            dir: root.join(".markdown-notes").join("sync-base"),
         }
     }
 

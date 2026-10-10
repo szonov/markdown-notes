@@ -24,7 +24,7 @@ use crate::error::{AppError, AppResult};
 use self::io::{atomic_create, atomic_write, bootstrap, initialize_runtime, AtomicCreateOutcome};
 use self::resolve::resolve;
 
-/// Atomic byte write staged under `.reflect/tmp/`, shared with the conflict
+/// Atomic byte write staged under `.markdown-notes/tmp/`, shared with the conflict
 /// machinery (shadow bases, resolution writes) so every graph write follows
 /// the same crash-safe, sync-clean path.
 pub(crate) use self::io::atomic_write_bytes;
@@ -36,7 +36,7 @@ pub(crate) use self::io::atomic_write_bytes;
 /// backup repo must never ride a file-sync provider — Plan 21).
 pub(crate) use self::io::modified_ms;
 /// The lexical traversal guard, shared with the conflict stores that mirror
-/// note paths under `.reflect/` (shadow bases, conflict archive).
+/// note paths under `.markdown-notes/` (shadow bases, conflict archive).
 pub(crate) use self::resolve::ensure_relative;
 /// The full traversal guard, shared with sibling modules that address graph
 /// files (capture promotes screenshots into `assets/`).
@@ -234,7 +234,7 @@ pub fn graph_create(path: String, state: State<GraphState>) -> AppResult<GraphIn
     activate(&state, &root)
 }
 
-/// Open an existing Markdown vault in place, adding only `.reflect/` runtime
+/// Open an existing Markdown vault in place, adding only `.markdown-notes/` runtime
 /// state. Reflect's authoring directories remain lazy for adopted vaults.
 #[tauri::command]
 pub fn graph_open(path: String, state: State<GraphState>) -> AppResult<GraphInfo> {
@@ -565,8 +565,8 @@ pub(crate) fn move_note_file(root: &Path, from: &str, to: &str) -> AppResult<()>
 
 /// Send a note to the OS trash (recoverable), not a hard delete (pinned to
 /// `generation`). Mobile has no OS trash: the file moves into the graph-local
-/// `.reflect/trash/` instead (Plan 19), the same recoverability promise, and
-/// `.reflect/` is already excluded from sync and indexing.
+/// `.markdown-notes/trash/` instead (Plan 19), the same recoverability promise, and
+/// `.markdown-notes/` is already excluded from sync and indexing.
 #[tauri::command]
 pub fn note_delete(path: String, generation: u64, state: State<GraphState>) -> AppResult<()> {
     let root = root_for_generation(&state, generation)?;
@@ -704,11 +704,11 @@ fn os_trash_delete(abs: &Path) -> AppResult<()> {
     ctx.delete(abs).map_err(|err| AppError::io(err.to_string()))
 }
 
-/// Move a deleted file under `<graph>/.reflect/trash/`, stamping the name
+/// Move a deleted file under `<graph>/.markdown-notes/trash/`, stamping the name
 /// with epoch millis — and a counter beyond that — until the name is free
 /// (repeat deletes of `a.md`, even within one millisecond).
 fn move_to_graph_trash(root: &Path, abs: &Path) -> AppResult<()> {
-    let trash_dir = root.join(".reflect").join("trash");
+    let trash_dir = root.join(".markdown-notes").join("trash");
     fs::create_dir_all(&trash_dir)?;
     let name = abs
         .file_name()
@@ -1078,7 +1078,7 @@ mod move_tests {
         assert!(ensure_revealable_path("assets/tool.xyz").is_ok());
         assert!(ensure_revealable_path("assets/report.docx").is_ok());
         assert!(ensure_revealable_path("Projects/Media/cat.png").is_ok());
-        assert!(ensure_revealable_path(".reflect/index.sqlite").is_err());
+        assert!(ensure_revealable_path(".markdown-notes/index.sqlite").is_err());
         assert!(ensure_revealable_path("../outside.png").is_err());
         assert!(ensure_revealable_path("/absolute.png").is_err());
     }
@@ -1184,7 +1184,7 @@ mod note_revision_tests {
         fs::write(&first, "first").unwrap();
         move_to_graph_trash(directory.path(), &first).unwrap();
 
-        let trash = directory.path().join(".reflect").join("trash");
+        let trash = directory.path().join(".markdown-notes").join("trash");
         assert!(!first.exists());
         assert_eq!(fs::read_to_string(trash.join("note.md")).unwrap(), "first");
 

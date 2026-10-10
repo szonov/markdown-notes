@@ -1,7 +1,7 @@
 //! Ignore local indexes and common operating-system/editor files in note folders.
 
 const DEFAULT_GROUPS: &[(&str, &[&str])] = &[
-    ("Reflect Local index + caches", &["/.reflect/"]),
+    ("Markdown Notes index + caches", &["/.markdown-notes/"]),
     ("macOS Finder metadata", &[".DS_Store", "._*"]),
     (
         "Windows Explorer metadata",

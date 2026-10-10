@@ -1,4 +1,4 @@
-//! Schema and migrations for `<graph>/.reflect/index.sqlite`.
+//! Schema and migrations for `<graph>/.markdown-notes/index.sqlite`.
 //!
 //! `rusqlite_migration` tracks the applied version in SQLite's `user_version`
 //! pragma. Append a new `M::up(include_str!(...))` (never edit a shipped one)
@@ -7,9 +7,9 @@
 //! Every table is a rebuildable projection of the Markdown folder.
 
 /// Directory inside a graph that holds the index (and marks a dir as a graph).
-pub const REFLECT_DIR: &str = ".reflect";
+pub const APP_DATA_DIR: &str = ".markdown-notes";
 
-/// The index database's filename inside [`REFLECT_DIR`].
+/// The index database's filename inside [`APP_DATA_DIR`].
 pub const INDEX_FILE: &str = "index.sqlite";
 
 /// `user_version` after every migration has run. Read-only consumers compare
@@ -112,9 +112,9 @@ mod schema {
             .map_err(|err| SchemaError::Migration(format!("to version {version}: {err}")))
     }
 
-    /// Open (creating if needed) and migrate `<root>/.reflect/index.sqlite`.
+    /// Open (creating if needed) and migrate `<root>/.markdown-notes/index.sqlite`.
     pub fn open_index_at(root: &Path) -> Result<Connection, SchemaError> {
-        let dir = root.join(super::REFLECT_DIR);
+        let dir = root.join(super::APP_DATA_DIR);
         std::fs::create_dir_all(&dir)?;
         let path = dir.join(super::INDEX_FILE);
         let mut conn = Connection::open(&path)?;
@@ -138,23 +138,22 @@ mod schema {
             }
             conn = Connection::open(&path)?;
         }
-        // Another PROCESS can hold this database too — a second app flavor on
-        // the same graph, or the `reflect` CLI (which sets its own timeout).
-        // Wait briefly for a cross-process lock to clear instead of failing
-        // writes instantly with SQLITE_BUSY ("database is locked").
+        // Another process can hold this database too — a second app instance
+        // on the same graph. Wait briefly instead of failing writes instantly
+        // with SQLITE_BUSY ("database is locked").
         conn.busy_timeout(std::time::Duration::from_secs(5))?;
         conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")?;
         migrate(&mut conn)?;
         Ok(conn)
     }
 
-    /// Open `<root>/.reflect/index.sqlite` **read-only** (no create, no
+    /// Open `<root>/.markdown-notes/index.sqlite` **read-only** (no create, no
     /// migrate) — a second connection for query traffic, so a long read never
     /// holds the writer's lock. WAL readers see the last committed state, and
     /// the writer connection (opened first via [`open_index_at`]) owns the
     /// file's existence and schema.
     pub fn open_index_read_only_at(root: &Path) -> Result<Connection, SchemaError> {
-        let path = root.join(super::REFLECT_DIR).join(super::INDEX_FILE);
+        let path = root.join(super::APP_DATA_DIR).join(super::INDEX_FILE);
         let conn = Connection::open_with_flags(
             path,
             rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY

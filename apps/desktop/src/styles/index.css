@@ -313,7 +313,10 @@ html:root {
   /* Meowdown forces grayscale antialiasing and a very loose 1.7 leading on
      `.ProseMirror`. Override both on the primary reading surface so WebKit can
      use the native macOS rendering of SF Pro at its regular master. */
-  font-weight: 400;
+  /* A touch lighter than CSS regular while keeping the native variable-font
+     rendering. This preserves readability without the slightly heavy look of
+     the 400 master. */
+  font-weight: 380;
   line-height: 1.5;
   -webkit-font-smoothing: auto;
 }
@@ -411,7 +414,7 @@ html:root {
      mirror the note body's native rendering instead of falling back to
      Meowdown's pale grayscale antialiasing and loose leading. */
   font-family: var(--font-reading, var(--font-sans));
-  font-weight: 400;
+  font-weight: 380;
   line-height: 1.5;
   -webkit-font-smoothing: auto;
 }
