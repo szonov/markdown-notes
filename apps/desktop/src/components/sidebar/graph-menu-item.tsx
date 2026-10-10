@@ -35,14 +35,14 @@ export function GraphMenuItem({
   const color = colorFor(graph.root) ?? DEFAULT_GRAPH_COLOR
 
   return (
-    <div className="flex h-8 items-stretch">
+    <div className="flex h-8 items-stretch rounded-md hover:bg-surface-hover focus-within:bg-surface-hover">
       <DropdownMenuSub>
         <DropdownMenuSubTrigger
           aria-label={`${t('Change color for')} ${graph.name}`}
           label={`${t('Change color for')} ${graph.name}`}
           openOnHover={false}
           showChevron={false}
-          className="shrink-0 justify-center px-2 py-0"
+          className="shrink-0 justify-center px-2 py-0 focus:bg-transparent data-open:bg-transparent data-popup-open:bg-transparent"
         >
           <GraphSwatch color={color} className="size-3.5 rounded" />
         </DropdownMenuSubTrigger>
@@ -69,7 +69,7 @@ export function GraphMenuItem({
           render={
             <DropdownMenuItem
               onClick={onSelect}
-              className="min-w-0 flex-1 gap-2 py-0 pr-2 pl-0 text-[13px] text-text-secondary"
+              className="min-w-0 flex-1 gap-2 py-0 pr-2 pl-0 text-[13px] text-text-secondary focus:bg-transparent"
             >
               <span className="min-w-0 flex-1 truncate">{graph.name}</span>
               {current ? (

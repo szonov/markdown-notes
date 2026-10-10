@@ -207,7 +207,7 @@ describe('focused note menu dispatch', () => {
     await vi.waitFor(() => {
       expect(emitTo).toHaveBeenCalledWith(
         { kind: 'WebviewWindow', label: 'note-1' },
-        'reflect-local://focused-note-menu-command',
+        'markdown-notes://focused-note-menu-command',
         'note.find',
       )
     })
@@ -227,7 +227,7 @@ describe('focused note menu dispatch', () => {
     await vi.waitFor(() => {
       expect(emitTo).toHaveBeenCalledWith(
         { kind: 'WebviewWindow', label: 'note-1' },
-        'reflect-local://focused-note-menu-command',
+        'markdown-notes://focused-note-menu-command',
         'note.findNext',
       )
     })

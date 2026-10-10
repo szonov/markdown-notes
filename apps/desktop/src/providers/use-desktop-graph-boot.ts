@@ -37,7 +37,12 @@ export function useDesktopGraphBoot({
         return
       }
       if (list.length > 0) {
-        await openRecent(list[0]!.root)
+        // Menu order is stable because it defines ⌘1…⌘9. Resume the
+        // actually most recently opened graph by timestamp without reordering it.
+        const mostRecent = list.reduce((latest, candidate) =>
+          candidate.openedMs > latest.openedMs ? candidate : latest,
+        )
+        await openRecent(mostRecent.root)
       } else {
         onChoose()
       }

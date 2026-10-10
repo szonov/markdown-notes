@@ -436,8 +436,14 @@ html:root {
   height: 0.75rem;
 }
 .reflect-hover-preview .reflect-editor img {
+  /* Markdown may carry an explicit display width. Inside the short hover card,
+     clamping only its height would squash a portrait image while leaving that
+     inline width intact. Let both dimensions follow the intrinsic ratio. */
   max-height: 7rem;
-  width: auto;
+  max-width: 100%;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain;
   border-radius: var(--radius-sm, 0.25rem);
 }
 /* A body taller than the card fades out at the clipped edge instead of

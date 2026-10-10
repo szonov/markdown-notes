@@ -20,7 +20,7 @@ export interface DeepLinkIo {
 }
 
 /**
- * Act on one incoming `reflect-local://` URL: navigation links navigate (a note
+ * Act on one incoming `markdown-notes://` URL: navigation links navigate (a note
  * target resolving through the index first), capture links spool an envelope
  * into `.reflect/inbox/` for the watcher-triggered drain to materialize.
  * Every outcome that isn't a navigation surfaces on the operations status

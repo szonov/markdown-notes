@@ -110,7 +110,8 @@ export interface DateTimePrefs {
  * Compact recency label for list rows (the original app's Updated column):
  * the time for today (per `timeFormat`), the weekday within the current week
  * (`Mon`), the short date otherwise (`6/3/2026`, `3/6/2026`, or
- * `2026-06-03`). `now` is injectable for tests.
+ * `2026-06-03`). The Russian interface consistently uses `03.06.2026`
+ * regardless of the daily-note title preference. `now` is injectable for tests.
  */
 export function formatRecencyLabel(
   epochMs: number,
@@ -123,6 +124,9 @@ export function formatRecencyLabel(
   }
   if (isSameWeek(date, now)) {
     return localizedFormat(date, 'EEE', 'EEEEEE')
+  }
+  if (displayLanguage === 'ru') {
+    return format(date, 'dd.MM.yyyy')
   }
   switch (prefs.dateFormat) {
     case 'dmy':

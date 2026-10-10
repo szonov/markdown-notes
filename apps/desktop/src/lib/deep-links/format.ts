@@ -7,12 +7,12 @@ import { DEEP_LINK_SCHEME } from '@/lib/deep-links/deep-link.ts'
  * tests). "Copy deep link" builds its clipboard text here.
  */
 
-/** `reflect-local://note/<target>` — `target` is a frontmatter id, title, or alias. */
+/** `markdown-notes://note/<target>` — `target` is a frontmatter id, title, or alias. */
 export function noteDeepLink(target: string): string {
   return `${DEEP_LINK_SCHEME}://note/${encodeURIComponent(target)}`
 }
 
-/** `reflect-local://daily/<date>` for an ISO `YYYY-MM-DD` date. */
+/** `markdown-notes://daily/<date>` for an ISO `YYYY-MM-DD` date. */
 export function dailyDeepLink(date: string): string {
   return `${DEEP_LINK_SCHEME}://daily/${date}`
 }

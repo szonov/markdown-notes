@@ -136,6 +136,19 @@ describe('GraphProvider open sequencing', () => {
     expect(result.current.graph).toBeNull()
   })
 
+  it('reopens the newest graph by timestamp without depending on shortcut order', async () => {
+    storedRecents = [
+      { root: '/shortcut-one', name: 'shortcut-one', openedMs: 10 },
+      { root: '/shortcut-two', name: 'shortcut-two', openedMs: 20 },
+    ]
+    const { result, act } = await renderHook(() => useGraph(), { wrapper })
+
+    await vi.waitFor(() => expect(invokeLog).toContain('graph_open:/shortcut-two'))
+    expect(invokeLog).not.toContain('graph_open:/shortcut-one')
+    await act(() => resolveOpen('/shortcut-two'))
+    await vi.waitFor(() => expect(result.current.status).toBe('ready'))
+  })
+
   it('serializes overlapping opens and commits only the last requested graph', async () => {
     const { result, act } = await renderHook(() => useGraph(), { wrapper })
     await vi.waitFor(() => expect(result.current.status).toBe('choosing'))

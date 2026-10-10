@@ -293,7 +293,7 @@ describe('Sidebar', () => {
       expect(openNativeContextMenu).toHaveBeenCalledWith({
         items: [
           expect.objectContaining({
-            text: 'Unpin Note',
+            text: 'Unpin note',
           }),
         ],
       }),

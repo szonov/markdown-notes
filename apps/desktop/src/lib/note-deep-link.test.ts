@@ -29,7 +29,7 @@ beforeEach(() => {
 describe('deepLinkForNote', () => {
   it('addresses a daily note by date, touching nothing', async () => {
     await expect(deepLinkForNote('daily/2026/2026-07-01.md', 3)).resolves.toBe(
-      'reflect-local://daily/2026-07-01',
+      'markdown-notes://daily/2026-07-01',
     )
     expect(readNote).not.toHaveBeenCalled()
     expect(writeNote).not.toHaveBeenCalled()
@@ -42,7 +42,7 @@ describe('deepLinkForNote', () => {
 
     const url = await deepLinkForNote('daily/2026/2026-02-31.md', 3)
 
-    expect(url.startsWith('reflect-local://note/')).toBe(true)
+    expect(url.startsWith('markdown-notes://note/')).toBe(true)
     expect(writeNote).toHaveBeenCalled()
   })
 
@@ -50,7 +50,7 @@ describe('deepLinkForNote', () => {
     readNote.mockResolvedValue('---\nid: 01hzy3v9k2m4n6p8q0r2s4t6vw\n---\n# A\n')
 
     await expect(deepLinkForNote('notes/a.md', 3)).resolves.toBe(
-      'reflect-local://note/01hzy3v9k2m4n6p8q0r2s4t6vw',
+      'markdown-notes://note/01hzy3v9k2m4n6p8q0r2s4t6vw',
     )
     expect(writeNote).not.toHaveBeenCalled()
     expect(indexNote).not.toHaveBeenCalled()
@@ -61,7 +61,7 @@ describe('deepLinkForNote', () => {
 
     const url = await deepLinkForNote('notes/a.md', 3)
 
-    const id = decodeURIComponent(url.replace('reflect-local://note/', ''))
+    const id = decodeURIComponent(url.replace('markdown-notes://note/', ''))
     expect(id).toMatch(ULID_RE)
     expect(writeNote).toHaveBeenCalled()
   })
@@ -71,7 +71,7 @@ describe('deepLinkForNote', () => {
 
     const url = await deepLinkForNote('notes/a.md', 3)
 
-    const id = decodeURIComponent(url.replace('reflect-local://note/', ''))
+    const id = decodeURIComponent(url.replace('markdown-notes://note/', ''))
     expect(id).toMatch(ULID_RE)
     expect(writeNote).toHaveBeenCalledWith('notes/a.md', `---\nid: ${id}\n---\n\n# A\n`, 3)
     // The index trails local writes by a watcher debounce; without this the
@@ -85,7 +85,7 @@ describe('deepLinkForNote', () => {
 
     const url = await deepLinkForNote('notes/a.md', 3)
 
-    expect(url.startsWith('reflect-local://note/')).toBe(true)
+    expect(url.startsWith('markdown-notes://note/')).toBe(true)
   })
 
   it('mints through the live session when one owns the note', async () => {
@@ -97,7 +97,7 @@ describe('deepLinkForNote', () => {
 
     const url = await deepLinkForNote('notes/a.md', 3)
 
-    const id = decodeURIComponent(url.replace('reflect-local://note/', ''))
+    const id = decodeURIComponent(url.replace('markdown-notes://note/', ''))
     expect(commitFrontmatter).toHaveBeenCalledWith({ id })
     expect(writeNote).not.toHaveBeenCalled()
   })

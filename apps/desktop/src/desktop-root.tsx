@@ -25,11 +25,11 @@ export function DesktopRoot(): ReactElement {
   const bridgeReady = useBridgeReady()
   const { t } = useI18n()
   // Deep-link intake starts with the surface, not the workspace: a
-  // `reflect-local://` URL that launched the app (or arrived on the graph chooser)
+  // `markdown-notes://` URL that launched the app (or arrived on the graph chooser)
   // buffers in `intake.ts` until a graph opens. Browser dev has no plugin.
   // Main window only: the plugin's event stream reaches every webview, and a
   // ⌘-clicked note window must not also navigate itself on OS-delivered URLs
-  // (in-note `reflect-local://` clicks still work — `dispatchDeepLink` and the
+  // (in-note `markdown-notes://` clicks still work — `dispatchDeepLink` and the
   // handler are per-webview state).
   useMainWindowEffect(() => {
     if (!isNativeShell()) {

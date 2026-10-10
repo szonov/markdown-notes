@@ -519,34 +519,34 @@ describe('NoteEditor link opening', () => {
     expect(openUrl).not.toHaveBeenCalled()
   })
 
-  it('routes a reflect-local:// link through the in-app deep-link intake, not the URL opener', async () => {
-    await render(<NoteEditor initialContent="[note](reflect-local://note/abc123) here" />)
+  it('routes a markdown-notes:// link through the in-app deep-link intake, not the URL opener', async () => {
+    await render(<NoteEditor initialContent="[note](markdown-notes://note/abc123) here" />)
 
     await pmRoot.getByRole('link').click()
     await vi.waitFor(() => {
-      expect(dispatchDeepLink).toHaveBeenCalledWith('reflect-local://note/abc123')
+      expect(dispatchDeepLink).toHaveBeenCalledWith('markdown-notes://note/abc123')
     })
     expect(openUrl).not.toHaveBeenCalled()
   })
 
-  it('⌘-click sends a reflect-local:// link to a new window instead of dispatching', async () => {
+  it('⌘-click sends a markdown-notes:// link to a new window instead of dispatching', async () => {
     openDeepLinkInNewWindow.mockResolvedValue(true)
-    await render(<NoteEditor initialContent="[note](reflect-local://note/abc123) here" />)
+    await render(<NoteEditor initialContent="[note](markdown-notes://note/abc123) here" />)
 
     await pmRoot.getByRole('link').click({ modifiers: ['ControlOrMeta'] })
     await vi.waitFor(() => {
-      expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('reflect-local://note/abc123')
+      expect(openDeepLinkInNewWindow).toHaveBeenCalledWith('markdown-notes://note/abc123')
     })
     expect(dispatchDeepLink).not.toHaveBeenCalled()
   })
 
   it('a declined ⌘-click open degrades to the normal deep-link dispatch', async () => {
     openDeepLinkInNewWindow.mockResolvedValue(false)
-    await render(<NoteEditor initialContent="[append](reflect-local://append?text=hi) here" />)
+    await render(<NoteEditor initialContent="[append](markdown-notes://append?text=hi) here" />)
 
     await pmRoot.getByRole('link').click({ modifiers: ['ControlOrMeta'] })
     await vi.waitFor(() => {
-      expect(dispatchDeepLink).toHaveBeenCalledWith('reflect-local://append?text=hi')
+      expect(dispatchDeepLink).toHaveBeenCalledWith('markdown-notes://append?text=hi')
     })
   })
 })

@@ -1,14 +1,14 @@
 import type { Route } from '@/routing/route.ts'
 
 /**
- * The `reflect-local://` deep-link vocabulary (docs/deep-links.md). URLs are a codec
+ * The `markdown-notes://` deep-link vocabulary (docs/deep-links.md). URLs are a codec
  * over the existing {@link Route} union plus two capture verbs — never a
  * second navigation grammar. `parse.ts` and `format.ts` are the only modules
  * that read or write this syntax.
  */
 
 /** The URL scheme the app registers (`plugins.deep-link` in tauri.conf.json). */
-export const DEEP_LINK_SCHEME = 'reflect-local'
+export const DEEP_LINK_SCHEME = 'markdown-notes'
 
 /**
  * Cap on capture-link text (`append`/`task`) — the envelope schema's own cap,

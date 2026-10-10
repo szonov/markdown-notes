@@ -4,7 +4,7 @@ import { parseDeepLink } from '@/lib/deep-links/parse.ts'
 import { openDeepLinkInNewWindow } from '@/lib/windows/open-in-new-window.ts'
 import { useLinkIntentGuard } from '@/lib/windows/use-link-intent-guard.ts'
 
-/** Follow one in-app `reflect-local://` link. */
+/** Follow one in-app `markdown-notes://` link. */
 export type FollowDeepLink = (options: { href: string; openInNewWindow: boolean }) => void
 
 /**

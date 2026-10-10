@@ -7,6 +7,7 @@ import {
   formatShortDate,
   formatTimeOfDay,
   isIsoDate,
+  setDateDisplayLanguage,
   todayIso,
 } from './dates.ts'
 
@@ -97,6 +98,20 @@ describe('dates', () => {
       expect(formatRecencyLabel(new Date(2025, 11, 31, 13, 0).getTime(), dmy, now)).toBe(
         '31/12/2025',
       )
+    })
+
+    it('uses dd.mm.yyyy for older dates in the Russian interface', () => {
+      setDateDisplayLanguage('ru')
+      try {
+        expect(formatRecencyLabel(new Date(2026, 0, 1, 13, 0).getTime(), mdy, now)).toBe(
+          '01.01.2026',
+        )
+        expect(formatRecencyLabel(new Date(2026, 4, 7, 13, 0).getTime(), iso, now)).toBe(
+          '07.05.2026',
+        )
+      } finally {
+        setDateDisplayLanguage('en')
+      }
     })
   })
 })

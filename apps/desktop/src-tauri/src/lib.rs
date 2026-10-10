@@ -100,7 +100,7 @@ pub fn run() {
 
     // Single-instance must be the first plugin so a second launch is caught
     // before any other state spins up: its `deep-link` feature hands the
-    // launching instance's `reflect-local://` URL to the deep-link plugin, and the
+    // launching instance's `markdown-notes://` URL to the deep-link plugin, and the
     // callback re-focuses the running window. macOS delivers scheme opens to
     // the running app natively; this is the Windows/Linux equivalent.
     #[cfg(desktop)]
@@ -112,7 +112,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init());
 
-    // Deep links (`reflect-local://`) are desktop-only for now: the scheme is
+    // Deep links (`markdown-notes://`) are desktop-only for now: the scheme is
     // registered at bundle time (`plugins.deep-link` in tauri.conf.json) and
     // the frontend consumes URLs through `onOpenUrl`.
     #[cfg(desktop)]

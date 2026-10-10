@@ -345,7 +345,7 @@ export function NoteEditor({
         })
         return
       }
-      // A `reflect-local://` link routes through the in-app deep-link pipeline —
+      // A `markdown-notes://` link routes through the in-app deep-link pipeline —
       // the OS opener would deny the scheme (and a round-trip could land on
       // another installed flavor). ⌘-click or a spare-`mod` keyboard follow sends an
       // *addressing* link to a new window instead; a declined open (capture link, browser dev)

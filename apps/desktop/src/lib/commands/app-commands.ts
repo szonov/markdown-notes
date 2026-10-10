@@ -164,8 +164,8 @@ const APP_COMMANDS: AppCommand[] = [
   {
     id: 'note.copyDeepLink',
     title: 'Copy deep link',
-    keywords: ['url', 'share', 'clipboard', 'reflect-local://', 'address'],
-    // The original app's copy-link shortcut. Copies a `reflect-local://` address for
+    keywords: ['url', 'share', 'clipboard', 'markdown-notes://', 'address'],
+    // The original app's copy-link shortcut. Copies a `markdown-notes://` address for
     // the note the current route edits — id-shaped so it survives renames,
     // minting the frontmatter id on first copy. `runCopyDeepLink` owns all
     // feedback (the "Deep link copied" status line and failure surfaces).
@@ -185,7 +185,7 @@ const APP_COMMANDS: AppCommand[] = [
     keywords: ['file', 'absolute', 'filesystem', 'clipboard', 'location'],
     // The OS-path sibling of "Copy deep link": copies the note's absolute
     // file path (Finder's Copy-as-Pathname chord) for use outside Reflect,
-    // where a reflect-local:// address cannot resolve. `runCopyNotePath` owns all
+    // where a markdown-notes:// address cannot resolve. `runCopyNotePath` owns all
     // feedback (the "Note path copied" status line and failure surfaces).
     keybinding: 'Alt-Mod-c',
     run: async (context) => {

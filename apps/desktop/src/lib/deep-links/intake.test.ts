@@ -40,13 +40,13 @@ describe('deep-link intake', () => {
   })
 
   it('buffers the launch URL from getCurrent — onOpenUrl does not replay it', async () => {
-    getCurrentMock.mockResolvedValue(['reflect-local://note/launch-target'])
+    getCurrentMock.mockResolvedValue(['markdown-notes://note/launch-target'])
     await startDeepLinkListener()
 
     const handler = vi.fn()
     setDeepLinkHandler(handler)
 
-    expect(handler).toHaveBeenCalledWith('reflect-local://note/launch-target')
+    expect(handler).toHaveBeenCalledWith('markdown-notes://note/launch-target')
   })
 
   it('retries after a failed subscription instead of latching disabled', async () => {
@@ -81,7 +81,7 @@ describe('deep-link intake', () => {
     await startDeepLinkListener()
     const handler = vi.fn()
     setDeepLinkHandler(handler)
-    pluginDeliver(['reflect-local://today'])
+    pluginDeliver(['markdown-notes://today'])
 
     expect(handler).toHaveBeenCalledTimes(1)
   })
@@ -91,37 +91,37 @@ describe('deep-link intake', () => {
     const handler = vi.fn()
     setDeepLinkHandler(handler)
 
-    pluginDeliver(['reflect-local://today'])
+    pluginDeliver(['markdown-notes://today'])
 
-    expect(handler).toHaveBeenCalledWith('reflect-local://today')
+    expect(handler).toHaveBeenCalledWith('markdown-notes://today')
   })
 
   it('buffers URLs that arrive with no handler and replays them in order on attach', async () => {
     await startDeepLinkListener()
-    pluginDeliver(['reflect-local://today', 'reflect-local://tasks'])
+    pluginDeliver(['markdown-notes://today', 'markdown-notes://tasks'])
 
     const handler = vi.fn()
     setDeepLinkHandler(handler)
 
-    expect(handler.mock.calls).toEqual([['reflect-local://today'], ['reflect-local://tasks']])
+    expect(handler.mock.calls).toEqual([['markdown-notes://today'], ['markdown-notes://tasks']])
   })
 
   it('delivers an in-app dispatch (a clicked note link) straight to the handler', () => {
     const handler = vi.fn()
     setDeepLinkHandler(handler)
 
-    dispatchDeepLink('reflect-local://note/from-a-note-body')
+    dispatchDeepLink('markdown-notes://note/from-a-note-body')
 
-    expect(handler).toHaveBeenCalledWith('reflect-local://note/from-a-note-body')
+    expect(handler).toHaveBeenCalledWith('markdown-notes://note/from-a-note-body')
   })
 
   it('buffers an in-app dispatch when no handler is attached', () => {
-    dispatchDeepLink('reflect-local://today')
+    dispatchDeepLink('markdown-notes://today')
 
     const handler = vi.fn()
     setDeepLinkHandler(handler)
 
-    expect(handler).toHaveBeenCalledWith('reflect-local://today')
+    expect(handler).toHaveBeenCalledWith('markdown-notes://today')
   })
 
   it('buffers again after the handler detaches (graph switch gap)', async () => {
@@ -130,11 +130,11 @@ describe('deep-link intake', () => {
     setDeepLinkHandler(first)
     setDeepLinkHandler(null)
 
-    pluginDeliver(['reflect-local://daily/2026-07-01'])
+    pluginDeliver(['markdown-notes://daily/2026-07-01'])
     expect(first).not.toHaveBeenCalled()
 
     const second = vi.fn()
     setDeepLinkHandler(second)
-    expect(second).toHaveBeenCalledWith('reflect-local://daily/2026-07-01')
+    expect(second).toHaveBeenCalledWith('markdown-notes://daily/2026-07-01')
   })
 })

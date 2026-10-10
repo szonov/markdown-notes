@@ -2,7 +2,7 @@ import { isIsoDate } from '@/lib/dates.ts'
 import { DEEP_LINK_SCHEME, type DeepLink } from '@/lib/deep-links/deep-link.ts'
 
 /**
- * Parse a `reflect-local://` URL into a {@link DeepLink}, or null for anything the
+ * Parse a `markdown-notes://` URL into a {@link DeepLink}, or null for anything the
  * grammar doesn't name. Null — not a best-effort guess: a URL is untrusted
  * input from outside the app, so an unknown verb, a malformed date, an
  * over-long payload, or stray path segments all reject rather than "open
@@ -13,7 +13,7 @@ export function parseDeepLink(raw: string): DeepLink | null {
   if (url === null || url.protocol !== `${DEEP_LINK_SCHEME}:`) {
     return null
   }
-  // The verb rides in the URL's host position (`reflect-local://today`) — an opaque
+  // The verb rides in the URL's host position (`markdown-notes://today`) — an opaque
   // host on a non-special scheme, which the WHATWG parser does *not* fold, so
   // lower-case it here. The argument is the path remainder.
   const argument = decodedPathRemainder(url)
@@ -66,7 +66,7 @@ function tryParseUrl(raw: string): URL | null {
 /**
  * The path after the verb, percent-decoded — `''` when absent (a bare or
  * trailing-slash URL), null when the encoding itself is malformed. Raw
- * slashes are kept so a hand-written `reflect-local://note/notes/foo.md` addresses
+ * slashes are kept so a hand-written `markdown-notes://note/notes/foo.md` addresses
  * the same note as the encoded form.
  */
 function decodedPathRemainder(url: URL): string | null {

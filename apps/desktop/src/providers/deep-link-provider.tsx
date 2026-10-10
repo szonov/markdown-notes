@@ -10,7 +10,7 @@ import {
 import { useRouter } from '@/routing/router.tsx'
 
 /**
- * Routes incoming `reflect-local://` URLs into the open graph session: attaches
+ * Routes incoming `markdown-notes://` URLs into the open graph session: attaches
  * this workspace's handler to the app-lifetime intake (`intake.ts`), which
  * replays anything that arrived before a graph was open. No UI — outcomes
  * surface as navigation or a toast inside {@link handleDeepLink}.

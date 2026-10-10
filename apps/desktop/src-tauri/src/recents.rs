@@ -16,7 +16,8 @@ use crate::error::{AppError, AppResult};
 
 const MAX_RECENTS: usize = 12;
 
-/// A previously-opened graph, newest first in the stored list.
+/// A previously-opened graph. Stored list order is stable because it also
+/// defines the graph's keyboard shortcut number.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RecentGraph {
@@ -60,11 +61,25 @@ fn save_to(path: &Path, recents: &[RecentGraph]) -> AppResult<()> {
     Ok(())
 }
 
-/// Prepend `entry`, dedupe by `root`, and cap the list. Pure (unit-tested).
+/// Update an existing entry in place, or append a new one, so reopening a graph
+/// never changes its keyboard shortcut. At capacity, evict the least recently
+/// opened graph without otherwise reordering the list. Pure (unit-tested).
 fn with_entry(mut recents: Vec<RecentGraph>, entry: RecentGraph) -> Vec<RecentGraph> {
-    recents.retain(|r| r.root != entry.root);
-    recents.insert(0, entry);
-    recents.truncate(MAX_RECENTS);
+    if let Some(index) = recents.iter().position(|recent| recent.root == entry.root) {
+        recents[index] = entry;
+        return recents;
+    }
+
+    recents.push(entry);
+    if recents.len() > MAX_RECENTS {
+        let least_recent_index = recents
+            .iter()
+            .enumerate()
+            .min_by_key(|(_, recent)| recent.opened_ms)
+            .map(|(index, _)| index)
+            .unwrap_or(0);
+        recents.remove(least_recent_index);
+    }
     recents
 }
 
@@ -75,7 +90,7 @@ fn now_ms() -> u64 {
         .unwrap_or(0)
 }
 
-/// Record a graph as most-recently-opened.
+/// Record a graph as opened without changing its stable list position.
 pub fn record(root: &Path, name: &str) -> AppResult<()> {
     let path = store_path()?;
     let entry = RecentGraph {
@@ -86,7 +101,7 @@ pub fn record(root: &Path, name: &str) -> AppResult<()> {
     save_to(&path, &with_entry(load_from(&path)?, entry))
 }
 
-/// The recent-graphs list, newest first.
+/// The recent-graphs list in stable shortcut order.
 pub fn list() -> AppResult<Vec<RecentGraph>> {
     load_from(&store_path()?)
 }
@@ -99,7 +114,7 @@ pub fn forget(root: &str) -> AppResult<()> {
     save_to(&path, &recents)
 }
 
-/// Command: the recent-graphs list, newest first.
+/// Command: the recent-graphs list in stable shortcut order.
 #[tauri::command]
 pub fn recent_graphs() -> AppResult<Vec<RecentGraph>> {
     list()
@@ -125,19 +140,31 @@ mod tests {
     }
 
     #[test]
-    fn prepends_dedupes_and_caps() {
+    fn preserves_existing_positions_and_caps() {
         let mut list = Vec::new();
         for i in 0..15 {
             list = with_entry(list, entry(&format!("/g/{i}"), i));
         }
         assert_eq!(list.len(), MAX_RECENTS);
-        assert_eq!(list[0].root, "/g/14"); // newest first
+        assert_eq!(list[0].root, "/g/3"); // the three least-recent entries were evicted
+        assert_eq!(list[MAX_RECENTS - 1].root, "/g/14");
 
-        // Re-opening an existing root moves it to front without duplicating.
+        // Re-opening an existing root updates it without moving or duplicating it.
+        let old_index = list.iter().position(|recent| recent.root == "/g/10").unwrap();
         let list = with_entry(list, entry("/g/10", 99));
-        assert_eq!(list[0].root, "/g/10");
+        assert_eq!(list[old_index].root, "/g/10");
+        assert_eq!(list[old_index].opened_ms, 99);
         assert_eq!(list.iter().filter(|r| r.root == "/g/10").count(), 1);
         assert_eq!(list.len(), MAX_RECENTS);
+    }
+
+    #[test]
+    fn appends_new_graphs_in_shortcut_order() {
+        let list = with_entry(vec![entry("/a", 10), entry("/b", 20)], entry("/c", 30));
+        assert_eq!(
+            list.iter().map(|recent| recent.root.as_str()).collect::<Vec<_>>(),
+            vec!["/a", "/b", "/c"]
+        );
     }
 
     #[test]
