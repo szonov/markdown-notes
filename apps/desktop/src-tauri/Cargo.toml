@@ -1,5 +1,5 @@
 [package]
-name = "reflect-open"
+name = "markdown-notes"
 # Intentionally frozen: the app version lives in apps/desktop/package.json and
 # tauri.conf.json points at it. The crate is never published, so its version
 # has no consumer — freezing it keeps Cargo.lock out of every release diff.

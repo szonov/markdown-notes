@@ -1,7 +1,7 @@
 //! User settings store: one JSON document in the OS config dir.
 //!
 //! Settings live next to the recents store — **never** inside any one graph's
-//! `.reflect/` — because they are per-user preferences that must follow the
+//! `.markdown-notes/` — because they are per-user preferences that must follow the
 //! user across graphs and survive graph deletion. Rust treats the document as
 //! an opaque JSON object (a capability, per the architecture conventions);
 //! the schema, defaults, and validation are policy and live in
@@ -14,6 +14,7 @@ use std::path::{Path, PathBuf};
 use serde_json::{Map, Value};
 use tempfile::NamedTempFile;
 
+use crate::app_data::config_file;
 use crate::error::{AppError, AppResult};
 
 /// The settings document: a JSON object keyed by setting name. `Map` (not
@@ -21,8 +22,7 @@ use crate::error::{AppError, AppResult};
 pub type SettingsDoc = Map<String, Value>;
 
 fn store_path() -> AppResult<PathBuf> {
-    let base = dirs::config_dir().ok_or_else(|| AppError::io("no OS config dir"))?;
-    Ok(base.join("reflect-open").join("settings.json"))
+    config_file("settings.json")
 }
 
 /// Load the stored document. A missing store is an empty object, but a real IO

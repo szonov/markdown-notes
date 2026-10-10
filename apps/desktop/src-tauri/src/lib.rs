@@ -14,6 +14,7 @@
 //! [`menu`] (the macOS app menu, incl. Paste and Match Style),
 //! [`error`] (the shared error contract).
 
+mod app_data;
 mod background_task;
 mod blocking;
 mod conflict;

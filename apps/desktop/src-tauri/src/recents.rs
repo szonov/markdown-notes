@@ -1,7 +1,7 @@
 //! Recent-graphs list (Plan 02).
 //!
 //! The recents list lives in the OS config dir — **never** inside any one
-//! graph's `.reflect/` — so it survives graph deletion and isn't synced as note
+//! graph's `.markdown-notes/` — so it survives graph deletion and isn't synced as note
 //! content.
 
 use std::fs;
@@ -12,6 +12,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;
 
+use crate::app_data::config_file;
 use crate::error::{AppError, AppResult};
 
 const MAX_RECENTS: usize = 12;
@@ -27,8 +28,7 @@ pub struct RecentGraph {
 }
 
 fn store_path() -> AppResult<PathBuf> {
-    let base = dirs::config_dir().ok_or_else(|| AppError::io("no OS config dir"))?;
-    Ok(base.join("reflect-open").join("recent-graphs.json"))
+    config_file("recent-graphs.json")
 }
 
 /// Load the stored list. A missing store is an empty list, but a real IO error
@@ -150,7 +150,10 @@ mod tests {
         assert_eq!(list[MAX_RECENTS - 1].root, "/g/14");
 
         // Re-opening an existing root updates it without moving or duplicating it.
-        let old_index = list.iter().position(|recent| recent.root == "/g/10").unwrap();
+        let old_index = list
+            .iter()
+            .position(|recent| recent.root == "/g/10")
+            .unwrap();
         let list = with_entry(list, entry("/g/10", 99));
         assert_eq!(list[old_index].root, "/g/10");
         assert_eq!(list[old_index].opened_ms, 99);
@@ -162,7 +165,9 @@ mod tests {
     fn appends_new_graphs_in_shortcut_order() {
         let list = with_entry(vec![entry("/a", 10), entry("/b", 20)], entry("/c", 30));
         assert_eq!(
-            list.iter().map(|recent| recent.root.as_str()).collect::<Vec<_>>(),
+            list.iter()
+                .map(|recent| recent.root.as_str())
+                .collect::<Vec<_>>(),
             vec!["/a", "/b", "/c"]
         );
     }
