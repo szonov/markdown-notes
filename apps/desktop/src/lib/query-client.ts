@@ -50,9 +50,6 @@ export const queryKeys = {
     duplicateNoteIds(root: GraphRoot) {
       return [...this.graph(root), 'duplicate-note-ids'] as const
     },
-    templates(root: GraphRoot) {
-      return [...this.graph(root), 'templates'] as const
-    },
     noteConflict(root: GraphRoot, path: string) {
       return [...this.graph(root), 'note-conflict', path] as const
     },

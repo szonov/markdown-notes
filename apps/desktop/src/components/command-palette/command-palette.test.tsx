@@ -74,21 +74,16 @@ async function renderPalette(query: string, context?: Partial<CommandContext>) {
     forward: vi.fn(),
     clearScrollState: vi.fn(),
     togglePin: vi.fn(async () => {}),
-    togglePrivate: vi.fn(async () => {}),
     toggleTheme: vi.fn(),
     toggleSidebar: vi.fn(),
-    newChat: vi.fn(),
     openNoteFind: vi.fn(),
     findNextInNote: vi.fn(),
     findPreviousInNote: vi.fn(),
     switchGraph: vi.fn(),
-    toggleAudioMemo: vi.fn(),
     generation: () => 1,
     graphRoot: () => '/g',
     openPalette: vi.fn(),
     openShortcuts: vi.fn(),
-    openTemplatePicker: vi.fn(),
-    openTemplateCreate: vi.fn(),
     ...context,
   }
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -272,7 +267,12 @@ describe('CommandPalette', () => {
     suggestWikiTargets.mockClear()
     suggestWikiTargets.mockResolvedValue([])
     searchWithFilters.mockResolvedValue([
-      { path: 'daily/2026-06-08.md', title: '2026-06-08', dailyDate: '2026-06-08', snippet: null },
+      {
+        path: 'daily/2026/2026-06-08.md',
+        title: '2026-06-08',
+        dailyDate: '2026-06-08',
+        snippet: null,
+      },
       { path: 'notes/w.md', title: 'Work log', dailyDate: null, snippet: null },
     ])
     const { view } = await renderPalette('#work is:daily')
@@ -360,7 +360,7 @@ describe('CommandPalette', () => {
     suggestWikiTargets.mockResolvedValue([
       {
         target: '2026-06-09',
-        path: 'daily/2026-06-09.md',
+        path: 'daily/2026/2026-06-09.md',
         title: '2026-06-09',
         alias: null,
         date: '2026-06-09',

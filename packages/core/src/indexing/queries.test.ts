@@ -182,11 +182,11 @@ describe('findWikiTargetMatch', () => {
   })
 
   it('reads a daily-date claim from the same table as every other tier', async () => {
-    mockInvoke.mockResolvedValue([{ note_path: 'daily/2026-06-09.md', tier: 1 }])
+    mockInvoke.mockResolvedValue([{ note_path: 'daily/2026/2026-06-09.md', tier: 1 }])
 
     await expect(findWikiTargetMatch('2026-06-09')).resolves.toEqual({
       tier: 1,
-      paths: ['daily/2026-06-09.md'],
+      paths: ['daily/2026/2026-06-09.md'],
     })
   })
 })
@@ -206,7 +206,7 @@ describe('listDailyNotes', () => {
   it('selects public dailies in the inclusive range, most recent first, capped', async () => {
     mockInvoke.mockResolvedValue([
       {
-        path: 'daily/2026-06-09.md',
+        path: 'daily/2026/2026-06-09.md',
         title: '2026-06-09',
         daily_date: '2026-06-09',
         preview: 'Stand-up notes.',
@@ -219,7 +219,7 @@ describe('listDailyNotes', () => {
 
     expect(rows).toEqual([
       {
-        path: 'daily/2026-06-09.md',
+        path: 'daily/2026/2026-06-09.md',
         title: '2026-06-09',
         dailyDate: '2026-06-09',
         preview: 'Stand-up notes.',
@@ -312,7 +312,7 @@ describe('getBacklinksWithContext', () => {
       indexedLinkCount: 3,
       sources: [
         {
-          path: 'daily/2026-07-01.md',
+          path: 'daily/2026/2026-07-01.md',
           title: '2026-07-01',
           recencyMs: 2_000,
           content: 'daily [[target]]',
@@ -341,7 +341,7 @@ describe('getBacklinksWithContext', () => {
     })
 
     expect(page.contexts.map((row) => row.sourcePath)).toEqual([
-      'daily/2026-07-01.md',
+      'daily/2026/2026-07-01.md',
       'notes/older.md',
     ])
     expect(page.nextCursor).toEqual({ recencyMs: 1_000, sourcePath: 'notes/older.md' })
@@ -350,7 +350,7 @@ describe('getBacklinksWithContext', () => {
       mockInvoke.mock.calls
         .filter(([command]) => command === 'note_read')
         .map(([, args]) => args['path']),
-    ).toEqual(['daily/2026-07-01.md', 'notes/older.md'])
+    ).toEqual(['daily/2026/2026-07-01.md', 'notes/older.md'])
 
     const sourceQuery = dbQueries().find(({ sql }) => sql.includes('select distinct'))
     expect(sourceQuery).toBeDefined()
@@ -508,9 +508,7 @@ describe('getPinnedNotes', () => {
     expect(sql).toContain('order by pinned_order IS NULL')
     expect(sql).toContain('"pinned_order"')
     expect(sql).toContain('title_key')
-    // A pinned template must not reach the sidebar's Pinned section.
-    expect(sql).toContain('"kind" != ?')
-    expect(args['params']).toEqual([1, 'template'])
+    expect(args['params']).toEqual([1])
   })
 })
 
@@ -631,17 +629,6 @@ describe('suggestWikiTargets', () => {
     ])
   })
 
-  it('excludes templates from both the title and alias candidate queries', async () => {
-    mockInvoke.mockResolvedValue([])
-
-    await suggestWikiTargets('journal')
-
-    expect(mockInvoke).toHaveBeenCalledTimes(2)
-    for (const [, args] of mockInvoke.mock.calls) {
-      expect(String(args['sql'])).toContain('"kind" != ?')
-      expect(args['params']).toContain('template')
-    }
-  })
 })
 
 describe('getOpenTasks', () => {
@@ -733,13 +720,4 @@ describe('getOpenTasks', () => {
     error.mockRestore()
   })
 
-  it('never surfaces template checkboxes — boilerplate, not real tasks', async () => {
-    mockInvoke.mockResolvedValue([])
-
-    await getOpenTasks()
-
-    const [, args] = mockInvoke.mock.calls[0]!
-    expect(String(args['sql'])).toContain('"notes"."kind" != ?')
-    expect(args['params']).toContain('template')
-  })
 })

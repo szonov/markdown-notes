@@ -15,8 +15,6 @@ interface DevFile {
 export interface DevFileStore {
   /** Every eligible Markdown note anywhere in the graph (`list_files`). */
   list: () => FileMeta[]
-  /** Files under a graph-relative directory prefix (the `dir_list` view). */
-  listDir: (dir: string) => FileMeta[]
   /** A note's markdown, or `null` when the path doesn't exist. */
   read: (path: string) => string | null
   exists: (path: string) => boolean
@@ -58,10 +56,6 @@ export function createDevFileStore(seed: Record<string, string>): DevFileStore {
 
   return {
     list: () => [...files].filter(([path]) => isNotePath(path)).map(toMeta),
-    listDir: (dir) => {
-      const prefix = dir.endsWith('/') ? dir : `${dir}/`
-      return [...files].filter(([path]) => path.startsWith(prefix)).map(toMeta)
-    },
     read: (path) => files.get(path)?.contents ?? null,
     exists: (path) => files.has(path),
     write: (path, contents) => {

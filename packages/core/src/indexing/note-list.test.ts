@@ -104,7 +104,7 @@ describe('listNotes', () => {
           pinned_order: null,
         },
         {
-          path: 'daily/2026-06-09.md',
+          path: 'daily/2026/2026-06-09.md',
           title: 'June 9, 2026',
           mtime: 1500,
           preview: 'Read a book.',
@@ -112,11 +112,14 @@ describe('listNotes', () => {
           pinned_order: null,
         },
       ])
-      .mockResolvedValueOnce([{ note_path: 'daily/2026-06-09.md', tag: 'Book' }])
+      .mockResolvedValueOnce([{ note_path: 'daily/2026/2026-06-09.md', tag: 'Book' }])
 
     const entries = await listNotes({ tag: 'Book' })
 
-    expect(entries.map((entry) => entry.path)).toEqual(['notes/health.md', 'daily/2026-06-09.md'])
+    expect(entries.map((entry) => entry.path)).toEqual([
+      'notes/health.md',
+      'daily/2026/2026-06-09.md',
+    ])
     expect(entries[1]?.tags).toEqual(['Book'])
 
     expect(mockInvoke).toHaveBeenCalledTimes(2)

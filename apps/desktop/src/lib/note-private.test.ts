@@ -101,8 +101,12 @@ describe('toggleNotePrivate', () => {
     const { session } = fakeSession('', false, null)
     openSession.mockReturnValue(session)
     readNote.mockRejectedValue({ kind: 'notFound', message: 'no such note' })
-    await expect(toggleNotePrivate(input('daily/2026-06-10.md'))).resolves.toBeUndefined()
-    expect(writeNote).toHaveBeenCalledWith('daily/2026-06-10.md', '---\nprivate: true\n---\n\n', 3)
+    await expect(toggleNotePrivate(input('daily/2026/2026-06-10.md'))).resolves.toBeUndefined()
+    expect(writeNote).toHaveBeenCalledWith(
+      'daily/2026/2026-06-10.md',
+      '---\nprivate: true\n---\n\n',
+      3,
+    )
   })
 
   it('reports non-notFound read failures through operations', async () => {

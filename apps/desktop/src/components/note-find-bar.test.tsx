@@ -33,11 +33,6 @@ function editorHandle(): NoteEditorHandle {
     focus: vi.fn(),
     setSelection: vi.fn(),
     getSelectedText: () => '',
-    openSelectionMenu: vi.fn(),
-    startPendingReplacement: () => false,
-    appendPendingReplacementText: vi.fn(),
-    acceptPendingReplacement: vi.fn(),
-    discardPendingReplacement: vi.fn(),
     findNext: vi.fn(),
     findPrevious: vi.fn(),
   }

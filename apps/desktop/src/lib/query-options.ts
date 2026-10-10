@@ -5,7 +5,6 @@ import {
   listAttachments,
   getConflictedNotes,
   getDuplicateNoteIds,
-  listTemplates,
   loadSettings,
   saveSettings,
 } from '@reflect/core'
@@ -24,14 +23,6 @@ export function createDuplicateNoteIdsQueryOptions(root: string | undefined) {
   return queryOptions({
     queryKey: queryKeys.index.duplicateNoteIds(root),
     queryFn: getDuplicateNoteIds,
-  })
-}
-
-/** Templates shared by the settings list and insertion picker. */
-export function createTemplatesQueryOptions(root: string | undefined) {
-  return queryOptions({
-    queryKey: queryKeys.index.templates(root),
-    queryFn: listTemplates,
   })
 }
 

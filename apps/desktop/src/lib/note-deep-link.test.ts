@@ -28,7 +28,7 @@ beforeEach(() => {
 
 describe('deepLinkForNote', () => {
   it('addresses a daily note by date, touching nothing', async () => {
-    await expect(deepLinkForNote('daily/2026-07-01.md', 3)).resolves.toBe(
+    await expect(deepLinkForNote('daily/2026/2026-07-01.md', 3)).resolves.toBe(
       'reflect-local://daily/2026-07-01',
     )
     expect(readNote).not.toHaveBeenCalled()
@@ -36,11 +36,11 @@ describe('deepLinkForNote', () => {
   })
 
   it('addresses an impossible-date daily file like a plain note (mints an id)', async () => {
-    // `routeForPath` opens daily/2026-02-31.md as a plain note; a date-form
+    // `routeForPath` opens daily/2026/2026-02-31.md as a plain note; a date-form
     // link would be one the parser rejects.
     readNote.mockResolvedValue('# Not a real day\n')
 
-    const url = await deepLinkForNote('daily/2026-02-31.md', 3)
+    const url = await deepLinkForNote('daily/2026/2026-02-31.md', 3)
 
     expect(url.startsWith('reflect-local://note/')).toBe(true)
     expect(writeNote).toHaveBeenCalled()

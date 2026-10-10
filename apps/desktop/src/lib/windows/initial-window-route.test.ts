@@ -24,7 +24,7 @@ describe('initialRouteForDeepLink', () => {
       path: 'notes/foo.md',
     })
     // A daily path routes to the daily view, same as routeForPath everywhere.
-    expect(initialRouteForDeepLink('reflect-local://note/daily%2F2026-07-04.md')).toEqual({
+    expect(initialRouteForDeepLink('reflect-local://note/daily%2F2026%2F2026-07-04.md')).toEqual({
       kind: 'daily',
       date: '2026-07-04',
     })

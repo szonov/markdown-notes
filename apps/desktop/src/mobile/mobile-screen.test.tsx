@@ -4,7 +4,7 @@ import { page, userEvent } from 'vitest/browser'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { format } from 'date-fns'
 import { act, StrictMode, type ReactElement } from 'react'
-import { setBridge } from '@reflect/core'
+import { dailyPath, setBridge } from '@reflect/core'
 import {
   clearFormattingToolbar,
   publishFormattingToolbar,
@@ -62,11 +62,6 @@ vi.mock('@/editor/note-editor.tsx', async () => {
             editorProbe.selectionCalls.push(position)
           },
           getSelectedText: () => '',
-          openSelectionMenu: () => {},
-          startPendingReplacement: () => false,
-          appendPendingReplacementText: () => {},
-          acceptPendingReplacement: () => {},
-          discardPendingReplacement: () => {},
           findNext: () => {},
           findPrevious: () => {},
         })
@@ -131,34 +126,9 @@ vi.mock('@/providers/settings-provider.tsx', () => ({
       editorMarkdownSyntax: 'hide',
       dateFormat: 'mdy',
       weekStartDay: 'monday',
-      aiProviders: [],
-      defaultAiProviderId: null,
-      chatSystemPrompt: '',
-      transcriptionPrompt: '',
-      aiPrompts: [],
     },
     updateSettings: async () => {},
     updateSettingsWith: () => {},
-  }),
-}))
-// The daily spine renders the capture menu; this suite is about screens,
-// not recording — an unavailable memo surface keeps its mic action out.
-vi.mock('@/mobile/audio-memo-provider.tsx', () => ({
-  useMobileAudioMemo: () => ({
-    phase: 'idle',
-    elapsedMs: 0,
-    level: 0,
-    pendingCount: 0,
-    available: false,
-    error: null,
-    canRetry: false,
-    drawerOpen: false,
-    toggle: () => {},
-    stopAndSave: () => {},
-    cancelRecording: () => {},
-    onDrawerOpenChange: () => {},
-    retry: () => {},
-    discard: () => {},
   }),
 }))
 
@@ -315,7 +285,7 @@ function otherDayInWeek(date: string): string {
 describe('MobileShell', () => {
   it('renders today as the daily spine with its note content', async () => {
     const today = todayIso()
-    files[`daily/${today}.md`] = 'captured on the go'
+    files[dailyPath(today)] = 'captured on the go'
     const view = await mount({ kind: 'today' })
 
     // The header is the month; the carousel mounts today's slide (±1
@@ -474,7 +444,7 @@ describe('MobileShell', () => {
     // Beyond the ±366-day window — only reachable as a date-link navigation,
     // which forces the carousel to rebuild its window around the day.
     const farDay = addDaysIso(todayIso(), 400)
-    files[`daily/${farDay}.md`] = 'far future plans'
+    files[dailyPath(farDay)] = 'far future plans'
     const view = await mount({ kind: 'today' }, { kind: 'daily', date: farDay })
 
     await user.click(view.getByRole('button', { name: 'probe-navigate' }))
@@ -601,7 +571,7 @@ describe('MobileShell', () => {
 
   it('double-tapping Daily while already on today focuses the editor at its end', async () => {
     const today = todayIso()
-    files[`daily/${today}.md`] = 'first thought'
+    files[dailyPath(today)] = 'first thought'
     const view = await mount({ kind: 'today' })
     await waitFor(() => {
       const editors = view.getByTestId('fake-editor').elements()

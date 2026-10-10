@@ -32,7 +32,7 @@ mod wake;
 mod web_fetch;
 mod windows;
 
-// The watcher and the embedding runtime are desktop capabilities (Plan 19):
+// The watcher is a desktop capability:
 // mobile swaps in stand-ins with the identical command surface, so the
 // `invoke_handler` list below needs no platform branches.
 #[cfg(desktop)]
@@ -237,12 +237,11 @@ pub fn run() {
             fs::assets::asset_upload_begin,
             fs::assets::asset_upload_append,
             fs::assets::asset_upload_commit,
-            fs::assets::asset_upload_commit_path,
             fs::assets::asset_upload_abort,
             fs::assets::asset_import,
-            fs::dir_list,
             fs::note_exists,
             fs::note_delete,
+            fs::note_delete_revision,
             fs::list_files,
             fs::list_attachments,
             fs::vault_scan_stats,

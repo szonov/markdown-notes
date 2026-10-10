@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { dailyPath } from '../graph/paths.ts'
 import { setBridge } from '../ipc/bridge.ts'
 import { applyProjection, connectIndex, openMigratedIndex, project } from './flow-test-harness.ts'
 import { suggestWikiLinkTargets, suggestWikiTargets } from './queries.ts'
@@ -22,7 +23,7 @@ describe('link usage flow', () => {
       applyProjection(
         database,
         project(
-          `daily/2026-01-${day}.md`,
+          dailyPath(`2026-01-${day}`),
           'Talked to [[Sam Brown]] and [[sam brown]].\n',
           5000 + day,
         ),
@@ -61,8 +62,8 @@ describe('link usage flow', () => {
     const database = openMigratedIndex()
     applyProjection(database, project('notes/hub.md', '# Hub\n', 1))
     applyProjection(database, project('notes/fresh.md', '# Fresh\n', 900))
-    applyProjection(database, project('daily/2026-01-10.md', '[[Hub]] [[2026-01-11]]\n', 5000))
-    applyProjection(database, project('daily/2026-01-11.md', '[[Hub]]\n', 5001))
+    applyProjection(database, project('daily/2026/2026-01-10.md', '[[Hub]] [[2026-01-11]]\n', 5000))
+    applyProjection(database, project('daily/2026/2026-01-11.md', '[[Hub]]\n', 5001))
     connectIndex(database)
     try {
       const suggestions = await suggestWikiTargets('')

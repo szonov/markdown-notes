@@ -132,10 +132,10 @@ describe('createDevIndexDb', () => {
   it('marks only the calendar days whose daily note has content', async () => {
     const db = await openDb()
     for (const [path, source] of [
-      ['daily/2026-06-01.md', 'Bought milk\n'],
-      ['daily/2026-06-02.md', '\n'],
-      ['daily/2026-06-03.md', '+ [ ] \n'],
-      ['daily/2026-06-04.md', '![](assets/beach.png)\n'],
+      ['daily/2026/2026-06-01.md', 'Bought milk\n'],
+      ['daily/2026/2026-06-02.md', '\n'],
+      ['daily/2026/2026-06-03.md', '+ [ ] \n'],
+      ['daily/2026/2026-06-04.md', '![](assets/beach.png)\n'],
     ] as const) {
       db.applyNote(
         buildIndexedNote(parseNote({ path, source }), {

@@ -63,10 +63,6 @@ vi.mock('@/providers/settings-provider.tsx', () => ({
     settings: {
       editorMarkdownSyntax: 'hide',
       editorDefaultBullet: false,
-      aiProviders: [],
-      defaultAiProviderId: null,
-      chatSystemPrompt: '',
-      aiPrompts: [],
     },
     updateSettings: async () => {},
     updateSettingsWith: () => {},

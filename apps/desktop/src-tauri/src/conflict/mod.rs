@@ -173,7 +173,7 @@ mod merge_text_tests {
         // appended a line to the daily note.
         let base = "# 2026-10-07\n\n- a\n  - a1\n";
         let out = merge(
-            "daily/2026-10-07.md",
+            "daily/2026/2026-10-07.md",
             base,
             "# 2026-10-07\n\n+ a\n  - a1\n",
             "# 2026-10-07\n\n- a\n  - a1\n- from the script\n",
@@ -189,7 +189,7 @@ mod merge_text_tests {
     fn both_appending_to_a_daily_note_unions() {
         let base = "# 2026-10-07\n\n- seed\n";
         let out = merge(
-            "daily/2026-10-07.md",
+            "daily/2026/2026-10-07.md",
             base,
             "# 2026-10-07\n\n- seed\n- mine\n",
             "# 2026-10-07\n\n- seed\n- theirs\n",

@@ -8,7 +8,7 @@ import { isNativeShell } from '@/lib/platform.ts'
  *
  * Secondary windows *adopt* the main window's graph session and run none of
  * the app-wide singletons — the index writer, sync/backup, the capture
- * drain, transcription and embedding reconcilers, update checks, and the OS
+ * drain, update checks, and the OS
  * deep-link intake all belong to the main window. Every such gate funnels
  * through this predicate so the ownership rule lives in one place.
  */

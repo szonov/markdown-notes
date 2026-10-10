@@ -12,7 +12,7 @@
 -- fact, so the projection now writes them like it already writes tags and
 -- aliases (`note_claims`), and the view is left with the resolution rule
 -- alone: strongest tier wins, first path wins inside it. Calendar validity
--- moves to the projection too: an impossible `daily/2026-02-31.md` never
+-- moves to the projection too: an impossible `daily/2026/2026-02-31.md` never
 -- claims tier 1, so the view needs no `date()` guard.
 
 CREATE TABLE note_claims (

@@ -12,10 +12,8 @@ import {
   isDaily,
   isNotePath,
   isSafeVisibleGraphPath,
-  isTemplatePath,
   mayContainNotes,
   notePath,
-  templatePath,
 } from './paths.ts'
 
 const fixtureSchema = z.array(
@@ -36,7 +34,7 @@ const classificationFixtures = fixtureSchema.parse(
 
 describe('graph paths', () => {
   it('builds daily-note paths from ISO dates', () => {
-    expect(dailyPath('2026-06-09')).toBe('daily/2026-06-09.md')
+    expect(dailyPath('2026-06-09')).toBe('daily/2026/2026-06-09.md')
   })
 
   it('rejects non-ISO daily dates', () => {
@@ -49,21 +47,20 @@ describe('graph paths', () => {
     expect(() => dailyPath('2026-02-31')).toThrow()
   })
 
-  it('builds note, template, and asset paths', () => {
+  it('builds note and asset paths', () => {
     expect(notePath('charlotte-maccaw')).toBe('notes/charlotte-maccaw.md')
-    expect(templatePath('journal')).toBe('templates/journal.md')
     expect(assetPath('screenshot.png')).toBe('assets/screenshot.png')
   })
 
   it('recognizes indexable Markdown anywhere outside hidden and reserved trees', () => {
     expect(isNotePath('notes/a.md')).toBe(true)
-    expect(isNotePath('daily/2026-06-12.md')).toBe(true)
+    expect(isNotePath('daily/2026/2026-06-12.md')).toBe(true)
     expect(isNotePath('notes/sub/deep.md')).toBe(true)
     expect(isNotePath('templates/journal.md')).toBe(true)
     expect(isNotePath('README.md')).toBe(true)
     expect(isNotePath('Projects/Plan.md')).toBe(true)
     expect(isNotePath('notes/a.txt')).toBe(false)
-    expect(isNotePath('audio-memos/audio-memo-2026-06-12-090000-000.m4a')).toBe(false)
+    expect(isNotePath('media/recording.m4a')).toBe(false)
     expect(isNotePath('assets/pasted.png')).toBe(false)
     expect(isNotePath('assets/caption.md')).toBe(false)
     expect(isNotePath('.obsidian/note.md')).toBe(false)
@@ -106,24 +103,22 @@ describe('graph paths', () => {
   it('prunes hidden and reserved root trees from note traversal', () => {
     expect(mayContainNotes('Projects')).toBe(true)
     expect(mayContainNotes('assets')).toBe(false)
-    expect(mayContainNotes('audio-memos/archive')).toBe(false)
+    expect(mayContainNotes('archive')).toBe(true)
     expect(mayContainNotes('.obsidian')).toBe(false)
   })
 
-  it('recognizes template paths', () => {
-    expect(isTemplatePath('templates/journal.md')).toBe(true)
-    expect(isTemplatePath('templates/journal.txt')).toBe(false)
-    expect(isTemplatePath('notes/journal.md')).toBe(false)
-  })
-
   it('recognizes daily-note paths', () => {
-    expect(isDaily('daily/2026-06-09.md')).toBe(true)
+    expect(isDaily('daily/2026/2026-06-09.md')).toBe(true)
+    expect(isDaily('daily/2026-06-09.md')).toBe(false)
+    expect(isDaily('daily/2025/2026-06-09.md')).toBe(false)
     expect(isDaily('notes/foo.md')).toBe(false)
     expect(isDaily('daily/not-a-date.md')).toBe(false)
   })
 
   it('extracts the date from a daily path, else null', () => {
-    expect(dateFromDailyPath('daily/2026-06-09.md')).toBe('2026-06-09')
+    expect(dateFromDailyPath('daily/2026/2026-06-09.md')).toBe('2026-06-09')
+    expect(dateFromDailyPath('daily/2026-06-09.md')).toBeNull()
+    expect(dateFromDailyPath('daily/2025/2026-06-09.md')).toBeNull()
     expect(dateFromDailyPath('notes/foo.md')).toBeNull()
   })
 })

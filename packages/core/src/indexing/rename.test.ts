@@ -148,7 +148,7 @@ describe('rewriteLinksForTitleChange', () => {
 
 describe('rewriteLinksForTitleChange stable-target displays', () => {
   it('updates a title-mirroring display while keeping the stable target', async () => {
-    const sourcePath = 'daily/2026-07-23.md'
+    const sourcePath = 'daily/2026/2026-07-23.md'
     const stableTarget = 'capture-2026-07-23-154848-811-c2b0'
     const { io, writes } = fakeIo(
       {
@@ -178,7 +178,7 @@ describe('rewriteLinksForTitleChange stable-target displays', () => {
 
   it('handles audio memo and user-defined stable aliases without note-type branches', async () => {
     const files = {
-      'daily/2026-07-23.md': '[[audio-memo-2026-07-23-154848|Old Title]]\n',
+      'daily/2026/2026-07-23.md': '[[audio-memo-2026-07-23-154848|Old Title]]\n',
       'notes/source.md': '[[stable-address|Old Title]]\n',
     }
     const { io, writes } = fakeIo(files, {
@@ -188,7 +188,7 @@ describe('rewriteLinksForTitleChange stable-target displays', () => {
       },
       backlinks: [
         {
-          sourcePath: 'daily/2026-07-23.md',
+          sourcePath: 'daily/2026/2026-07-23.md',
           targetRaw: 'audio-memo-2026-07-23-154848',
           alias: 'Old Title',
         },
@@ -208,7 +208,7 @@ describe('rewriteLinksForTitleChange stable-target displays', () => {
     })
 
     expect(writes).toEqual({
-      'daily/2026-07-23.md': '[[audio-memo-2026-07-23-154848|New Title]]\n',
+      'daily/2026/2026-07-23.md': '[[audio-memo-2026-07-23-154848|New Title]]\n',
       'notes/source.md': '[[stable-address|New Title]]\n',
     })
   })
@@ -309,7 +309,7 @@ describe('rewriteLinksForTitleChange stable-target displays', () => {
   })
 
   it('syncs a stable display even when the old title belongs to another note now', async () => {
-    const sourcePath = 'daily/2026-07-23.md'
+    const sourcePath = 'daily/2026/2026-07-23.md'
     const { io, writes } = fakeIo(
       { [sourcePath]: '- [[capture-base|Old Title]]\n' },
       {
@@ -372,7 +372,7 @@ describe('rewriteLinksForTitleChange stable-target displays', () => {
   it('syncs a display the index still records under an earlier title', async () => {
     // The first retitle (A → B) rewrote this Daily entry; the watcher has not
     // reprojected it yet, so the index still shows its display as "A".
-    const sourcePath = 'daily/2026-07-23.md'
+    const sourcePath = 'daily/2026/2026-07-23.md'
     const { io, writes } = fakeIo(
       { [sourcePath]: '- [[capture-base|B]]\n' },
       {

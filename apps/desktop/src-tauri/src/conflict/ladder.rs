@@ -233,7 +233,7 @@ mod tests {
         // (same-position append), the union rule resolves it.
         let base = "# 2026-07-04\n\n- seed\n";
         let result = resolve(input(
-            "daily/2026-07-04.md",
+            "daily/2026/2026-07-04.md",
             Some(base),
             (
                 side("# 2026-07-04\n\n- seed\n- mac\n", "Mac", 1),

@@ -134,10 +134,18 @@ export function createDevBridge(backend: DevBridgeBackend): IpcBridge {
         files.remove(pathArgsSchema.parse(args).path)
         return null
       }
+      case 'note_delete_revision': {
+        const { path, expectedContents } = z
+          .object({ path: z.string(), expectedContents: z.string() })
+          .parse(args)
+        if (files.read(path) !== expectedContents) {
+          throw new ReflectError('io', 'Note changed on disk; reload before retrying')
+        }
+        files.remove(path)
+        return null
+      }
       case 'list_files':
         return files.list()
-      case 'dir_list':
-        return files.listDir(z.object({ dir: z.string() }).parse(args).dir)
       case 'note_move_indexed': {
         const {
           request: { from, to },

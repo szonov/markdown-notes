@@ -207,7 +207,7 @@ export function wikiEmbedAssetPath(target: string): string | null {
  * Canonicalize an asset href to the on-disk path. A note body may write the same
  * file many ways — percent-encoded (`assets/my%20photo.png`), `./`-prefixed
  * (`./assets/a.png`), with `..`/empty segments — while the file on disk (and the
- * watcher / `dir_list` / `readAsset` paths) is the collapsed `assets/...` form.
+ * watcher and `readAsset` paths) is the collapsed `assets/...` form.
  * The index projection and the asset-description privacy gate key off this
  * canonical form, so every spelling of one file collapses to one key — a private
  * referer can't hide behind an alternate encoding *or* an alternate path shape.

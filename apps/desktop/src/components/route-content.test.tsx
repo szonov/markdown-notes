@@ -59,11 +59,6 @@ vi.mock('@/editor/note-editor.tsx', async () => {
           },
           setSelection: () => {},
           getSelectedText: () => '',
-          openSelectionMenu: () => {},
-          startPendingReplacement: () => false,
-          appendPendingReplacementText: () => {},
-          acceptPendingReplacement: () => {},
-          discardPendingReplacement: () => {},
           findNext: () => {},
           findPrevious: () => {},
         })
@@ -103,10 +98,6 @@ vi.mock('@/providers/settings-provider.tsx', () => ({
     settings: {
       editorMarkdownSyntax: 'hide',
       allNotesFilterTags: ['book', 'link', 'person'],
-      aiProviders: [],
-      defaultAiProviderId: null,
-      chatSystemPrompt: '',
-      aiPrompts: [],
       dailyNotesView: settingsState.dailyNotesView,
     },
     updateSettings: async () => {},
@@ -115,11 +106,6 @@ vi.mock('@/providers/settings-provider.tsx', () => ({
 }))
 vi.mock('@/components/settings-screen.tsx', () => ({
   SettingsScreen: () => <div data-testid="settings-screen" />,
-}))
-// The chat screen needs the ChatProvider stack (covered by its own tests);
-// here only the route → view mapping is under test.
-vi.mock('@/components/chat/chat-screen.tsx', () => ({
-  ChatScreen: () => <div data-testid="chat-screen" />,
 }))
 
 /** The fake graph: files behind the IPC bridge + a write log. */
@@ -203,7 +189,7 @@ describe('RouteContent', () => {
 
   it('renders a selected day as one daily-note page', async () => {
     const view = await renderRoute({ kind: 'daily', date: '2026-02-28' })
-    await expect.element(page.getByLabelText('Editing daily/2026-02-28.md')).toBeVisible()
+    await expect.element(page.getByLabelText('Editing daily/2026/2026-02-28.md')).toBeVisible()
     await expect.element(page.getByTestId('daily-stream')).not.toBeInTheDocument()
     await view.unmount()
   })

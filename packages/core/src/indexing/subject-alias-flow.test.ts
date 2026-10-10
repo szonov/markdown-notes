@@ -54,7 +54,7 @@ describe('v1 subject alias flow', () => {
   it('retitles a display reached through a stable subject alias', async () => {
     const database = openMigratedIndex()
     const subjectPath = 'notes/capture.md'
-    const sourcePath = 'daily/2026-07-23.md'
+    const sourcePath = 'daily/2026/2026-07-23.md'
     const source = '[[capture-2026-07-23-154848|Old Title]]\n'
     applyProjection(
       database,
@@ -181,14 +181,14 @@ describe('v1 subject alias flow', () => {
     const projections = [
       // A calendar-valid daily address outranks a regular note with that title,
       // even when the daily's custom H1 keeps it out of the title search hits.
-      project('daily/2026-07-10.md', '# Friday Journal\n', 10),
+      project('daily/2026/2026-07-10.md', '# Friday Journal\n', 10),
       project('notes/date-title.md', '# 2026-07-10\n', 90),
       // Without a daily, a regular note may own a valid date key. A generated
       // date phrase must not masquerade as a daily and navigate to this note.
       project('notes/tomorrow-title.md', '# 2026-07-11\n', 92),
       // A shape-valid but impossible daily path is only an ordinary title
       // claimant. Its daily_date projection must not block the real title.
-      project('daily/2026-02-31.md', '# Invalid date file\n', 15),
+      project('daily/2026/2026-02-31.md', '# Invalid date file\n', 15),
       project('notes/invalid-date-title.md', '# 2026-02-31\n', 95),
       // Ordinary duplicate titles are ambiguous for writable navigation, so
       // neither title-only candidate is selectable irrespective of recency.
@@ -237,7 +237,7 @@ describe('v1 subject alias flow', () => {
       // The daily owns the date key; the date-titled note stays selectable
       // through its path address instead of vanishing.
       expect(dateSuggestions.map(({ path, insertText }) => ({ path, insertText }))).toEqual([
-        { path: 'daily/2026-07-10.md', insertText: '2026-07-10' },
+        { path: 'daily/2026/2026-07-10.md', insertText: '2026-07-10' },
         { path: 'notes/date-title.md', insertText: 'notes/date-title' },
       ])
       const { suggestions: fuzzyDateSuggestions } = await suggestWikiLinkTargets(
@@ -248,7 +248,7 @@ describe('v1 subject alias flow', () => {
       expect(fuzzyDateSuggestions).toMatchObject([
         {
           target: '2026-07-10',
-          path: 'daily/2026-07-10.md',
+          path: 'daily/2026/2026-07-10.md',
           insertText: '2026-07-10',
           generated: { phrase: 'Today' },
         },

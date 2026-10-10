@@ -6,11 +6,9 @@
 
 export const DAILY_DIR = 'daily'
 export const NOTES_DIR = 'notes'
-/** Note templates — indexed as their own kind, excluded from note surfaces. */
-export const TEMPLATES_DIR = 'templates'
 export const ASSETS_DIR = 'assets'
 /** Root trees whose Markdown files are attachment metadata, never notes. */
-const RESERVED_NOTE_TREES = new Set([ASSETS_DIR, 'audio-memos'])
+const RESERVED_NOTE_TREES = new Set([ASSETS_DIR])
 
 /**
  * Local attachment formats Reflect can render or open: Obsidian-compatible
@@ -84,14 +82,14 @@ function asciiLowerCase(value: string): string {
   return value.replaceAll(/[A-Z]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) + 32))
 }
 
-/** Matches a daily-note path and captures its ISO date. */
-const DAILY_PATH_RE = /^daily\/(\d{4}-\d{2}-\d{2})\.md$/
+/** Matches `daily/YYYY/YYYY-MM-DD.md` and captures the directory year and ISO date. */
+const DAILY_PATH_RE = /^daily\/(\d{4})\/(\d{4}-\d{2}-\d{2})\.md$/
 /** A bare ISO date (`YYYY-MM-DD`). */
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 /**
  * Is this a real calendar date, not merely a `YYYY-MM-DD`-shaped string?
- * `daily/2026-02-31.md` is a legal filename and an ordinary note; it must
+ * `daily/2026/2026-02-31.md` is a legal filename and an ordinary note; it must
  * never claim a date that no calendar has. Rejects well-formatted but invalid
  * dates (e.g. 2026-13-99) by round-tripping through UTC and comparing the
  * components.
@@ -119,7 +117,7 @@ export function dailyPath(date: string): string {
   if (!isCalendarDate(date)) {
     throw new Error(`dailyPath expects a valid calendar date, got: ${date}`)
   }
-  return `${DAILY_DIR}/${date}.md`
+  return `${DAILY_DIR}/${date.slice(0, 4)}/${date}.md`
 }
 
 /**
@@ -142,40 +140,14 @@ export function notePath(slug: string): string {
   return `${NOTES_DIR}/${slug}.md`
 }
 
-/** Graph-relative path to a template for a filename slug (without `.md`). */
-export function templatePath(slug: string): string {
-  return `${TEMPLATES_DIR}/${slug}.md`
-}
-
 /** Graph-relative path to an attachment under `assets/`. */
 export function assetPath(name: string): string {
   return `${ASSETS_DIR}/${name}`
 }
 
-/**
- * Suffix of a managed asset-description file (Plan 20): the AI description +
- * OCR for an asset lives beside it as `<asset>.reflect.md`.
- */
-export const DESCRIPTION_SUFFIX = '.reflect.md'
-
-/** Graph-relative description path for an asset (`assets/x.png` → `assets/x.png.reflect.md`). */
-export function descriptionPathFor(assetPath: string): string {
-  return `${assetPath}${DESCRIPTION_SUFFIX}`
-}
-
-/**
- * Is this graph-relative path an asset under `assets/` (and not a managed
- * description file)? A coarse predicate — it does not check the file
- * extension — used to decide whether a watcher batch is relevant to the
- * asset-description pass; precise eligibility is `isEligibleAssetPath`.
- */
-export function isAssetPath(path: string): boolean {
-  return path.startsWith(`${ASSETS_DIR}/`) && !path.endsWith(DESCRIPTION_SUFFIX)
-}
-
-/** Is this graph-relative path a daily note (`daily/YYYY-MM-DD.md`)? */
+/** Is this graph-relative path a daily note (`daily/YYYY/YYYY-MM-DD.md`)? */
 export function isDaily(path: string): boolean {
-  return DAILY_PATH_RE.test(path)
+  return dateFromDailyPath(path) !== null
 }
 
 /**
@@ -220,12 +192,7 @@ export function classifyGraphPath(path: string): GraphPathKind | null {
 }
 
 /**
- * Is this graph-relative path an indexable markdown note? The file-change
- * stream carries more than notes — the watcher also reports `audio-memos/`
- * recordings — so consumers that read or index note *content* gate on this.
- * Templates count: they are indexed and editable like notes, just excluded
- * from note surfaces (gate on {@link isTemplatePath} where that matters,
- * e.g. embeddings).
+ * Is this graph-relative path an indexable markdown note?
  */
 export function isNotePath(path: string): boolean {
   return classifyGraphPath(path) === 'note'
@@ -248,12 +215,10 @@ export function mayContainNotes(path: string): boolean {
   return first !== undefined && !RESERVED_NOTE_TREES.has(asciiLowerCase(first))
 }
 
-/** Is this graph-relative path a note template (`.md` under `templates/`)? */
-export function isTemplatePath(path: string): boolean {
-  return path.startsWith(`${TEMPLATES_DIR}/`) && isNotePath(path)
-}
-
 /** Extract the ISO date from a daily-note path, or `null` if it isn't one. */
 export function dateFromDailyPath(path: string): string | null {
-  return DAILY_PATH_RE.exec(path)?.[1] ?? null
+  const match = DAILY_PATH_RE.exec(path)
+  const directoryYear = match?.[1]
+  const date = match?.[2]
+  return directoryYear !== undefined && date?.startsWith(`${directoryYear}-`) ? date : null
 }

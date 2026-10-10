@@ -205,9 +205,9 @@ describe('NoteActionsMenu', () => {
   })
 
   it('offers Unlock note for a private daily note and toggles canonically', async () => {
-    currentNoteRow = noteRow('daily/2026-06-10.md', true, 'June 10th, 2026')
+    currentNoteRow = noteRow('daily/2026/2026-06-10.md', true, 'June 10th, 2026')
     noteSource.value = '---\nprivate: true\n---\n# A\n'
-    const { view } = await mount('daily/2026-06-10.md')
+    const { view } = await mount('daily/2026/2026-06-10.md')
 
     await openActions()
     await expect.element(view.getByRole('button', { name: 'Unlock note' })).toBeInTheDocument()
@@ -216,7 +216,7 @@ describe('NoteActionsMenu', () => {
 
     await vi.waitFor(() =>
       expect(commitNoteFrontmatter).toHaveBeenCalledWith(
-        'daily/2026-06-10.md',
+        'daily/2026/2026-06-10.md',
         { private: false },
         7,
       ),

@@ -21,9 +21,7 @@ use tauri_plugin_opener::OpenerExt;
 
 use crate::error::{AppError, AppResult};
 
-use self::io::{
-    atomic_create, atomic_write, bootstrap, collect_files, initialize_runtime, AtomicCreateOutcome,
-};
+use self::io::{atomic_create, atomic_write, bootstrap, initialize_runtime, AtomicCreateOutcome};
 use self::resolve::resolve;
 
 /// Atomic byte write staged under `.reflect/tmp/`, shared with the conflict
@@ -34,7 +32,6 @@ pub(crate) use self::io::atomic_write_bytes;
 /// "Occupied" probe (real file OR eviction placeholder), shared with the
 /// iCloud sweep's collision folding — an evicted canonical note must not be
 /// treated as a free slot (Plan 21).
-pub(crate) use self::io::file_occupied;
 /// Sync-exclusion marking, shared with `git::repo` (a freshly initialized
 /// backup repo must never ride a file-sync provider — Plan 21).
 pub(crate) use self::io::modified_ms;
@@ -215,7 +212,7 @@ fn root_for(state: &State<GraphState>, generation: Option<u64>) -> AppResult<Pat
 /// an adopted vault keeps its images beside its notes. Classification is the
 /// shared `graph-paths` policy, so neither surface can serve a note, a hidden
 /// file, or a traversal path. Writes are deliberately untouched — Reflect
-/// only ever creates files under `assets/` and `audio-memos/`, and widening
+/// only ever creates files under `assets/`, and widening
 /// reads must not widen what Reflect will write.
 fn ensure_readable_attachment_path(path: &str) -> AppResult<()> {
     if reflect_graph_paths::is_attachment(path) {
@@ -284,7 +281,7 @@ pub enum LocalNoteRead {
 }
 
 /// Read a note's markdown **only when its bytes are local**. Bulk background
-/// passes (the embedding backfill, asset-description gathering) must use this
+/// passes over many notes must use this
 /// instead of [`note_read`]: reading an evicted note makes `fileproviderd`
 /// materialize it on demand, and a whole-graph pass over an evicted iCloud
 /// graph becomes thousands of serial blocking downloads. Runs off the main
@@ -429,11 +426,10 @@ pub fn asset_write(
     Ok(())
 }
 
-/// Read a binary asset's bytes, base64-encoded for the JSON IPC (e.g. audio
-/// memos read back for transcription). Pinned to `generation`, unlike
-/// `note_read`: the caller is a background pass that can span a graph
+/// Read a binary asset's bytes, base64-encoded for the JSON IPC. Pinned to
+/// `generation`, unlike `note_read`: the caller can span a graph
 /// switch, and an unpinned read would resolve against the *new* root —
-/// handing back (and possibly sending to a provider) another graph's file.
+/// handing back another graph's file.
 #[tauri::command]
 pub fn asset_read(path: String, generation: u64, state: State<GraphState>) -> AppResult<String> {
     use base64::Engine;
@@ -528,24 +524,6 @@ fn asset_file_url(path: &Path) -> AppResult<tauri::Url> {
     })
 }
 
-/// List every file (any extension) under a graph-relative directory, e.g.
-/// `audio-memos`. Which directory means what is the TypeScript layer's policy;
-/// a missing directory lists as empty. Pinned to `generation` for the same
-/// reason as `asset_read` — the listing seeds a background pass that must
-/// never mix graphs.
-#[tauri::command]
-pub fn dir_list(
-    dir: String,
-    generation: u64,
-    state: State<GraphState>,
-) -> AppResult<Vec<FileMeta>> {
-    let root = root_for_generation(&state, generation)?;
-    resolve(&root, &dir)?; // traversal guard; the walk itself skips symlinks
-    let mut out = Vec::new();
-    collect_files(&root, &dir, None, &mut out)?;
-    Ok(out)
-}
-
 /// Does a graph-relative path currently exist as a file? The collision picker
 /// (Plan 17) probes disk as well as the index — the index lags the watcher by
 /// a debounce, and an unindexed file must never be clobbered by a new note.
@@ -593,6 +571,41 @@ pub(crate) fn move_note_file(root: &Path, from: &str, to: &str) -> AppResult<()>
 pub fn note_delete(path: String, generation: u64, state: State<GraphState>) -> AppResult<()> {
     let root = root_for_generation(&state, generation)?;
     let abs = resolve(&root, &path)?;
+    delete_note_target(&root, &path, abs)?;
+    invalidate_file_catalog(&state, &root);
+    Ok(())
+}
+
+/// Delete a note only if its current normalized text still matches the
+/// revision the editor loaded. The revision check and trash move share the
+/// note-write lock, so an external/native write cannot slip between them.
+#[tauri::command]
+pub fn note_delete_revision(
+    path: String,
+    generation: u64,
+    expected_contents: String,
+    state: State<GraphState>,
+) -> AppResult<()> {
+    let root = root_for_generation(&state, generation)?;
+    let abs = resolve(&root, &path)?;
+    let _guard = NOTE_WRITE_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    verify_note_revision(&root, &abs, &expected_contents)?;
+    delete_note_target(&root, &path, abs)?;
+    invalidate_file_catalog(&state, &root);
+    Ok(())
+}
+
+fn verify_note_revision(root: &Path, target: &Path, expected: &str) -> AppResult<()> {
+    let current = io::read_note_no_follow(root, target)?;
+    if current != expected {
+        return Err(AppError::io("Note changed on disk; reload before retrying"));
+    }
+    Ok(())
+}
+
+fn delete_note_target(root: &Path, path: &str, abs: PathBuf) -> AppResult<()> {
     // An iCloud-evicted note exists only as its `.name.md.icloud` stub —
     // trashing the logical path would fail and the note would be
     // undeletable. Removing the stub deletes the iCloud item (Plan 21).
@@ -604,12 +617,21 @@ pub fn note_delete(path: String, generation: u64, state: State<GraphState>) -> A
             .unwrap_or(abs)
     };
     #[cfg(desktop)]
-    os_trash_delete(&target)?;
+    if let Err(err) = os_trash_delete(&target) {
+        // NSFileManager can refuse to move an otherwise writable iCloud file
+        // to the system Trash (Cocoa `trashItemAtURL` permission error). Keep
+        // deletion recoverable by falling back to the graph-local trash. If
+        // the first operation actually moved the item before reporting an
+        // error, there is nothing left to move and the delete has succeeded.
+        if target.exists() {
+            tracing::warn!(?err, path = %target.display(), "system trash failed; using graph trash");
+            move_to_graph_trash(root, &target)?;
+        }
+    }
     #[cfg(mobile)]
-    move_to_graph_trash(&root, &target)?;
+    move_to_graph_trash(root, &target)?;
     // A deleted note's sync ancestor is meaningless — drop it (Plan 21).
-    crate::conflict::shadow::ShadowStore::new(&root).forget(&path);
-    invalidate_file_catalog(&state, &root);
+    crate::conflict::shadow::ShadowStore::new(root).forget(path);
     Ok(())
 }
 
@@ -685,7 +707,6 @@ fn os_trash_delete(abs: &Path) -> AppResult<()> {
 /// Move a deleted file under `<graph>/.reflect/trash/`, stamping the name
 /// with epoch millis — and a counter beyond that — until the name is free
 /// (repeat deletes of `a.md`, even within one millisecond).
-#[cfg(mobile)]
 fn move_to_graph_trash(root: &Path, abs: &Path) -> AppResult<()> {
     let trash_dir = root.join(".reflect").join("trash");
     fs::create_dir_all(&trash_dir)?;
@@ -1039,7 +1060,7 @@ mod move_tests {
         assert!(ensure_readable_attachment_path("assets/report.docx").is_ok());
         assert!(ensure_readable_attachment_path("assets/archive.zip").is_ok());
         assert!(ensure_readable_attachment_path("Projects/Media/cat.png").is_ok());
-        assert!(ensure_readable_attachment_path("audio-memos/memo.m4a").is_ok());
+        assert!(ensure_readable_attachment_path("Media/memo.m4a").is_ok());
         // Notes, hidden components, traversal, extensionless paths, and
         // executable formats refuse.
         assert!(ensure_readable_attachment_path("notes/secret.md").is_err());
@@ -1142,5 +1163,41 @@ mod note_revision_tests {
         write_note_revision(directory.path(), &target, "first", true, None).unwrap();
         assert!(write_note_revision(directory.path(), &target, "second", true, None).is_err());
         assert_eq!(fs::read_to_string(&target).unwrap(), "first");
+    }
+
+    #[test]
+    fn delete_revision_rejects_text_changed_since_editor_read() {
+        let directory = tempfile::tempdir().unwrap();
+        let target = directory.path().join("daily.md");
+        fs::write(&target, "newer text\n").unwrap();
+
+        assert!(verify_note_revision(directory.path(), &target, "older text\n").is_err());
+        verify_note_revision(directory.path(), &target, "newer text\n").unwrap();
+        assert_eq!(fs::read_to_string(target).unwrap(), "newer text\n");
+    }
+
+    #[test]
+    fn graph_trash_is_recoverable_and_avoids_name_collisions() {
+        let directory = tempfile::tempdir().unwrap();
+        let first = directory.path().join("notes").join("note.md");
+        fs::create_dir_all(first.parent().unwrap()).unwrap();
+        fs::write(&first, "first").unwrap();
+        move_to_graph_trash(directory.path(), &first).unwrap();
+
+        let trash = directory.path().join(".reflect").join("trash");
+        assert!(!first.exists());
+        assert_eq!(fs::read_to_string(trash.join("note.md")).unwrap(), "first");
+
+        fs::write(&first, "second").unwrap();
+        move_to_graph_trash(directory.path(), &first).unwrap();
+        let mut entries = fs::read_dir(trash)
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        entries.sort_by_key(std::fs::DirEntry::file_name);
+        assert_eq!(entries.len(), 2);
+        assert!(entries.iter().any(|entry| {
+            entry.file_name() != "note.md" && fs::read_to_string(entry.path()).unwrap() == "second"
+        }));
     }
 }

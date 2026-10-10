@@ -59,9 +59,9 @@ describe('rowForHit', () => {
 
   it('allows regular notes, but not daily notes, to expose delete', () => {
     expect(rowForHit(hit({ path: 'notes/a.md', dailyDate: null })).canDelete).toBe(true)
-    expect(rowForHit(hit({ path: 'daily/2026-08-15.md', dailyDate: '2026-08-15' })).canDelete).toBe(
-      false,
-    )
+    expect(
+      rowForHit(hit({ path: 'daily/2026/2026-08-15.md', dailyDate: '2026-08-15' })).canDelete,
+    ).toBe(false)
   })
 })
 

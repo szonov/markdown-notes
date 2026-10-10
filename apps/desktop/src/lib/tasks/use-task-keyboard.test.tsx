@@ -333,7 +333,7 @@ describe('useTaskKeyboard', () => {
 
   it('Return adds a task to today’s daily when nothing is selected', async () => {
     const created = task({
-      notePath: 'daily/2026-06-15.md',
+      notePath: 'daily/2026/2026-06-15.md',
       astPath: [0],
       text: '',
     })
@@ -346,7 +346,7 @@ describe('useTaskKeyboard', () => {
     const event = press(root, 'Enter')
     expect(event.defaultPrevented).toBe(true)
     expect(insert).toHaveBeenCalledWith({
-      notePath: 'daily/2026-06-15.md',
+      notePath: 'daily/2026/2026-06-15.md',
       noteTitle: '2026-06-15',
       dailyDate: '2026-06-15',
       isPinned: false,
@@ -420,7 +420,11 @@ describe('useTaskKeyboard', () => {
   it.each([
     [
       'an undated row in a past daily note',
-      task({ notePath: 'daily/2026-06-01.md', noteTitle: '2026-06-01', dailyDate: '2026-06-01' }),
+      task({
+        notePath: 'daily/2026/2026-06-01.md',
+        noteTitle: '2026-06-01',
+        dailyDate: '2026-06-01',
+      }),
     ],
     ['an overdue row', task({ notePath: 'notes/a.md', noteTitle: 'A', dueDate: '2026-06-01' })],
     ['an upcoming row', task({ notePath: 'notes/a.md', noteTitle: 'A', dueDate: '2026-06-20' })],
@@ -462,7 +466,7 @@ describe('useTaskKeyboard', () => {
 
     press(root, 'Enter')
     expect(insert).toHaveBeenCalledWith({
-      notePath: 'daily/2026-06-15.md',
+      notePath: 'daily/2026/2026-06-15.md',
       noteTitle: '2026-06-15',
       dailyDate: '2026-06-15',
       isPinned: false,

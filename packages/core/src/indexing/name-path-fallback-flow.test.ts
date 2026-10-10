@@ -20,7 +20,11 @@ describe('colon and slash title flow', () => {
     )
     applyProjection(
       database,
-      project('daily/2026-08-04.md', 'See [[Test: Long With Parens & Ampersand Follow-up]].\n', 10),
+      project(
+        'daily/2026/2026-08-04.md',
+        'See [[Test: Long With Parens & Ampersand Follow-up]].\n',
+        10,
+      ),
     )
     connectIndex(database)
 
@@ -30,7 +34,7 @@ describe('colon and slash title flow', () => {
       ).resolves.toEqual({ kind: 'resolved', path: targetPath })
 
       const backlinks = await getBacklinks(targetPath)
-      expect(backlinks.map((row) => row.sourcePath)).toEqual(['daily/2026-08-04.md'])
+      expect(backlinks.map((row) => row.sourcePath)).toEqual(['daily/2026/2026-08-04.md'])
 
       const { suggestions } = await suggestWikiLinkTargets('Test: Long')
       expect(suggestions.map((row) => row.insertText)).toEqual([
@@ -49,7 +53,7 @@ describe('colon and slash title flow', () => {
     applyProjection(database, project(targetPath, '# john/sally meeting notes\n', 20))
     applyProjection(
       database,
-      project('daily/2026-08-04.md', 'See [[john/sally meeting notes]].\n', 10),
+      project('daily/2026/2026-08-04.md', 'See [[john/sally meeting notes]].\n', 10),
     )
     connectIndex(database)
 
@@ -60,7 +64,7 @@ describe('colon and slash title flow', () => {
       })
 
       const backlinks = await getBacklinks(targetPath)
-      expect(backlinks.map((row) => row.sourcePath)).toEqual(['daily/2026-08-04.md'])
+      expect(backlinks.map((row) => row.sourcePath)).toEqual(['daily/2026/2026-08-04.md'])
 
       const { suggestions } = await suggestWikiLinkTargets('john/sally')
       expect(suggestions.map((row) => row.insertText)).toEqual(['john/sally meeting notes'])
@@ -75,7 +79,7 @@ describe('colon and slash title flow', () => {
     const database = openMigratedIndex()
     applyProjection(database, project('Projects/Plan.md', '# Weekly Planning\n', 20))
     applyProjection(database, project('notes/imposter.md', '# Projects/Plan\n', 30))
-    applyProjection(database, project('daily/2026-08-04.md', 'See [[Projects/Plan]].\n', 10))
+    applyProjection(database, project('daily/2026/2026-08-04.md', 'See [[Projects/Plan]].\n', 10))
     connectIndex(database)
 
     try {
@@ -85,7 +89,7 @@ describe('colon and slash title flow', () => {
       })
 
       const fileBacklinks = await getBacklinks('Projects/Plan.md')
-      expect(fileBacklinks.map((row) => row.sourcePath)).toEqual(['daily/2026-08-04.md'])
+      expect(fileBacklinks.map((row) => row.sourcePath)).toEqual(['daily/2026/2026-08-04.md'])
       await expect(getBacklinks('notes/imposter.md')).resolves.toEqual([])
     } finally {
       setBridge(null)
@@ -96,7 +100,7 @@ describe('colon and slash title flow', () => {
   it('gives a rooted path no name fallback, in resolution or backlinks', async () => {
     const database = openMigratedIndex()
     applyProjection(database, project('notes/missing.md', '# /Missing\n', 20))
-    applyProjection(database, project('daily/2026-08-04.md', 'See [[/Missing]].\n', 10))
+    applyProjection(database, project('daily/2026/2026-08-04.md', 'See [[/Missing]].\n', 10))
     connectIndex(database)
 
     try {
@@ -115,7 +119,10 @@ describe('colon and slash title flow', () => {
     const database = openMigratedIndex()
     const targetPath = 'notes/missingplan.md'
     applyProjection(database, project(targetPath, '# Missing/Plan\n', 20))
-    applyProjection(database, project('daily/2026-08-04.md', 'See [[Missing/Plan#Next]].\n', 10))
+    applyProjection(
+      database,
+      project('daily/2026/2026-08-04.md', 'See [[Missing/Plan#Next]].\n', 10),
+    )
     connectIndex(database)
 
     try {
@@ -125,7 +132,7 @@ describe('colon and slash title flow', () => {
       })
 
       const backlinks = await getBacklinks(targetPath)
-      expect(backlinks.map((row) => row.sourcePath)).toEqual(['daily/2026-08-04.md'])
+      expect(backlinks.map((row) => row.sourcePath)).toEqual(['daily/2026/2026-08-04.md'])
     } finally {
       setBridge(null)
       database.close()
@@ -136,7 +143,7 @@ describe('colon and slash title flow', () => {
     const database = openMigratedIndex()
     const targetPath = 'notes/missingplan.md'
     applyProjection(database, project(targetPath, '# Missing/Plan\n', 20))
-    applyProjection(database, project('daily/2026-08-04.md', 'See [[Missing/Plan.md]].\n', 10))
+    applyProjection(database, project('daily/2026/2026-08-04.md', 'See [[Missing/Plan.md]].\n', 10))
     connectIndex(database)
 
     try {
@@ -146,7 +153,7 @@ describe('colon and slash title flow', () => {
       })
 
       const backlinks = await getBacklinks(targetPath)
-      expect(backlinks.map((row) => row.sourcePath)).toEqual(['daily/2026-08-04.md'])
+      expect(backlinks.map((row) => row.sourcePath)).toEqual(['daily/2026/2026-08-04.md'])
     } finally {
       setBridge(null)
       database.close()

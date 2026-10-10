@@ -215,13 +215,11 @@ export function useAppShortcuts(): CommandContext {
           await toggleNotePinned({ queryClient, root, generation, path })
         }
       },
-      togglePrivate: async () => {},
       back,
       forward,
       clearScrollState,
       toggleTheme: () => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark'),
       toggleSidebar,
-      newChat: () => {},
       openNoteFind: () => {
         openNoteFindForPath(
           focusedNotePathForRoute(routeRef.current, todayIso(), focusedDailyDateRef.current),
@@ -236,13 +234,10 @@ export function useAppShortcuts(): CommandContext {
         }
         void openRecentRef.current(recent.root)
       },
-      toggleAudioMemo: () => {},
       generation: () => generationRef.current,
       graphRoot: () => graphRootRef.current,
       openPalette,
       openShortcuts,
-      openTemplatePicker: () => {},
-      openTemplateCreate: () => {},
     }),
     [
       queryClient,

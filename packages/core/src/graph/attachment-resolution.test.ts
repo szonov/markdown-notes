@@ -72,7 +72,7 @@ describe('resolveAttachmentLink', () => {
   })
 
   it("keeps Reflect's vault-root `assets/` reading before the catalog loads", () => {
-    expect(resolveAttachmentLink('daily/2026-09-23.md', 'assets/pasted-1.png', null)).toBe(
+    expect(resolveAttachmentLink('daily/2026/2026-09-23.md', 'assets/pasted-1.png', null)).toBe(
       'assets/pasted-1.png',
     )
     expect(resolveAttachmentLink('notes/Plan.md', 'assets/pasted-2.png', vault)).toBe(

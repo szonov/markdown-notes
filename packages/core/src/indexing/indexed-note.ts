@@ -4,13 +4,7 @@ import {
   noteBasenameKey,
   wikiNoteReference,
 } from '../graph/note-reference.ts'
-import {
-  dateFromDailyPath,
-  foldGraphPath,
-  isCalendarDate,
-  isDaily,
-  isTemplatePath,
-} from '../graph/paths.ts'
+import { dateFromDailyPath, foldGraphPath, isCalendarDate, isDaily } from '../graph/paths.ts'
 import { hasSearchableChar } from '../lib/searchable-char.ts'
 import {
   detectConflictMarkers,
@@ -60,17 +54,14 @@ import { serializeWikiSuggestionAddress } from './suggest.ts'
  * rows until reprojected, so the bump backfills them ·
  * 8 — `tasks.due_date` (explicit `[[YYYY-MM-DD]]` per task, V1 Overdue semantics):
  * existing task rows have a null due date until reprojected.
- * 9 — asset descriptions folded into `search_fts.body` (Plan 20 search
- * integration): existing notes carry no asset-description text in search until
- * reprojected, so the bump rebuilds them.
+ * 9 — historical asset-description search projection (removed).
  * 10 — asset reference paths fully canonicalized (`./`, `..`, empty segments
  * collapsed, not just percent-decoded): the `assets` projection's keys change,
  * so the bump rebuilds them — the privacy gate matches them against the
  * canonical on-disk path.
  * 11 — `tasks` projection limited to round Meowdown task checkboxes (`+ [ ]` /
  * `+ [x]`), excluding square checklist checkboxes from the aggregate Tasks view.
- * 12 — `notes.kind` (daily / note / template): templates are indexed but
- * excluded from note surfaces, so rows must carry the kind.
+ * 12 — `notes.kind` projection.
  * 13 — `note_emails` projection (`- Email:` contact-field bullets): existing
  * person notes carry no email rows until reprojected, and attendee → note
  * resolution in the calendar flow needs them, so the bump backfills them.
@@ -101,8 +92,10 @@ import { serializeWikiSuggestionAddress } from './suggest.ts'
  * of plain text, so every note's tasks must reproject.
  * 22 - task breadcrumbs start with the chain of headings above the task (the
  * `Tasks` heading included), so every note's tasks must reproject.
+ * 23 - the removed templates subsystem leaves legacy `templates/*.md` files
+ * as ordinary notes.
  */
-export const PROJECTION_VERSION = 22
+export const PROJECTION_VERSION = 23
 
 /**
  * Precedence of the spellings a note answers to (`note_claims.tier`): the
@@ -110,7 +103,7 @@ export const PROJECTION_VERSION = 22
  * migration 0019 and the CLI read the same values.
  */
 export const CLAIM_TIER = {
-  /** Calendar-valid daily date (`daily/2026-07-26.md` answering to `2026-07-26`). */
+  /** Calendar-valid daily date (`daily/2026/2026-07-26.md` answering to `2026-07-26`). */
   dailyDate: 1,
   /** Authored title (frontmatter or first heading; filename when untitled). */
   title: 2,
@@ -195,8 +188,8 @@ export const indexedTaskSchema = z.object({
 })
 export type IndexedTask = z.infer<typeof indexedTaskSchema>
 
-/** What a `notes` row is: part of the graph (daily/note) or a template. */
-export const noteKindSchema = z.enum(['daily', 'note', 'template'])
+/** What a `notes` row is: a dated daily note or a regular note. */
+export const noteKindSchema = z.enum(['daily', 'note'])
 export type NoteKind = z.infer<typeof noteKindSchema>
 
 export const indexedNoteSchema = z.object({
@@ -206,7 +199,7 @@ export const indexedNoteSchema = z.object({
   titleKey: z.string(),
   /** ASCII-folded graph path: what a path-qualified link joins against. */
   pathKey: z.string(),
-  /** Derived from the path; templates are excluded from note surfaces. */
+  /** Derived from the path. */
   kind: noteKindSchema,
   dailyDate: z.string().nullable(),
   isPrivate: z.boolean(),
@@ -282,8 +275,7 @@ export function projectNoteAliases(parsed: ParsedNote): IndexedAlias[] {
 
 /**
  * Every folded spelling this note answers to, with the tier that settles a
- * contest against another note. Templates claim nothing: they are reachable
- * only through an explicit `templates/…` path.
+ * contest against another note.
  *
  * A note with no authored title already carries its filename as its title
  * (`deriveTitle`), so the filename tier only adds an address for a note
@@ -295,9 +287,6 @@ export function projectNoteClaims(
   parsed: ParsedNote,
   aliases: readonly IndexedAlias[],
 ): IndexedClaim[] {
-  if (isTemplatePath(parsed.path)) {
-    return []
-  }
   const claims: IndexedClaim[] = []
   const seen = new Set<string>()
   const claim = (key: string, tier: number): void => {
@@ -368,7 +357,7 @@ export function buildIndexedNote(
     title: parsed.title,
     titleKey: foldKey(parsed.title),
     pathKey: foldGraphPath(parsed.path),
-    kind: isDaily(parsed.path) ? 'daily' : isTemplatePath(parsed.path) ? 'template' : 'note',
+    kind: isDaily(parsed.path) ? 'daily' : 'note',
     dailyDate: isDaily(parsed.path) ? dateFromDailyPath(parsed.path) : null,
     isPrivate: parsed.frontmatter.private,
     isPinned: isPinned(parsed.frontmatter),

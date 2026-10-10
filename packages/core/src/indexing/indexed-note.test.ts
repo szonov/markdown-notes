@@ -9,7 +9,7 @@ import {
 
 describe('buildIndexedNote', () => {
   it('carries the projection version that rebuilds heading-chain task breadcrumbs', () => {
-    expect(PROJECTION_VERSION).toBe(22)
+    expect(PROJECTION_VERSION).toBe(23)
   })
 
   it('flattens a parsed note into the index payload', () => {
@@ -139,7 +139,7 @@ describe('buildIndexedNote', () => {
 
   it('flags a note as empty only when nothing would render', () => {
     const hasContentOf = (source: string): boolean =>
-      buildIndexedNote(parseNote({ path: 'daily/2026-06-09.md', source }), {
+      buildIndexedNote(parseNote({ path: 'daily/2026/2026-06-09.md', source }), {
         fileHash: 'h',
         mtime: 0,
         source,
@@ -166,11 +166,14 @@ describe('buildIndexedNote', () => {
   })
 
   it('marks daily notes with their date and carries no id', () => {
-    const indexed = buildIndexedNote(parseNote({ path: 'daily/2026-06-09.md', source: 'today' }), {
-      fileHash: 'h',
-      mtime: 0,
-      source: 'today',
-    })
+    const indexed = buildIndexedNote(
+      parseNote({ path: 'daily/2026/2026-06-09.md', source: 'today' }),
+      {
+        fileHash: 'h',
+        mtime: 0,
+        source: 'today',
+      },
+    )
     expect(indexed.dailyDate).toBe('2026-06-09')
     expect(indexed.title).toBe('2026-06-09')
     expect(indexed.id).toBeNull()
@@ -185,9 +188,9 @@ describe('buildIndexedNote', () => {
         mtime: 0,
         source: 'body',
       }).kind
-    expect(kindOf('daily/2026-06-09.md')).toBe('daily')
+    expect(kindOf('daily/2026/2026-06-09.md')).toBe('daily')
     expect(kindOf('notes/n.md')).toBe('note')
-    expect(kindOf('templates/journal.md')).toBe('template')
+    expect(kindOf('templates/journal.md')).toBe('note')
   })
 
   it('projects an explicit pin order', () => {
@@ -382,10 +385,10 @@ describe('projectNoteClaims (via buildIndexedNote)', () => {
 
   it('claims a calendar-valid daily date but not an impossible one', () => {
     expect(
-      buildIndexedNote(parseNote({ path: 'daily/2026-07-26.md', source: '' }), meta).claims,
+      buildIndexedNote(parseNote({ path: 'daily/2026/2026-07-26.md', source: '' }), meta).claims,
     ).toContainEqual({ key: '2026-07-26', tier: CLAIM_TIER.dailyDate })
     expect(
-      buildIndexedNote(parseNote({ path: 'daily/2026-02-31.md', source: '' }), meta).claims,
+      buildIndexedNote(parseNote({ path: 'daily/2026/2026-02-31.md', source: '' }), meta).claims,
     ).not.toContainEqual({ key: '2026-02-31', tier: CLAIM_TIER.dailyDate })
   })
 
@@ -402,13 +405,13 @@ describe('projectNoteClaims (via buildIndexedNote)', () => {
     ])
   })
 
-  it('claims nothing for a template', () => {
+  it('treats Markdown in a legacy templates directory as a regular note', () => {
     expect(
       buildIndexedNote(parseNote({ path: 'templates/meeting.md', source: '# Meeting' }), {
         ...meta,
         source: '# Meeting',
       }).claims,
-    ).toEqual([])
+    ).toEqual([{ key: 'meeting', tier: CLAIM_TIER.title }])
   })
 })
 

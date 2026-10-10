@@ -33,8 +33,7 @@ function contextSidebarFor(target: ContextSidebarTarget | null): ReactElement | 
 /**
  * Everything inside the workspace's providers: the headerless shell — the
  * collapsible workspace and contextual sidebars beside the note pane — plus
- * the always-mounted global surfaces (operations status, ⌘K palette,
- * embeddings sync). Split
+ * the always-mounted global surfaces (operations status and ⌘K palette). Split
  * from {@link GraphWorkspace} because these hooks need the providers it
  * mounts.
  */

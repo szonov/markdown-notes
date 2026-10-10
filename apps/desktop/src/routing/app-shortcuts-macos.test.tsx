@@ -48,15 +48,9 @@ vi.mock('@/providers/theme-provider.tsx', () => ({
 }))
 vi.mock('@/providers/settings-provider.tsx', () => ({
   useSettings: () => ({
-    settings: { editorMarkdownSyntax: 'hide', semanticSearchEnabled: false, theme: 'system' },
+    settings: { editorMarkdownSyntax: 'hide', theme: 'system' },
     updateSettings: vi.fn(),
   }),
-}))
-vi.mock('@/providers/audio-memo-provider.tsx', () => ({
-  useAudioMemo: () => ({ toggle: vi.fn() }),
-}))
-vi.mock('@/providers/chat-provider.tsx', () => ({
-  useChatSession: () => ({ newChat: vi.fn() }),
 }))
 
 registerAppCommands() // production does this in main.tsx

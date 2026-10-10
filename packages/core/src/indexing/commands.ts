@@ -67,7 +67,7 @@ function movedNoteAddress(path: string) {
 
 /**
  * Move a note file **and** its index rows in one Rust transaction (Plan 17):
- * pinned state, conflict flags, and embedding vectors survive the rename, and
+ * pinned state, conflict flags, and child projections survive the rename, and
  * the watcher's delete+create echo is benign by construction (the remove
  * finds no rows; the upsert re-applies identical rows). Unlike
  * the other index commands, `generation` here is the **graph** generation

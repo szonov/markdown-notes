@@ -21,8 +21,6 @@ export interface CommandContext {
   notePath: () => string | null
   /** Toggle the focused note pin with immediate shared feedback. */
   togglePin: () => Promise<void>
-  /** Legacy capability retained for compatibility with older command contexts. */
-  togglePrivate: () => Promise<void>
   back: () => void
   forward: () => void
   /** Discard the current view's saved scroll offsets so it re-anchors when revisited. */
@@ -30,8 +28,6 @@ export interface CommandContext {
   toggleTheme: () => void
   /** Collapse/expand the workspace and contextual sidebars. */
   toggleSidebar: () => void
-  /** Legacy capability retained for compatibility with older command contexts. */
-  newChat: () => void
   /** Open Find for the note currently targeted by {@link notePath}. */
   openNoteFind: () => void
   /** Advance the active or most recently closed note Find query. */
@@ -40,11 +36,9 @@ export interface CommandContext {
   findPreviousInNote: () => void
   /** Switch to a recent graph by zero-based position in the graph switcher. */
   switchGraph: (index: number) => void
-  /** Legacy capability retained for compatibility with older command contexts. */
-  toggleAudioMemo: () => void
   /**
    * The open **index session** generation (`index_open`), or null when none —
-   * what index/embedding commands echo. File writes (`note_write`) take
+   * what index commands echo. File writes (`note_write`) take
    * `graph.generation` instead; no current command needs that one.
    */
   generation: () => number | null
@@ -54,11 +48,6 @@ export interface CommandContext {
   openPalette: (query?: string) => void
   /** Open the ⌘/ shortcuts cheat-sheet. */
   openShortcuts: () => void
-  /** Legacy capability retained for compatibility with older command contexts. */
-  openTemplatePicker: () => void
-  /** Legacy capability retained for compatibility with older command contexts. */
-  openTemplateCreate: () => void
-  /** Legacy capability retained for compatibility with older command contexts. */
 }
 
 export interface AppCommand {

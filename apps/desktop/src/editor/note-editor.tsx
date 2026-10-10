@@ -10,7 +10,6 @@ import { openUrlSync } from '@/lib/open-url.ts'
 import { isTouchEditorSurface } from '@/lib/platform-surface.ts'
 import { cn } from '@/lib/utils.ts'
 import type {
-  AcceptPendingReplacementOptions,
   ExitBoundaryHandler,
   FileClickHandler,
   FileInfoResolver,
@@ -20,7 +19,6 @@ import type {
   LinkPreviewResolver,
   MarkMode,
   SearchStatus,
-  StartPendingReplacementOptions,
   WikiEmbedResolver,
   WikilinkHoverHit,
 } from '@meowdown/core'
@@ -29,9 +27,6 @@ import {
   useLightbox,
   WikilinkHoverCard,
   type EditorHandle,
-  type PendingReplacementResolveHandler,
-  type SelectionMenuSearchHandler,
-  type SlashMenuSearchHandler,
   type TagSearchHandler,
   type WikilinkSearchHandler,
 } from '@meowdown/react'
@@ -91,16 +86,6 @@ export interface NoteEditorHandle {
   setSelection(position: 'start' | 'end'): void
   /** The current selection's text (blocks separated by blank lines). */
   getSelectedText(): string
-  /** Open the selection AI menu (no-op on an empty selection). */
-  openSelectionMenu(): void
-  /** Stage a pending replacement over a range; false when the range is invalid. */
-  startPendingReplacement(options: StartPendingReplacementOptions): boolean
-  /** Append streamed text to the staged replacement's preview. */
-  appendPendingReplacementText(text: string): void
-  /** Apply the staged replacement as one edit; `mode` overrides its placement. */
-  acceptPendingReplacement(options?: AcceptPendingReplacementOptions): void
-  /** Clear the staged replacement without touching the document. */
-  discardPendingReplacement(): void
   /** Select the next find match, wrapping at the document end. */
   findNext(this: void): void
   /** Select the previous find match, wrapping at the document start. */
@@ -199,17 +184,6 @@ interface NoteEditorProps {
   onWikilinkSearch?: WikilinkSearchHandler
   /** Search tags for the `#` autocomplete menu. */
   onTagSearch?: TagSearchHandler
-  /**
-   * Search prompts for the selection AI menu. Omitting it disables the menu
-   * and its selection affordance entirely (e.g. for `private: true` notes).
-   */
-  onSelectionMenuSearch?: SelectionMenuSearchHandler
-  /** Extra controls in the pending-replacement preview footer (e.g. Retry). */
-  pendingReplacementActions?: ReactNode
-  /** Called when a staged replacement is accepted or discarded. */
-  onPendingReplacementResolve?: PendingReplacementResolveHandler
-  /** Host rows for the `/` insert menu (note templates). */
-  onSlashMenuSearch?: SlashMenuSearchHandler
   /** Handler when pressing ArrowUp/ArrowDown at the document edge. */
   onExitBoundary?: ExitBoundaryHandler | undefined
   /**
@@ -266,10 +240,6 @@ export function NoteEditor({
   onTagClick,
   onWikilinkSearch,
   onTagSearch,
-  onSelectionMenuSearch,
-  pendingReplacementActions,
-  onPendingReplacementResolve,
-  onSlashMenuSearch,
   onExitBoundary,
   children,
   titlePlaceholder,
@@ -325,12 +295,6 @@ export function NoteEditor({
       focus: () => innerRef.current?.focus(),
       setSelection: (position) => innerRef.current?.setSelection(position),
       getSelectedText: () => innerRef.current?.getSelectedText() ?? '',
-      openSelectionMenu: () => innerRef.current?.openSelectionMenu(),
-      startPendingReplacement: (options) =>
-        innerRef.current?.startPendingReplacement(options) ?? false,
-      appendPendingReplacementText: (text) => innerRef.current?.appendPendingReplacementText(text),
-      acceptPendingReplacement: (options) => innerRef.current?.acceptPendingReplacement(options),
-      discardPendingReplacement: () => innerRef.current?.discardPendingReplacement(),
       findNext: () => innerRef.current?.findNext(),
       findPrevious: () => innerRef.current?.findPrevious(),
     }),
@@ -473,10 +437,6 @@ export function NoteEditor({
         onImageClick={handleImageClick}
         {...(onWikilinkSearch !== undefined ? { onWikilinkSearch } : {})}
         {...(onTagSearch !== undefined ? { onTagSearch } : {})}
-        {...(onSelectionMenuSearch !== undefined ? { onSelectionMenuSearch } : {})}
-        {...(pendingReplacementActions !== undefined ? { pendingReplacementActions } : {})}
-        {...(onPendingReplacementResolve !== undefined ? { onPendingReplacementResolve } : {})}
-        {...(onSlashMenuSearch !== undefined ? { onSlashMenuSearch } : {})}
         resolveImageUrl={handleResolveImageUrl}
         resolveWikiEmbed={handleResolveWikiEmbed}
         resolveWikilink={resolveWikilink}

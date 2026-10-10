@@ -63,7 +63,6 @@ export async function suggestTags(query: string, limit = 8): Promise<TagSuggesti
   let candidates = db
     .selectFrom('tags')
     .innerJoin('notes', 'notes.path', 'tags.notePath')
-    .where('notes.kind', '!=', 'template')
     .select([sql<string>`min(tags.tag)`.as('tag'), sql<number>`count(*)`.as('count')])
     .groupBy('tags.tagKey')
     .orderBy(sql`count(*)`, 'desc')
@@ -126,7 +125,6 @@ export async function getWikiAddressForPath(path: string): Promise<WikiLinkSugge
   const note = await db
     .selectFrom('notes')
     .where('path', '=', path)
-    .where('kind', '!=', 'template')
     .select(['path', 'title', 'titleKey', 'dailyDate', 'mtime'])
     .executeTakeFirst()
   if (note === undefined) {
@@ -151,7 +149,6 @@ async function queryWikiTargetCandidates(
   // however long ago its file was last edited. An exact hit is always kept.
   let titleQuery = db
     .selectFrom('notes')
-    .where('kind', '!=', 'template')
     .select(['path', 'title', 'titleKey', 'dailyDate', 'mtime', selectLinkCount()])
     .orderBy(sql`title_key = ${key}`, 'desc')
     .orderBy(sql`link_count`, 'desc')
@@ -170,7 +167,6 @@ async function queryWikiTargetCandidates(
     aliases = await db
       .selectFrom('aliases')
       .innerJoin('notes', 'notes.path', 'aliases.notePath')
-      .where('notes.kind', '!=', 'template')
       .where(sql<boolean>`alias_key LIKE ${likeContains(key)} ESCAPE '\\'`)
       .select([
         'notes.path',

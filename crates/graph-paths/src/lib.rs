@@ -17,9 +17,9 @@ pub use walk::{
     REFLECT_IGNORE_FILE,
 };
 
-/// Root trees reserved for Reflect-managed attachments and recordings.
-/// Markdown under either tree is content, not a note.
-pub const RESERVED_NOTE_TREES: [&str; 2] = ["assets", "audio-memos"];
+/// Root tree reserved for attachments. Markdown under it is attachment
+/// metadata, not a note.
+pub const RESERVED_NOTE_TREES: [&str; 1] = ["assets"];
 
 /// Local attachment formats supported by Reflect: Obsidian-compatible media
 /// plus common document, text, data, and archive formats. Never executable or
@@ -71,8 +71,7 @@ pub fn is_attachment(path: &str) -> bool {
 }
 
 /// Whether every component of a wire path is a visible, normal relative
-/// component. [`classify`] implies this; walkers use it alone for paths that
-/// are tracked without being notes (e.g. `audio-memos/` recordings).
+/// component. [`classify`] implies this.
 pub fn is_safe_visible(path: &str) -> bool {
     wire_components(path).is_some()
 }

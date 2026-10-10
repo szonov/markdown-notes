@@ -168,7 +168,7 @@ describe('resolveOrCreateNoteWithTitle', () => {
       query: (sql) =>
         sql.includes('note_claims')
           ? [
-              { note_path: 'daily/2026-06-09.md', tier: 1 },
+              { note_path: 'daily/2026/2026-06-09.md', tier: 1 },
               { note_path: 'notes/date-title.md', tier: 2 },
             ]
           : [],
@@ -176,7 +176,7 @@ describe('resolveOrCreateNoteWithTitle', () => {
 
     await expect(resolveOrCreateNoteWithTitle('2026-06-09', 7)).resolves.toEqual({
       kind: 'resolved',
-      path: 'daily/2026-06-09.md',
+      path: 'daily/2026/2026-06-09.md',
     })
     // The tier-1 daily claim resolves without a disk probe.
     expect(invoke.mock.calls.some(([command]) => command === 'note_read')).toBe(false)
@@ -184,15 +184,15 @@ describe('resolveOrCreateNoteWithTitle', () => {
 
   it('reuses an unindexed daily file instead of creating a regular date-titled note', async () => {
     const invoke = bindBridge({
-      files: { 'daily/2026-06-09.md': 'Daily contents\n' },
+      files: { 'daily/2026/2026-06-09.md': 'Daily contents\n' },
     })
 
     await expect(resolveOrCreateNoteWithTitle('2026-06-09', 7)).resolves.toEqual({
       kind: 'resolved',
-      path: 'daily/2026-06-09.md',
+      path: 'daily/2026/2026-06-09.md',
     })
     expect(invoke).toHaveBeenCalledWith('note_read', {
-      path: 'daily/2026-06-09.md',
+      path: 'daily/2026/2026-06-09.md',
       generation: 7,
     })
     expect(invoke.mock.calls.some(([command]) => command === 'note_create')).toBe(false)
@@ -514,7 +514,7 @@ describe('isUntitledNotePath', () => {
 
   it('rejects slug-named, daily, and near-miss paths', () => {
     expect(isUntitledNotePath('notes/meeting-notes.md')).toBe(false)
-    expect(isUntitledNotePath('daily/2026-06-12.md')).toBe(false)
+    expect(isUntitledNotePath('daily/2026/2026-06-12.md')).toBe(false)
     // A 128-bit ULID cannot start above `7` (the textual form has two spare bits).
     expect(isUntitledNotePath('notes/81arz3ndektsv4rrffq69g5fav.md')).toBe(false)
     // Right length, but `u` is outside the Crockford base32 alphabet.

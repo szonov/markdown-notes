@@ -6,8 +6,7 @@
 //! lives under `.reflect/`, which is filtered out here, so index writes can't
 //! loop back. The watcher reports eligible markdown notes and supported
 //! attachments anywhere in the vault (the shared `reflect-graph-paths`
-//! policy), plus anything under `audio-memos/` (recordings feed the sync
-//! debounce and the transcription reconciler, not the index) and capture
+//! policy), plus capture
 //! envelopes under `.reflect/inbox/`. Non-note consumers filter by path. The
 //! frontend resolves create-vs-delete and re-indexes (content-hash gated).
 //!
@@ -160,8 +159,8 @@ struct BatchEffects {
 }
 
 /// Graph-relative wire path if `path` is tracked: an eligible markdown note
-/// or supported attachment anywhere visible (the shared classification), an
-/// audio-memo recording (anything under `audio-memos/`), or a spooled capture
+/// or supported attachment anywhere visible (the shared classification), or
+/// a spooled capture
 /// envelope (`.json` under `.reflect/inbox/` — the one carve-out from the
 /// `.reflect/` blackout; the envelope is the spool's commit point and
 /// triggers the capture drain), else `None`. Pure — the filtering rule,
@@ -185,9 +184,7 @@ fn tracked_relpath(path: &Path, root: &Path) -> Option<String> {
         return None;
     }
     let kind = classify(&wire);
-    let tracked = kind == Some(GraphPathKind::Note)
-        || kind == Some(GraphPathKind::Attachment)
-        || wire.starts_with("audio-memos/");
+    let tracked = kind == Some(GraphPathKind::Note) || kind == Some(GraphPathKind::Attachment);
     tracked.then_some(wire)
 }
 
@@ -375,8 +372,8 @@ mod tests {
             Some("notes/a.md")
         );
         assert_eq!(
-            tracked_relpath(Path::new("/g/daily/2026-06-09.md"), root).as_deref(),
-            Some("daily/2026-06-09.md")
+            tracked_relpath(Path::new("/g/daily/2026/2026-06-09.md"), root).as_deref(),
+            Some("daily/2026/2026-06-09.md")
         );
         // Templates are tracked like notes; only lowercase `.md` files count.
         assert_eq!(
@@ -405,15 +402,10 @@ mod tests {
             tracked_relpath(Path::new("/g/Projects/upper.MD"), root),
             None
         );
-        // Recordings are tracked whole-directory: they feed the sync debounce
-        // and the transcription reconciler.
+        // Supported attachments are tracked in adopted folders too.
         assert_eq!(
-            tracked_relpath(
-                Path::new("/g/audio-memos/audio-memo-2026-06-09-090000-000.m4a"),
-                root
-            )
-            .as_deref(),
-            Some("audio-memos/audio-memo-2026-06-09-090000-000.m4a")
+            tracked_relpath(Path::new("/g/Media/recording.m4a"), root).as_deref(),
+            Some("Media/recording.m4a")
         );
         // Capture envelopes are tracked: `.json` under `.reflect/inbox/` is
         // the spool's commit point and triggers the drain. Sibling screenshots
@@ -436,18 +428,18 @@ mod tests {
             None
         );
         // Not tracked: the index, unsupported extensions, dotfiles, outside
-        // root, or the audio-memos directory entry itself.
+        // root, or a directory entry itself.
         assert_eq!(
             tracked_relpath(Path::new("/g/.reflect/index.sqlite"), root),
             None
         );
         assert_eq!(tracked_relpath(Path::new("/g/notes/x.xyz"), root), None);
-        assert_eq!(tracked_relpath(Path::new("/g/audio-memos"), root), None);
+        assert_eq!(tracked_relpath(Path::new("/g/Media"), root), None);
         assert_eq!(tracked_relpath(Path::new("/other/notes/a.md"), root), None);
     }
 
     #[test]
-    fn tracks_supported_attachments_but_never_description_files() {
+    fn tracks_supported_attachments_but_not_markdown_inside_assets() {
         let root = Path::new("/g");
         for rel in [
             "assets/diagram.png",
@@ -599,8 +591,8 @@ mod tests {
             Some("notes/a.md")
         );
         assert_eq!(
-            tracked_relpath(Path::new("/g/audio-memos/.memo.m4a.icloud"), root).as_deref(),
-            Some("audio-memos/memo.m4a")
+            tracked_relpath(Path::new("/g/Media/.memo.m4a.icloud"), root).as_deref(),
+            Some("Media/memo.m4a")
         );
         // The logical file must still pass the tracking rules.
         assert_eq!(

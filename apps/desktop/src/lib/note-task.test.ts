@@ -247,8 +247,8 @@ describe('insertTask', () => {
     readNote.mockRejectedValue(Object.assign(new Error('missing'), { kind: 'notFound' }))
     writeNote.mockResolvedValue(undefined)
 
-    await insertTask('daily/2026-06-14.md', 7)
-    expect(writeNote).toHaveBeenCalledWith('daily/2026-06-14.md', '## Tasks\n\n+ [ ] \n', 7)
+    await insertTask('daily/2026/2026-06-14.md', 7)
+    expect(writeNote).toHaveBeenCalledWith('daily/2026/2026-06-14.md', '## Tasks\n\n+ [ ] \n', 7)
   })
 
   it('appends through the live session when the note is open', async () => {

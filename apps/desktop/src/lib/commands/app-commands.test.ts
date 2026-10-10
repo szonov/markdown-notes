@@ -63,21 +63,16 @@ function fakeContext(overrides?: Partial<CommandContext>) {
     forward: vi.fn(),
     clearScrollState: vi.fn(),
     togglePin: vi.fn(async () => {}),
-    togglePrivate: vi.fn(async () => {}),
     toggleTheme: vi.fn(),
     toggleSidebar: vi.fn(),
-    newChat: vi.fn(),
     openNoteFind: vi.fn(),
     findNextInNote: vi.fn(),
     findPreviousInNote: vi.fn(),
     switchGraph: vi.fn(),
-    toggleAudioMemo: vi.fn(),
     generation: () => 7,
     graphRoot: () => '/g',
     openPalette: vi.fn(),
     openShortcuts: vi.fn(),
-    openTemplatePicker: vi.fn(),
-    openTemplateCreate: vi.fn(),
     ...overrides,
   }
   return { context, navigated, navigateOptions }
@@ -203,7 +198,7 @@ describe('app commands', () => {
     })
 
     const { context: focusedDaily } = fakeContext({
-      notePath: () => 'daily/2026-06-18.md',
+      notePath: () => 'daily/2026/2026-06-18.md',
     })
     await command('note.openInNewWindow').run(focusedDaily)
     expect(openRouteInNewWindow).toHaveBeenLastCalledWith({ kind: 'daily', date: '2026-06-18' })

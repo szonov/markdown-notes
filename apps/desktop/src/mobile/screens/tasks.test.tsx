@@ -105,11 +105,6 @@ vi.mock('@/editor/note-editor.tsx', async () => {
           },
           setSelection: () => {},
           getSelectedText: () => '',
-          openSelectionMenu: () => {},
-          startPendingReplacement: () => false,
-          appendPendingReplacementText: () => {},
-          acceptPendingReplacement: () => {},
-          discardPendingReplacement: () => {},
           findNext: () => {},
           findPrevious: () => {},
         })
@@ -301,14 +296,14 @@ describe('MobileTasks', () => {
       task({
         text: 'jotted today',
         dailyDate: '2026-06-14',
-        notePath: 'daily/2026-06-14.md',
+        notePath: 'daily/2026/2026-06-14.md',
         astPath: [0],
       }),
       task({
         text: 'late',
         dueDate: '2026-06-01',
         dailyDate: '2026-06-01',
-        notePath: 'daily/2026-06-01.md',
+        notePath: 'daily/2026/2026-06-01.md',
         astPath: [0],
       }),
       task({ text: 'undated', astPath: [0] }),
@@ -626,14 +621,14 @@ describe('MobileTasks', () => {
 
   it('adds a task to today’s daily from the Current group and opens its sheet', async () => {
     getOpenTasks.mockResolvedValue([
-      task({ text: 'jotted today', dailyDate: '2026-06-14', notePath: 'daily/2026-06-14.md' }),
+      task({ text: 'jotted today', dailyDate: '2026-06-14', notePath: 'daily/2026/2026-06-14.md' }),
     ])
     const user = userEvent
     const view = await renderScreen()
 
     await user.click(await view.findByRole('button', { name: 'Add a task to today' }))
 
-    await waitFor(() => expect(insertTask).toHaveBeenCalledWith('daily/2026-06-14.md', 1))
+    await waitFor(() => expect(insertTask).toHaveBeenCalledWith('daily/2026/2026-06-14.md', 1))
     // The new (empty) task's quick-edit sheet opens to type into.
     const input = asTextArea(await view.findByRole('textbox', { name: 'Task text' }))
     expect(input.value).toBe('')
@@ -653,7 +648,7 @@ describe('MobileTasks', () => {
     await view.findByText('buy milk')
     await user.click(view.getByRole('button', { name: 'New task' }))
 
-    await waitFor(() => expect(insertTask).toHaveBeenCalledWith('daily/2026-06-14.md', 1))
+    await waitFor(() => expect(insertTask).toHaveBeenCalledWith('daily/2026/2026-06-14.md', 1))
     const input = asTextArea(await view.findByRole('textbox', { name: 'Task text' }))
     expect(input.value).toBe('')
     await view.unmount()
@@ -661,7 +656,7 @@ describe('MobileTasks', () => {
 
   it('focuses the editor when "+" adds a new task', async () => {
     getOpenTasks.mockResolvedValue([
-      task({ text: 'jotted today', dailyDate: '2026-06-14', notePath: 'daily/2026-06-14.md' }),
+      task({ text: 'jotted today', dailyDate: '2026-06-14', notePath: 'daily/2026/2026-06-14.md' }),
     ])
     const user = userEvent
     const view = await renderScreen()
@@ -710,7 +705,7 @@ describe('MobileTasks', () => {
 
   it('abandoning a "+"-added task deletes it instead of ghosting an empty row', async () => {
     getOpenTasks.mockResolvedValue([
-      task({ text: 'jotted today', dailyDate: '2026-06-14', notePath: 'daily/2026-06-14.md' }),
+      task({ text: 'jotted today', dailyDate: '2026-06-14', notePath: 'daily/2026/2026-06-14.md' }),
     ])
     const user = userEvent
     const view = await renderScreen()
@@ -743,7 +738,7 @@ describe('MobileTasks', () => {
 
   it('deletes an abandoned "+"-added task when the screen unmounts', async () => {
     getOpenTasks.mockResolvedValue([
-      task({ text: 'jotted today', dailyDate: '2026-06-14', notePath: 'daily/2026-06-14.md' }),
+      task({ text: 'jotted today', dailyDate: '2026-06-14', notePath: 'daily/2026/2026-06-14.md' }),
     ])
     const user = userEvent
     const view = await renderScreen()
@@ -758,7 +753,7 @@ describe('MobileTasks', () => {
 
   it('hides buckets through the filter sheet', async () => {
     getOpenTasks.mockResolvedValue([
-      task({ text: 'jotted today', dailyDate: '2026-06-14', notePath: 'daily/2026-06-14.md' }),
+      task({ text: 'jotted today', dailyDate: '2026-06-14', notePath: 'daily/2026/2026-06-14.md' }),
       task({ text: 'undated' }),
     ])
     const user = userEvent
@@ -822,7 +817,7 @@ describe('MobileTasks', () => {
     await view.findByText('No tasks to show')
     await user.click(view.getByRole('button', { name: 'Add a task' }))
 
-    await waitFor(() => expect(insertTask).toHaveBeenCalledWith('daily/2026-06-14.md', 1))
+    await waitFor(() => expect(insertTask).toHaveBeenCalledWith('daily/2026/2026-06-14.md', 1))
     await view.unmount()
   })
 

@@ -58,7 +58,7 @@ beforeEach(async () => {
 describe('IncomingBacklinks', () => {
   it('renders nothing when the note has no inbound links (no empty chrome)', async () => {
     getBacklinksWithContext.mockResolvedValue([])
-    const view = await renderSection('daily/2026-07-02.md')
+    const view = await renderSection('daily/2026/2026-07-02.md')
     await vi.waitFor(() => expect(getBacklinksWithContext).toHaveBeenCalled())
     await expect.element(view.getByText(/Incoming backlink/)).not.toBeInTheDocument()
     await view.unmount()
@@ -66,7 +66,7 @@ describe('IncomingBacklinks', () => {
 
   it('surfaces a failed query as an alert instead of rendering nothing', async () => {
     getBacklinksWithContext.mockRejectedValue(new Error('index unavailable'))
-    const view = await renderSection('daily/2026-07-02.md')
+    const view = await renderSection('daily/2026/2026-07-02.md')
     await expect.element(view.getByRole('alert')).toMatchTextContent('Couldn’t load backlinks.')
     await view.unmount()
   })
@@ -95,7 +95,7 @@ describe('IncomingBacklinks', () => {
         tasks: [],
       },
     ])
-    const view = await renderSection('daily/2026-07-02.md')
+    const view = await renderSection('daily/2026/2026-07-02.md')
 
     await expect.element(view.getByText('Incoming backlinks (3)')).toBeVisible()
     await expectLocatorToHaveCount(view.getByText('Meeting Notes'), 1)
@@ -108,7 +108,7 @@ describe('IncomingBacklinks', () => {
   it('navigates a daily-note source to the daily route (the carousel follows it)', async () => {
     getBacklinksWithContext.mockResolvedValue([
       {
-        sourcePath: 'daily/2026-06-01.md',
+        sourcePath: 'daily/2026/2026-06-01.md',
         sourceTitle: 'June 1st, 2026',
         snippet: 'planned [[Roadmap]] here',
         posFrom: 4,
@@ -135,7 +135,7 @@ describe('IncomingBacklinks', () => {
         tasks: [],
       },
     ])
-    const view = await renderSection('daily/2026-07-02.md')
+    const view = await renderSection('daily/2026/2026-07-02.md')
 
     await userEvent.click(view.getByText('Meeting Notes'))
     await expect.element(view.getByTestId('route')).toMatchTextContent('notes/meeting.md')
@@ -155,7 +155,7 @@ describe('IncomingBacklinks', () => {
         tasks: [],
       },
     ])
-    const view = await renderSection('daily/2026-07-02.md')
+    const view = await renderSection('daily/2026/2026-07-02.md')
 
     const header = view.getByRole('button', { name: /Incoming backlink \(1\)/ })
     await expect.element(header).toHaveAttribute('aria-expanded', 'true')
@@ -166,7 +166,7 @@ describe('IncomingBacklinks', () => {
     await expect.element(view.getByText(/discussed/)).not.toBeInTheDocument()
     await view.unmount()
 
-    const reopened = await renderSection('daily/2026-07-02.md')
+    const reopened = await renderSection('daily/2026/2026-07-02.md')
     const persistedHeader = reopened.getByRole('button', {
       name: /Incoming backlink \(1\)/,
     })
@@ -188,8 +188,8 @@ describe('IncomingBacklinks', () => {
     const view = await render(
       <QueryClientProvider client={client}>
         <RouterProvider>
-          <IncomingBacklinks path="daily/2026-07-01.md" />
-          <IncomingBacklinks path="daily/2026-07-02.md" />
+          <IncomingBacklinks path="daily/2026/2026-07-01.md" />
+          <IncomingBacklinks path="daily/2026/2026-07-02.md" />
         </RouterProvider>
       </QueryClientProvider>,
     )
@@ -221,7 +221,7 @@ describe('IncomingBacklinks', () => {
         tasks: [],
       },
     ])
-    const view = await renderSection('daily/2026-07-02.md')
+    const view = await renderSection('daily/2026/2026-07-02.md')
 
     const header = view.getByRole('button', { name: /Incoming backlinks \(2\)/ })
     await expect.element(header).toBeVisible()

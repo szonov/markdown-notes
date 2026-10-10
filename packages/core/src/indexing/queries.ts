@@ -81,7 +81,6 @@ export async function getPinnedNotes(): Promise<PinnedNote[]> {
   return await db
     .selectFrom('notes')
     .where('isPinned', '=', 1)
-    .where('kind', '!=', 'template')
     .select(['path', 'title', 'dailyDate', 'pinnedOrder'])
     .orderBy(sql`pinned_order IS NULL`)
     .orderBy('pinnedOrder')
@@ -259,7 +258,6 @@ export async function getNotesByTag(tag: string): Promise<string[]> {
     .selectFrom('tags')
     .innerJoin('notes', 'notes.path', 'tags.notePath')
     .where('tagKey', '=', foldTag(tag))
-    .where('notes.kind', '!=', 'template')
     .select('notePath')
     .orderBy('notePath')
     .execute()
@@ -352,7 +350,7 @@ export const UNCLAIMED_TIER = 0
 
 /**
  * Look up one folded spelling. `note_claims` already encodes the precedence
- * (templates claim nothing), so this is a single indexed read rather than one
+ * so this is a single indexed read rather than one
  * query per tier. Unlike {@link resolveWikiTarget}, this does not collapse a
  * tier to its first path; callers that may create on a miss need to
  * distinguish one existing note from several notes claiming the same

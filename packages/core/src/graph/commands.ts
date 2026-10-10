@@ -76,7 +76,7 @@ export type LocalNoteRead = z.infer<typeof localNoteReadSchema>
 /**
  * Read a note's markdown **only when its bytes are local**, reporting an
  * iCloud-evicted note as `{ kind: 'evicted' }` instead of reading it. Bulk
- * background passes (the embedding backfill, asset-description gathering)
+ * background passes
  * must use this instead of {@link readNote}: reading an evicted note blocks
  * while the OS materializes it on demand, and a whole-graph pass over an
  * evicted iCloud graph becomes thousands of serial blocking downloads.
@@ -151,7 +151,7 @@ export async function writeAsset(
 
 /**
  * Read a binary asset's bytes by graph-relative path, base64-encoded (the IPC
- * is JSON). E.g. an audio memo read back for transcription. `generation` pins
+ * is JSON). `generation` pins
  * the read: background passes can span a graph switch, and an unpinned read
  * would resolve against the new graph's same-named file.
  */
@@ -179,15 +179,6 @@ export async function revealAsset(path: string, generation: number): Promise<voi
 }
 
 /**
- * List every file (any extension) under a graph-relative directory, e.g.
- * `audio-memos`. A missing directory lists as empty. Pinned to `generation`
- * for the same reason as {@link readAsset}.
- */
-export async function listDir(dir: string, generation: number): Promise<FileMeta[]> {
-  return await call('dir_list', { dir, generation }, z.array(fileMetaSchema))
-}
-
-/**
  * Does a graph-relative path currently exist as a file on disk? Probes the
  * filesystem directly — unlike an index lookup, this can't lag the watcher.
  */
@@ -198,6 +189,20 @@ export async function noteExists(path: string): Promise<boolean> {
 /** Send a note to the OS trash (recoverable; pinned to `generation`). */
 export async function deleteNote(path: string, generation: number): Promise<void> {
   await call('note_delete', { path, generation }, voidSchema)
+  echoLocalWrite({ path, kind: 'remove' })
+}
+
+/**
+ * Delete a note only while its on-disk text still equals `expectedContents`.
+ * Used by autosave when an existing daily note is cleared: an external edit
+ * that races the empty save must win instead of being sent to the trash.
+ */
+export async function deleteNoteRevision(
+  path: string,
+  generation: number,
+  expectedContents: string,
+): Promise<void> {
+  await call('note_delete_revision', { path, generation, expectedContents }, voidSchema)
   echoLocalWrite({ path, kind: 'remove' })
 }
 

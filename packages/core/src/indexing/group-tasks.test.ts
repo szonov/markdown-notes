@@ -138,9 +138,9 @@ describe('groupTasks', () => {
   it('treats a bare task in a past daily note as Current, not Overdue (V1 asymmetry)', () => {
     const groups = groupTasks(
       [
-        task({ notePath: 'daily/2026-06-10.md', dailyDate: PAST, text: 'past' }),
-        task({ notePath: 'daily/2026-06-14.md', dailyDate: TODAY, text: 'today' }),
-        task({ notePath: 'daily/2026-06-20.md', dailyDate: FUTURE, text: 'future' }),
+        task({ notePath: 'daily/2026/2026-06-10.md', dailyDate: PAST, text: 'past' }),
+        task({ notePath: 'daily/2026/2026-06-14.md', dailyDate: TODAY, text: 'today' }),
+        task({ notePath: 'daily/2026/2026-06-20.md', dailyDate: FUTURE, text: 'future' }),
       ],
       TODAY,
     )
@@ -164,14 +164,14 @@ describe('groupTasks', () => {
       [
         // future due date inside a PAST daily note → Upcoming
         task({
-          notePath: 'daily/2026-06-10.md',
+          notePath: 'daily/2026/2026-06-10.md',
           dailyDate: PAST,
           dueDate: FUTURE,
           text: 'pushed-out',
         }),
         // past due date inside a FUTURE daily note → Overdue
         task({
-          notePath: 'daily/2026-06-20.md',
+          notePath: 'daily/2026/2026-06-20.md',
           dailyDate: FUTURE,
           dueDate: PAST,
           text: 'pulled-in',
@@ -220,9 +220,9 @@ describe('groupTasks', () => {
     const groups = groupTasks(
       [
         task({ notePath: 'notes/p.md', noteTitle: 'P', text: 'undated' }),
-        task({ notePath: 'daily/2026-06-14.md', dailyDate: TODAY, text: 'cur' }),
+        task({ notePath: 'daily/2026/2026-06-14.md', dailyDate: TODAY, text: 'cur' }),
         task({ notePath: 'notes/d.md', dueDate: PAST, text: 'over' }),
-        task({ notePath: 'daily/2026-06-20.md', dailyDate: FUTURE, text: 'up' }),
+        task({ notePath: 'daily/2026/2026-06-20.md', dailyDate: FUTURE, text: 'up' }),
       ],
       TODAY,
     )

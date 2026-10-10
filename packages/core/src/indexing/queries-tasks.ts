@@ -26,7 +26,6 @@ function taskRowsQuery() {
   return db
     .selectFrom('tasks')
     .innerJoin('notes', 'notes.path', 'tasks.notePath')
-    .where('notes.kind', '!=', 'template')
     .select([
       'tasks.notePath',
       'tasks.astPath',

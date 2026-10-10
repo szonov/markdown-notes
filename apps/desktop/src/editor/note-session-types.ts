@@ -51,7 +51,11 @@ export interface NoteSessionIo {
    * writes.
    */
   write:
-    | ((path: string, contents: string, expectedContents?: string | null) => Promise<void>)
+    | ((
+        path: string,
+        contents: string,
+        expectedContents?: string | null,
+      ) => Promise<'written' | 'deleted' | void>)
     | null
 }
 

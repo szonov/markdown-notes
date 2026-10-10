@@ -219,7 +219,7 @@ describe('NoteRowList', () => {
 
   it('does not offer delete for a daily note', async () => {
     const view = await render(
-      <SwipeHarness note={row({ path: 'daily/2026-08-15.md', canDelete: false })} />,
+      <SwipeHarness note={row({ path: 'daily/2026/2026-08-15.md', canDelete: false })} />,
     )
     const surface = view.getByRole('button', { name: /Alpha.*First line/ }).element()
     const rect = surface.getBoundingClientRect()

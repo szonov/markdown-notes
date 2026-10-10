@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { readNote, writeNote, type FileChange } from '@reflect/core'
+import { deleteNoteRevision, isDaily, readNote, writeNote, type FileChange } from '@reflect/core'
 import { useFileChanges } from '@/lib/use-file-changes.ts'
 import { createDocumentBinding, type DocumentBinding } from './document-binding.ts'
 import type { NoteEditorHandle } from './note-editor.tsx'
@@ -124,6 +124,16 @@ export function useNoteDocument(
                   const current = generationRef.current
                   if (current === null) {
                     return Promise.reject(new Error('no graph generation available for save'))
+                  }
+                  if (
+                    isDaily(forPath) &&
+                    contents.trim() === '' &&
+                    expectedContents !== null &&
+                    expectedContents !== undefined
+                  ) {
+                    return deleteNoteRevision(forPath, current, expectedContents).then(
+                      () => 'deleted' as const,
+                    )
                   }
                   return writeNote(forPath, contents, current, expectedContents)
                 }

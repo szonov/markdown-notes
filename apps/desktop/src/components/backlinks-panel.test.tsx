@@ -257,8 +257,8 @@ describe('BacklinksPanel', () => {
     const view = await render(
       <QueryClientProvider client={client}>
         <RouterProvider>
-          <BacklinksPanel path="daily/2026-06-09.md" />
-          <BacklinksPanel path="daily/2026-06-10.md" />
+          <BacklinksPanel path="daily/2026/2026-06-09.md" />
+          <BacklinksPanel path="daily/2026/2026-06-10.md" />
         </RouterProvider>
       </QueryClientProvider>,
     )

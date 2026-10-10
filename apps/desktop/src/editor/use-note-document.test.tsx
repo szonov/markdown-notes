@@ -41,11 +41,6 @@ function fakeEditor(): NoteEditorHandle & { applied: string[] } {
     focus: () => {},
     setSelection: () => {},
     getSelectedText: () => '',
-    openSelectionMenu: () => {},
-    startPendingReplacement: () => false,
-    appendPendingReplacementText: () => {},
-    acceptPendingReplacement: () => {},
-    discardPendingReplacement: () => {},
     findNext: () => {},
     findPrevious: () => {},
   }
@@ -1056,7 +1051,7 @@ describe('useNoteDocument', () => {
       })
 
       const hook = await renderHook(() =>
-        useNoteDocument('daily/2026-06-09.md', 1, { createIfMissing: true }),
+        useNoteDocument('daily/2026/2026-06-09.md', 1, { createIfMissing: true }),
       )
       await hook.act(() => vi.advanceTimersByTimeAsync(0))
       expect(hook.result.current.status).toBe('ready')
@@ -1067,6 +1062,67 @@ describe('useNoteDocument', () => {
       await hook.act(() => hook.result.current.onEditorChange('first keystroke\n'))
       await hook.act(() => vi.advanceTimersByTimeAsync(1000))
       expect(writes).toEqual(['first keystroke\n'])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('deletes an existing daily note when its editor is completely cleared', async () => {
+    vi.useFakeTimers()
+    try {
+      disk = 'written earlier\n'
+      mockInvoke.mockImplementation(async (command, args) => {
+        if (command === 'note_read') {
+          return disk
+        }
+        if (command === 'note_delete_revision') {
+          expect(args).toEqual({
+            path: 'daily/2026/2026-06-09.md',
+            generation: 1,
+            expectedContents: 'written earlier\n',
+          })
+          disk = ''
+          return null
+        }
+        return null
+      })
+
+      const hook = await renderHook(() =>
+        useNoteDocument('daily/2026/2026-06-09.md', 1, { createIfMissing: true }),
+      )
+      await hook.act(() => vi.advanceTimersByTimeAsync(0))
+      expect(hook.result.current.status).toBe('ready')
+
+      await hook.act(() => hook.result.current.onEditorChange('\n'))
+      await hook.act(() => vi.advanceTimersByTimeAsync(1000))
+
+      expect(mockInvoke).toHaveBeenCalledWith('note_delete_revision', {
+        path: 'daily/2026/2026-06-09.md',
+        generation: 1,
+        expectedContents: 'written earlier\n',
+      })
+      expect(mockInvoke.mock.calls.some(([command]) => command === 'note_write')).toBe(false)
+      expect(hook.result.current.missing).toBe(true)
+      expect(hook.result.current.dirty).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps an empty regular note as a file', async () => {
+    vi.useFakeTimers()
+    try {
+      const hook = await renderHook(() => useNoteDocument('notes/a.md', 1))
+      await hook.act(() => vi.advanceTimersByTimeAsync(0))
+
+      await hook.act(() => hook.result.current.onEditorChange('\n'))
+      await hook.act(() => vi.advanceTimersByTimeAsync(1000))
+
+      expect(mockInvoke.mock.calls.some(([command]) => command === 'note_delete_revision')).toBe(
+        false,
+      )
+      expect(writes).toEqual(['\n'])
+      expect(hook.result.current.missing).toBe(false)
     } finally {
       vi.useRealTimers()
     }

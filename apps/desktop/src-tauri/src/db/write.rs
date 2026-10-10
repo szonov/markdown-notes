@@ -23,7 +23,7 @@ pub struct IndexedNote {
     pub(super) title_key: String,
     /// ASCII-folded graph path: what a path-qualified link joins against.
     pub(super) path_key: String,
-    /// 'daily' | 'note' | 'template' — templates are excluded from note surfaces.
+    /// 'daily' | 'note'.
     pub(super) kind: String,
     pub(super) daily_date: Option<String>,
     pub(super) is_private: bool,
@@ -248,7 +248,7 @@ pub(super) fn apply_note(conn: &Connection, note: &IndexedNote) -> AppResult<()>
 pub struct MovedNoteAddress {
     pub(super) path_key: String,
     pub(super) basename_key: String,
-    /// Set only for a calendar-valid `daily/YYYY-MM-DD.md` destination.
+    /// Set only for a calendar-valid `daily/YYYY/YYYY-MM-DD.md` destination.
     pub(super) daily_date: Option<String>,
 }
 

@@ -1,10 +1,9 @@
 import type { Unlisten } from '../ipc/bridge.ts'
-import { isAssetPath, isNotePath } from '../graph/paths.ts'
+import { isNotePath } from '../graph/paths.ts'
 import { readNote } from '../graph/commands.ts'
 import { moveIndexedRows, removeFromIndex } from './commands.ts'
 import { subscribeFileChanges, type FileChange } from './file-changes.ts'
 import { hashContent, matchesTrustedMtime } from './hash.ts'
-import { emitIndexApplied } from './index-applied.ts'
 import {
   buildNoteProjection,
   createIndexApplyBatch,
@@ -48,8 +47,8 @@ const logApplyError: ApplyErrorHandler = (error, change) => {
  * Same-batch external-rename healing (Plan 17): an external rename reaches
  * the watcher as remove(old) + upsert(new) in one debounced batch. When the
  * new file carries the removed row's frontmatter id, move the rows and
- * re-index in place — embedding vectors survive instead of being dropped and
- * re-bought. Returns the handled paths; everything else takes the plain path.
+ * re-index in place so all child projections survive. Returns the handled
+ * paths; everything else takes the plain path.
  *
  * Pairs only within a batch: the debouncer groups rename halves in practice,
  * and a split pair degrades to today's delete+create (the orphan row is gone
@@ -279,13 +278,6 @@ export async function applyIndexChanges(
  * changes were all already reflected (mtime/hash skips) fires nothing — there
  * is nothing new to refetch.
  *
- * After the same apply step, {@link emitIndexApplied} broadcasts the **full**
- * batch (notes *and* asset-file changes) to its subscribers — the seam the
- * asset-description controller (Plan 20) uses so its privacy gate always reads a
- * settled index, never racing a just-written private note's indexing. Batches
- * that touch neither notes nor assets (e.g. audio-memo recordings) are skipped
- * entirely, as before.
- *
  * `canApply` gates both event admission and execution from the serialized
  * queue. Events dropped after suspension are intentionally recovered by the
  * lifecycle's foreground reconcile.
@@ -304,9 +296,8 @@ export function subscribeIndexChanges(
       return
     }
     const notes = changes.filter((change) => isNotePath(change.path))
-    const touchesAssets = changes.some((change) => isAssetPath(change.path))
-    if (notes.length === 0 && !touchesAssets) {
-      return // e.g. a batch of audio-memo recordings — nothing the index tracks
+    if (notes.length === 0) {
+      return
     }
     applyQueue = applyQueue
       .then(() => {
@@ -324,12 +315,6 @@ export function subscribeIndexChanges(
         if (notes.length > 0 && mutations > 0) {
           onApplied?.(notes)
         }
-        // Post-apply: the asset-description controller reads the now-settled
-        // index off this. Carries the full batch (notes + asset files) and the
-        // `generation` so a consumer can drop a stale emit from a graph it has
-        // switched away from. Chained on the same queue, so any prior note apply
-        // is visible before an asset-only batch's gate runs.
-        emitIndexApplied(changes, generation)
       })
       .catch((error) => {
         console.error('failed to apply watcher batch:', error)

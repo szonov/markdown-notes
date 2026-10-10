@@ -10,7 +10,6 @@ describe('dev file store discovery', () => {
       '.obsidian/private.md': '# Hidden',
       'Projects/.private/hidden.md': '# Hidden',
       'assets/caption.md': '# Asset metadata',
-      'audio-memos/transcript.md': '# Recording metadata',
       'UPPER.MD': '# Wrong suffix',
     })
 

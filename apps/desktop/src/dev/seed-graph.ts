@@ -5,6 +5,7 @@
  * renders with believable data. Dates are computed relative to "today" so the
  * daily stream always lands on the current week.
  */
+import { dailyPath } from '@reflect/core'
 
 /** Local-time `YYYY-MM-DD` for `offsetDays` before today. */
 function isoDay(offsetDays: number): string {
@@ -29,30 +30,30 @@ export function seedGraphFiles(): Record<string, string> {
   const nextWeek = isoDay(-7)
 
   return {
-    [`daily/${today}.md`]: [
+    [dailyPath(today)]: [
       `- Morning review with [[Sarah Chen]] about the [[Reflect V2]] launch`,
       `+ [ ] Ship the mobile filter badges [[${today}]]`,
       `+ [ ] Reply to the beta feedback thread`,
       `- Started reading [[Atomic Habits]] on the train #book`,
       ``,
     ].join('\n'),
-    [`daily/${yesterday}.md`]: [
+    [dailyPath(yesterday)]: [
       `- Pairing session on the day carousel swipe physics`,
       `+ [x] Fix the week-strip echo guard`,
       `- Lunch with [[James Clear]] — talked habit loops #person`,
       ``,
     ].join('\n'),
-    [`daily/${isoDay(2)}.md`]: [
+    [dailyPath(isoDay(2))]: [
       `- Sketched the [[Quarterly Goals]] doc`,
       `+ [ ] Book flights for the offsite [[${nextWeek}]]`,
       ``,
     ].join('\n'),
-    [`daily/${isoDay(4)}.md`]: [
+    [dailyPath(isoDay(4))]: [
       `- Deep-work day on sync conflict handling`,
       `- Saved [Local-first software](https://www.inkandswitch.com/local-first/) #link`,
       ``,
     ].join('\n'),
-    [`daily/${isoDay(7)}.md`]: [
+    [dailyPath(isoDay(7))]: [
       `- Weekly planning: reviewed [[Reading List]]`,
       `+ [x] Cut the 0.2 beta release`,
       ``,

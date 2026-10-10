@@ -4,12 +4,11 @@ import { isMainWindow } from '@/lib/windows/window-role.ts'
 /**
  * `useEffect` that runs only in the MAIN window — the mount point for every
  * app-wide singleton: sync/backup and iCloud controllers, the capture drain,
- * the transcription reconciler, asset describing, update checks, the OS
+ * update checks, and the OS
  * deep-link intake. A secondary note window mounting a second instance would
- * double-run AI passes, git work, and index writes, so new background
- * controllers must come through here (or carry an explicit `isMainWindow()`
- * gate, like `EmbeddingsSync`, whose gating is data-flow rather than an
- * effect). The window-ownership rule itself is documented on
+ * double-run background work and index writes, so new background controllers
+ * must come through here (or carry an explicit `isMainWindow()` gate). The
+ * window-ownership rule itself is documented on
  * `lib/windows/window-role.ts`.
  *
  * `deps` are checked by `react-hooks/exhaustive-deps` via the config's

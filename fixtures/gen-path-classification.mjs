@@ -10,7 +10,7 @@
 // Unicode confusables, separator garbage) so the corpus can't silently
 // under-cover what the implementations differ on.
 
-const RESERVED = new Set(['assets', 'audio-memos'])
+const RESERVED = new Set(['assets'])
 const ATTACHMENTS = new Set([
   '3gp',
   '7z',
@@ -95,8 +95,7 @@ const SEEDS = [
   'Projects/Deep/Unicode-台北.md',
   'Projects/İstanbul.md',
   'Projects/Encoded%20Name.md',
-  'daily/2026-07-14.md',
-  'templates/Meeting.md',
+  'daily/2026/2026-07-14.md',
   'Notes/Sub/deep.md',
   'UPPER.MD',
   'note.markdown',
@@ -106,8 +105,6 @@ const SEEDS = [
   'Projects/.private/note.md',
   'assets/caption.md',
   'Assets/caption.md',
-  'audio-memos/transcript.md',
-  'AUDIO-MEMOS/transcript.md',
   '../outside.md',
   'Projects/../outside.md',
   'Projects/./note.md',
@@ -121,7 +118,6 @@ const SEEDS = [
   'Media/PHOTO.JPEG',
   'Media/clip.MP4',
   'Media/clip.m\u212Av',
-  'audio-memos/memo.m4a',
   'Documents/reference.pdf',
   'Documents/archive.zip',
   'Documents/report.docx',
@@ -138,12 +134,10 @@ const DIRS = [
   '',
   'notes/',
   'daily/',
-  'templates/',
   'Projects/deep/',
   'assets/',
   'Assets/',
   'aSSets/',
-  'audio-memos/',
   '.hidden/',
   'notes/.private/',
 ]

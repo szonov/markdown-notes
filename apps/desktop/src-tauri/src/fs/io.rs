@@ -13,9 +13,9 @@ use std::os::raw::c_int;
 use std::path::Path;
 use std::time::UNIX_EPOCH;
 
-use reflect_graph_paths::{
-    evicted_logical_path, eviction_placeholder, is_dataless, normalize_line_endings, to_slash_lossy,
-};
+use reflect_graph_paths::{eviction_placeholder, normalize_line_endings};
+#[cfg(test)]
+use reflect_graph_paths::{evicted_logical_path, is_dataless, to_slash_lossy};
 
 use crate::error::{AppError, AppResult};
 use crate::graph_gitignore;
@@ -454,6 +454,7 @@ pub(crate) fn file_occupied(abs: &Path) -> bool {
 /// regular file (assets). An iCloud eviction placeholder lists as its
 /// *logical* file (same extension rules) with `placeholder: true`, so an
 /// evicted note stays present to reconcile instead of looking deleted.
+#[cfg(test)]
 pub(super) fn collect_files(
     root: &Path,
     dir: &str,
@@ -910,7 +911,12 @@ mod tests {
         let dir = tempdir().unwrap();
         bootstrap(dir.path()).unwrap();
         atomic_write(dir.path(), &dir.path().join("notes/a.md"), "a").unwrap();
-        atomic_write(dir.path(), &dir.path().join("daily/2026-06-09.md"), "b").unwrap();
+        atomic_write(
+            dir.path(),
+            &dir.path().join("daily/2026/2026-06-09.md"),
+            "b",
+        )
+        .unwrap();
         atomic_write(dir.path(), &dir.path().join("templates/journal.md"), "t").unwrap();
         atomic_write(dir.path(), &dir.path().join("README.md"), "root").unwrap();
         atomic_write(dir.path(), &dir.path().join("Projects/deep/plan.md"), "n").unwrap();
@@ -924,7 +930,7 @@ mod tests {
         assert!(paths.contains(&"README.md"));
         assert!(paths.contains(&"Projects/deep/plan.md"));
         assert!(paths.contains(&"notes/a.md"));
-        assert!(paths.contains(&"daily/2026-06-09.md"));
+        assert!(paths.contains(&"daily/2026/2026-06-09.md"));
         assert!(paths.contains(&"templates/journal.md"));
         assert!(!paths.iter().any(|p| p.ends_with(".txt")));
         assert!(!paths.iter().any(|p| p.starts_with("assets/")));
@@ -1010,27 +1016,17 @@ mod tests {
     fn unfiltered_collect_lists_every_file_in_a_dir() {
         let dir = tempdir().unwrap();
         bootstrap(dir.path()).unwrap();
-        // `audio-memos/` is not bootstrapped — the first write creates it.
-        atomic_write_bytes(
-            dir.path(),
-            &dir.path().join("audio-memos/memo.webm"),
-            b"audio",
-        )
-        .unwrap();
-        atomic_write_bytes(
-            dir.path(),
-            &dir.path().join("audio-memos/memo.m4a"),
-            b"audio",
-        )
-        .unwrap();
+        // Arbitrary adopted subdirectories are discovered too.
+        atomic_write_bytes(dir.path(), &dir.path().join("Media/memo.webm"), b"audio").unwrap();
+        atomic_write_bytes(dir.path(), &dir.path().join("Media/memo.m4a"), b"audio").unwrap();
         atomic_write(dir.path(), &dir.path().join("notes/a.md"), "a").unwrap();
 
         let mut out = Vec::new();
-        collect_files(dir.path(), "audio-memos", None, &mut out).unwrap();
+        collect_files(dir.path(), "Media", None, &mut out).unwrap();
         let paths: Vec<&str> = out.iter().map(|f| f.path.as_str()).collect();
         assert_eq!(paths.len(), 2);
-        assert!(paths.contains(&"audio-memos/memo.webm"));
-        assert!(paths.contains(&"audio-memos/memo.m4a"));
+        assert!(paths.contains(&"Media/memo.webm"));
+        assert!(paths.contains(&"Media/memo.m4a"));
     }
 
     #[test]
@@ -1039,7 +1035,7 @@ mod tests {
         bootstrap(dir.path()).unwrap();
 
         let mut out = Vec::new();
-        collect_files(dir.path(), "audio-memos", None, &mut out).unwrap();
+        collect_files(dir.path(), "missing", None, &mut out).unwrap();
         assert!(out.is_empty());
     }
 }

@@ -1,8 +1,5 @@
 /**
- * The shared lifecycle for a background reconcile loop — capture enrichment
- * ({@link createCaptureController}), audio-memo transcription
- * ({@link createTranscriptionReconciler}), and asset descriptions
- * ({@link createAssetDescribeController}) are all the same shape: a
+ * The shared lifecycle for a background reconcile loop: a
  * generation-pinned, single-flight pass driven by watcher/focus/online events.
  * The loop guards, wake wiring, and teardown are identical and breed bugs inside
  * a React effect seam, so they live here once. Each feature supplies its own
@@ -13,7 +10,7 @@
  * One iteration of a feature's reconcile work. Receives the loop's `isStale`
  * gate to thread into its own reads/writes (and to bail between awaits). Return
  * `'stop'` to end the loop immediately, even if a follow-up was queued mid-pass
- * (e.g. a transient provider failure that should wait for the next external
+ * (e.g. a transient failure that should wait for the next external
  * trigger rather than spin); return `void` to keep draining queued follow-ups.
  */
 export type ReconcilePass = (isStale: () => boolean) => Promise<void | 'stop'>

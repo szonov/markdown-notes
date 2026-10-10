@@ -67,12 +67,9 @@ vi.mock('@/providers/theme-provider.tsx', () => ({
 }))
 vi.mock('@/providers/settings-provider.tsx', () => ({
   useSettings: () => ({
-    settings: { editorMarkdownSyntax: 'hide', semanticSearchEnabled: false, theme: 'system' },
+    settings: { editorMarkdownSyntax: 'hide', theme: 'system' },
     updateSettings: vi.fn(),
   }),
-}))
-vi.mock('@/providers/audio-memo-provider.tsx', () => ({
-  useAudioMemo: () => ({ toggle: vi.fn() }),
 }))
 registerAppCommands() // production does this in main.tsx
 
@@ -161,7 +158,11 @@ describe('app shortcuts', () => {
     await act(() => result.current.router.navigate({ kind: 'daily', date: '2026-09-08' }))
     await act(() => result.current.setFocusedDailyDate('2026-09-07'))
     await act(() => result.current.context.togglePin())
-    expect(commitNoteFrontmatter).toHaveBeenCalledWith('daily/2026-09-07.md', { pinned: true }, 1)
+    expect(commitNoteFrontmatter).toHaveBeenCalledWith(
+      'daily/2026/2026-09-07.md',
+      { pinned: true },
+      1,
+    )
     expect(
       client.getQueryData<PinnedNote[]>(queryKeys.index.pinnedNotes('/g'))?.[0]?.dailyDate,
     ).toBe('2026-09-07')

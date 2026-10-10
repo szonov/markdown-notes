@@ -1,5 +1,5 @@
 import { noteExists } from '../graph/commands.ts'
-import { notePath, templatePath } from '../graph/paths.ts'
+import { notePath } from '../graph/paths.ts'
 import { slugForTitle } from '../markdown/slug.ts'
 import { db } from './db.ts'
 
@@ -12,11 +12,9 @@ import { db } from './db.ts'
  * disk: the index lags the watcher by a debounce, and an unindexed file must
  * never be clobbered by a new note's slug.
  *
- * The entry points share one probe loop: {@link slugPathForTitle} /
- * {@link templateSlugPathForTitle} for the rename pipeline (the note's own
- * path always counts as free — a note never collides with itself, and never
- * "tightens" to a shorter suffix) and {@link availableTemplatePath} for
- * template creation. Note creation no longer probes here: it claims each
+ * The rename pipeline's entry point keeps the note's own path free — a note
+ * never collides with itself, and never "tightens" to a shorter suffix.
+ * Note creation no longer probes here: it claims each
  * candidate atomically through the no-clobber `note_create` command
  * (`createNoteWithTitle`), where disk occupancy is the only authority.
  * See `docs/readable-filenames.md`.
@@ -62,32 +60,6 @@ async function probeNotePath(
     }
   }
   throw new Error(`no available note path for slug "${slug}" after ${MAX_COLLISION_PROBES} probes`)
-}
-
-/**
- * The first available `templates/…` path for `slug` (template creation) —
- * the shared probe and collision suffix, in the templates directory. `taken`
- * is injectable for tests; the default probes the index and the filesystem.
- */
-export async function availableTemplatePath(
-  slug: string,
-  taken: (path: string) => Promise<boolean> = pathTaken,
-): Promise<string> {
-  return await probeNotePath(slug, taken, null, templatePath)
-}
-
-/**
- * Where `path`'s template file should live for `title` (the settings rename's
- * target) — {@link slugPathForTitle}'s semantics in the templates directory:
- * the template's own path always counts as free, so a no-op rename never
- * "moves" a file onto a `-2` suffix.
- */
-export async function templateSlugPathForTitle(
-  path: string,
-  title: string,
-  taken: (candidate: string) => Promise<boolean> = pathTaken,
-): Promise<string> {
-  return await probeNotePath(slugForTitle(title), taken, path, templatePath)
 }
 
 /**

@@ -64,7 +64,7 @@ const noteRows = [
   },
 ]
 const taggedDailyRow = {
-  path: 'daily/2026-06-09.md',
+  path: 'daily/2026/2026-06-09.md',
   title: 'June 9, 2026',
   mtime: TOKYO_MTIME,
   preview: 'Daily travel notes.',
@@ -72,7 +72,7 @@ const taggedDailyRow = {
 const tagRows = [
   { note_path: 'notes/health.md', tag: 'link' },
   { note_path: 'notes/tokyo.md', tag: 'link' },
-  { note_path: 'daily/2026-06-09.md', tag: 'travel' },
+  { note_path: 'daily/2026/2026-06-09.md', tag: 'travel' },
 ]
 const facetRows = [
   { tag: 'book', count: 3 },

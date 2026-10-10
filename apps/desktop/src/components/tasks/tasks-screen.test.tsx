@@ -349,7 +349,7 @@ describe('TasksScreen', () => {
   it('groups tasks by date bucket then note, in display order', async () => {
     getOpenTasks.mockResolvedValue([
       task({
-        notePath: 'daily/2026-06-14.md',
+        notePath: 'daily/2026/2026-06-14.md',
         dailyDate: '2026-06-14',
         text: 'today task',
         noteTitle: '2026-06-14',
@@ -547,7 +547,7 @@ describe('TasksScreen', () => {
   it('opens a task’s source note from its date without editing the task', async () => {
     getOpenTasks.mockResolvedValue([
       task({
-        notePath: 'daily/2026-06-09.md',
+        notePath: 'daily/2026/2026-06-09.md',
         dailyDate: '2026-06-09',
         text: 'daily task',
         noteTitle: '2026-06-09',
@@ -968,7 +968,7 @@ describe('TasksScreen', () => {
     await view.findByRole('button', { name: 'first' })
     await userEvent.keyboard('{Enter}')
     // Nothing was selected, so the new task lands in today's daily note.
-    await waitFor(() => expect(insertTask).toHaveBeenCalledWith('daily/2026-06-14.md', 1))
+    await waitFor(() => expect(insertTask).toHaveBeenCalledWith('daily/2026/2026-06-14.md', 1))
     // The optimistic empty row mounts its inline editor, ready to type into.
     await view.findByTestId('task-editor')
     await view.unmount()
@@ -996,7 +996,7 @@ describe('TasksScreen', () => {
     await userEvent.click(view.getByRole('button', { name: 'delete-edit' }))
     await waitFor(() =>
       expect(writeTask).toHaveBeenCalledWith(
-        expect.objectContaining({ notePath: 'daily/2026-06-14.md' }),
+        expect.objectContaining({ notePath: 'daily/2026/2026-06-14.md' }),
         [{ kind: 'remove' }],
         1,
       ),

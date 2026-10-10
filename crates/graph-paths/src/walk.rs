@@ -245,11 +245,11 @@ mod tests {
         let root = dir.path();
         write(root, "README.md", "root");
         write(root, "notes/a.md", "a");
-        write(root, "daily/2026-06-09.md", "b");
+        write(root, "daily/2026/2026-06-09.md", "b");
         write(root, "templates/journal.md", "t");
         write(root, "Projects/deep/plan.md", "nested");
         write(root, "assets/caption.md", "asset");
-        write(root, "audio-memos/transcript.md", "audio");
+        write(root, "Media/transcript.md", "media");
         write(root, ".obsidian/plugin.md", "hidden");
         write(root, "Projects/.private/secret.md", "hidden");
         write(root, "Projects/upper.MD", "upper");
@@ -263,9 +263,10 @@ mod tests {
         assert_eq!(
             notes,
             vec![
+                "Media/transcript.md",
                 "Projects/deep/plan.md",
                 "README.md",
-                "daily/2026-06-09.md",
+                "daily/2026/2026-06-09.md",
                 "notes/a.md",
                 "templates/journal.md",
             ]

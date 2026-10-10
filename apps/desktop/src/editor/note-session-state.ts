@@ -121,13 +121,17 @@ export function createNoteSession(options: NoteSessionOptions): NoteSession {
         const content = header + buffer
         inFlightWrite = content
         try {
-          await write(path, content, missing ? null : disk)
+          const outcome = await write(path, content, missing ? null : disk)
           disk = content
           dirty = header + buffer !== content
-          missing = false // the landed write created the file if it was missing
+          // A daily note cleared to nothing is atomically removed by the host.
+          // Keep its serialized empty buffer as the clean baseline, but mark
+          // the file missing so the next real edit recreates it with a
+          // no-clobber expected revision.
+          missing = outcome === 'deleted'
           error = null // a previous save failure is resolved by this success
           emit()
-          onContent?.(content, 'saved')
+          onContent?.(outcome === 'deleted' ? '' : content, 'saved')
         } finally {
           inFlightWrite = null
         }
