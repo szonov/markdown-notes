@@ -1,5 +1,6 @@
 import { toast } from '@/components/ui/toast.tsx'
 import { getOperations, subscribeOperations, type Operation } from '@/lib/operations.ts'
+import type { Translate } from '@/providers/i18n-provider.tsx'
 
 /**
  * The desktop face of the operations store (foundations hardening): a small,
@@ -26,21 +27,21 @@ function toastId(operation: Operation): string {
   return `operation-${operation.id}`
 }
 
-function descriptionFor(operation: Operation): string | undefined {
+function descriptionFor(operation: Operation, t: Translate): string | undefined {
   if (operation.status !== 'running' && operation.message !== null) {
-    return operation.message
+    return t(operation.message)
   }
   if (operation.progress !== null) {
     return `${operation.progress.done}/${operation.progress.total}`
   }
-  return operation.description ?? undefined
+  return operation.description !== null ? t(operation.description) : undefined
 }
 
-function showOperationToast(operation: Operation): void {
+function showOperationToast(operation: Operation, t: Translate): void {
   const operationAction = operation.action
   const actionProps = operationAction
     ? {
-        children: operationAction.label,
+        children: t(operationAction.label),
         onClick: () => {
           void Promise.resolve(operationAction.run()).catch((error: unknown) => {
             console.error('operation action failed:', error)
@@ -50,8 +51,8 @@ function showOperationToast(operation: Operation): void {
     : undefined
   const options = {
     id: toastId(operation),
-    title: operation.label,
-    description: descriptionFor(operation),
+    title: t(operation.label),
+    description: descriptionFor(operation, t),
     ...NON_DISMISSIBLE_OPERATION_OPTIONS,
     actionProps,
   }
@@ -72,7 +73,7 @@ function showOperationToast(operation: Operation): void {
 }
 
 /** Start mirroring the operations store into toasts; returns a detach. */
-export function attachOperationToasts(): () => void {
+export function attachOperationToasts(t: Translate = (text) => text): () => void {
   let shownIds = new Set<number>()
   const sync = (): void => {
     const operations = getOperations()
@@ -83,7 +84,7 @@ export function attachOperationToasts(): () => void {
       }
     }
     for (const operation of operations) {
-      showOperationToast(operation)
+      showOperationToast(operation, t)
     }
     shownIds = nextIds
   }

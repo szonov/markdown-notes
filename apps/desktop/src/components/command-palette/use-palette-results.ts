@@ -8,6 +8,7 @@ import { queryKeys } from '@/lib/query-client.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
 import { useSettings } from '@/providers/settings-provider.tsx'
 import { buildPaletteSections, type PaletteSections } from './entries.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 /**
  * The palette's data layer (Plan 08), extracted so the component stays
@@ -25,7 +26,16 @@ export interface PaletteResults {
   searchFailed: boolean
 }
 
+function localizedCommandTitle(title: string, language: 'en' | 'ru', t: (text: string) => string): string {
+  const graphSwitch = /^Switch to graph (\d+)$/.exec(title)
+  if (language === 'ru' && graphSwitch?.[1] !== undefined) {
+    return `Переключиться на папку ${graphSwitch[1]}`
+  }
+  return t(title)
+}
+
 export function usePaletteResults(open: boolean, query: string): PaletteResults {
+  const { language, t } = useI18n()
   const { graph } = useGraph()
   const { settings } = useSettings()
 
@@ -90,9 +100,12 @@ export function usePaletteResults(open: boolean, query: string): PaletteResults 
         suggestions: suggestions ?? [],
         hits: hits ?? [],
         filtered: parsed.filtered,
-        commands: listCommands(),
+        commands: listCommands().map((command) => ({
+          ...command,
+          title: localizedCommandTitle(command.title, language, t),
+        })),
       }),
-    [query, trimmed, suggestions, hits, parsed.filtered],
+    [query, trimmed, suggestions, hits, parsed.filtered, language, t],
   )
 
   return { sections, resultsSettled, searchFailed }

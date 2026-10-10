@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog.tsx'
 import { InputGroup, InputGroupAddon } from '@/components/ui/input-group.tsx'
 import { SearchIcon, CheckIcon } from 'lucide-react'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
   return (
@@ -39,6 +40,7 @@ function CommandDialog({
   showCloseButton?: boolean
   children: React.ReactNode
 }) {
+  const { t } = useI18n()
   return (
     <Dialog {...props}>
       <DialogContent
@@ -46,8 +48,8 @@ function CommandDialog({
         showCloseButton={showCloseButton}
       >
         <DialogHeader className="sr-only">
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogTitle>{t(title)}</DialogTitle>
+          <DialogDescription>{t(description)}</DialogDescription>
         </DialogHeader>
         {children}
       </DialogContent>

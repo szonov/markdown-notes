@@ -3,6 +3,7 @@ import { foldTag, type NoteTagFacet } from '@reflect/core'
 import { useSettings } from '@/providers/settings-provider.tsx'
 import { CustomFilterMenu } from './custom-filter-menu.tsx'
 import { FilterTab } from './filter-tab.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface AllNotesFiltersProps {
   /** The active tag filter (`null` = the All tab). */
@@ -20,6 +21,7 @@ interface AllNotesFiltersProps {
  */
 export function AllNotesFilters({ tag, facets, onSelect }: AllNotesFiltersProps): ReactElement {
   const { settings } = useSettings()
+  const { t } = useI18n()
 
   // The setting is user-edited JSON — dedupe case-insensitively and drop
   // blanks so a hand-edited document can't render twin or empty tabs.
@@ -41,10 +43,10 @@ export function AllNotesFilters({ tag, facets, onSelect }: AllNotesFiltersProps)
   return (
     <div
       role="group"
-      aria-label="Filter by tag"
+      aria-label={t('Filter by tag')}
       className="flex items-stretch divide-x divide-border overflow-hidden rounded-lg border border-border bg-surface shadow-sm"
     >
-      <FilterTab label="All" active={tag === null} onClick={() => onSelect(null)} />
+      <FilterTab label={t('All')} active={tag === null} onClick={() => onSelect(null)} />
       {pinned.map((pinnedTag) => (
         <FilterTab
           key={foldTag(pinnedTag)}

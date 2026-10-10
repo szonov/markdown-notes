@@ -5,6 +5,7 @@ import {
   type ResizableSidebarPanel,
 } from '@/hooks/use-sidebar-resize.ts'
 import { cn } from '@/lib/utils.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 const PANEL_LABELS: Record<ResizableSidebarPanel, string> = {
   workspace: 'Resize sidebar',
@@ -30,13 +31,14 @@ interface SidebarResizeHandleProps {
  */
 export function SidebarResizeHandle({ panel }: SidebarResizeHandleProps): ReactElement {
   const { width, range, dragging, handlers } = useSidebarResize(panel)
+  const { t } = useI18n()
 
   return (
     <div
       role="separator"
       tabIndex={0}
       aria-orientation="vertical"
-      aria-label={PANEL_LABELS[panel]}
+      aria-label={t(PANEL_LABELS[panel])}
       aria-controls={SIDEBAR_PANEL_IDS[panel]}
       aria-valuenow={width}
       aria-valuemin={range.min}

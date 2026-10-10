@@ -6,6 +6,7 @@ import { formatDayLabel } from '@/lib/dates.ts'
 import { addMonths, buildMonthGrid, monthLabel, monthOf, weekdayLabels } from '@/lib/month-grid.ts'
 import { cn } from '@/lib/utils.ts'
 import { useSettings } from '@/providers/settings-provider.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface TaskScheduleCalendarProps {
   /** Controlled open state (the ⌘⇧S shortcut toggles it). */
@@ -35,6 +36,7 @@ export function TaskScheduleCalendar({
   children,
 }: TaskScheduleCalendarProps): ReactElement {
   const { settings } = useSettings()
+  const { t } = useI18n()
   const weekStartsOn = weekStartDow(settings.weekStartDay)
   const [month, setMonth] = useState(() => monthOf(today))
   // Re-anchor to today's month each time the popover opens, without an effect.
@@ -55,13 +57,13 @@ export function TaskScheduleCalendar({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger render={children} />
-      <PopoverContent align="end" className="w-auto p-0" aria-label="Schedule">
+      <PopoverContent align="end" className="w-auto p-0" aria-label={t('Schedule')}>
         <header className="flex items-center justify-between px-4 pt-3 pb-1">
           <div className="text-sm font-semibold text-text">{monthLabel(month)}</div>
           <nav className="flex items-center gap-1 text-text-muted">
             <button
               type="button"
-              aria-label="Previous month"
+              aria-label={t('Previous month')}
               onClick={() => setMonth(addMonths(month, -1))}
               className="rounded-md p-0.5 transition-colors hover:bg-surface-hover hover:text-text"
             >
@@ -69,7 +71,7 @@ export function TaskScheduleCalendar({
             </button>
             <button
               type="button"
-              aria-label="Next month"
+              aria-label={t('Next month')}
               onClick={() => setMonth(addMonths(month, 1))}
               className="rounded-md p-0.5 transition-colors hover:bg-surface-hover hover:text-text"
             >
@@ -117,7 +119,7 @@ export function TaskScheduleCalendar({
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-text-muted transition-colors hover:bg-surface-hover hover:text-text focus-visible:outline-none"
           >
             <X className="size-3.5" />
-            Clear date
+            {t('Clear date')}
           </button>
         </div>
       </PopoverContent>

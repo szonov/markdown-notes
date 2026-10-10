@@ -4,6 +4,7 @@ import { ExternalLinkIcon, XIcon } from 'lucide-react'
 import { LightboxChromeButton } from '@/editor/lightbox-chrome-button.tsx'
 import { useImageDismissDrag } from '@/editor/use-image-dismiss-drag.ts'
 import { cn } from '@/lib/utils.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface ImageLightboxContentProps {
   item: LightboxImageItem
@@ -18,6 +19,7 @@ export function ImageLightboxContent({
   onClose,
   onOpenImage,
 }: ImageLightboxContentProps): ReactElement {
+  const { t } = useI18n()
   const dismissDrag = useImageDismissDrag({ active: true, enabled: mobileSurface, onClose })
 
   return (
@@ -30,7 +32,7 @@ export function ImageLightboxContent({
           side="left"
           wrapperStyle={dismissDrag.chromeStyle}
           size="icon-lg"
-          aria-label="Close"
+          aria-label={t('Close')}
           onClick={onClose}
         >
           <XIcon />
@@ -45,12 +47,12 @@ export function ImageLightboxContent({
           onClick={onOpenImage}
         >
           <ExternalLinkIcon data-icon="inline-start" />
-          Open
+          {t('Open')}
         </LightboxChromeButton>
       ) : null}
       <button
         type="button"
-        aria-label="Close image preview"
+        aria-label={t('Close image preview')}
         className={cn(
           'absolute inset-0 flex cursor-zoom-out items-center justify-center overflow-hidden bg-transparent',
           mobileSurface ? 'touch-none p-0' : 'p-6',

@@ -1,4 +1,6 @@
-import { format, isSameDay, isSameWeek, parse } from 'date-fns'
+import { format, isSameDay, isSameWeek, parse, type Locale } from 'date-fns'
+import { enUS } from 'date-fns/locale/en-US'
+import { ru } from 'date-fns/locale/ru'
 import type { DateFormat, TimeFormat } from '@reflect/core'
 
 /**
@@ -13,6 +15,21 @@ import type { DateFormat, TimeFormat } from '@reflect/core'
 export { addDaysIso, isIsoDate } from '@reflect/utils'
 
 const ISO_DATE_FORMAT = 'yyyy-MM-dd'
+let displayLanguage: 'en' | 'ru' = 'en'
+
+export function setDateDisplayLanguage(language: 'en' | 'ru'): void {
+  displayLanguage = language
+}
+
+export function getDateDisplayLocale(): Locale {
+  return displayLanguage === 'ru' ? ru : enUS
+}
+
+function localizedFormat(date: Date, englishPattern: string, russianPattern: string): string {
+  return format(date, displayLanguage === 'ru' ? russianPattern : englishPattern, {
+    locale: getDateDisplayLocale(),
+  })
+}
 
 /** Parse an ISO `YYYY-MM-DD` string as a local Date (the one parsing path). */
 export function parseIsoDate(date: string): Date {
@@ -32,11 +49,11 @@ export function todayIso(): string {
 export function formatDayLabel(date: string, dateFormat: DateFormat): string {
   switch (dateFormat) {
     case 'dmy':
-      return format(parseIsoDate(date), 'EEE, do MMMM, yyyy')
+      return localizedFormat(parseIsoDate(date), 'EEE, do MMMM, yyyy', 'EEEEEE, d MMMM yyyy')
     case 'iso':
       return date
     case 'mdy':
-      return format(parseIsoDate(date), 'EEE, MMMM do, yyyy')
+      return localizedFormat(parseIsoDate(date), 'EEE, MMMM do, yyyy', 'EEEEEE, LLLL d, yyyy')
   }
 }
 
@@ -64,11 +81,11 @@ export function formatShortDate(date: string, dateFormat: DateFormat): string {
 export function formatFullDate(date: Date, dateFormat: DateFormat): string {
   switch (dateFormat) {
     case 'dmy':
-      return format(date, 'do MMMM, yyyy')
+      return localizedFormat(date, 'do MMMM, yyyy', 'd MMMM yyyy')
     case 'iso':
       return format(date, ISO_DATE_FORMAT)
     case 'mdy':
-      return format(date, 'MMMM do, yyyy')
+      return localizedFormat(date, 'MMMM do, yyyy', 'LLLL d, yyyy')
   }
 }
 
@@ -105,7 +122,7 @@ export function formatRecencyLabel(
     return formatTimeOfDay(date, prefs.timeFormat)
   }
   if (isSameWeek(date, now)) {
-    return format(date, 'EEE')
+    return localizedFormat(date, 'EEE', 'EEEEEE')
   }
   switch (prefs.dateFormat) {
     case 'dmy':

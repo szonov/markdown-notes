@@ -4,6 +4,7 @@ import { dateFromDailyPath, type DateFormat } from '@reflect/core'
 import { MarkdownPreview } from '@/editor/markdown-preview.tsx'
 import { formatDayLabel } from '@/lib/dates.ts'
 import { cn } from '@/lib/utils.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface WikiLinkHoverPreviewProps {
   path: string
@@ -63,6 +64,7 @@ export function WikiLinkHoverPreview({
   resolveImageUrl,
   resolveWikiEmbed,
 }: WikiLinkHoverPreviewProps): ReactElement {
+  const { t } = useI18n()
   const dailyDate = dateFromDailyPath(path)
   const empty = markdown.trim().length === 0
   const { setRoot, overflowing } = useOverflowing()
@@ -81,7 +83,7 @@ export function WikiLinkHoverPreview({
           <div className="reflect-daily-subject mb-1">{formatDayLabel(dailyDate, dateFormat)}</div>
         ) : null}
         {empty ? (
-          <p className="text-text-muted italic">Empty note</p>
+          <p className="text-text-muted italic">{t('Empty note')}</p>
         ) : (
           <MarkdownPreview
             content={markdown}

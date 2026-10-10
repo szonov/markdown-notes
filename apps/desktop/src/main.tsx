@@ -11,6 +11,7 @@ import { PlatformRoot, warmPlatformRoot } from '@platform-root'
 import { EditorFullWidthEffect } from '@/providers/editor-full-width.tsx'
 import { EditorTextSizeEffect } from '@/providers/editor-text-size.tsx'
 import { SettingsProvider } from '@/providers/settings-provider.tsx'
+import { I18nProvider } from '@/providers/i18n-provider.tsx'
 import { ThemeProvider } from '@/providers/theme-provider.tsx'
 import '@/styles/index.css'
 
@@ -34,11 +35,13 @@ createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <SettingsProvider>
-        <EditorFullWidthEffect />
-        <EditorTextSizeEffect />
-        <ThemeProvider>
-          <PlatformRoot />
-        </ThemeProvider>
+        <I18nProvider>
+          <EditorFullWidthEffect />
+          <EditorTextSizeEffect />
+          <ThemeProvider>
+            <PlatformRoot />
+          </ThemeProvider>
+        </I18nProvider>
       </SettingsProvider>
     </QueryClientProvider>
   </StrictMode>,

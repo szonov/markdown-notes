@@ -14,6 +14,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx'
 import { useGraphColors } from '@/hooks/use-graph-colors.ts'
 import { DEFAULT_GRAPH_COLOR, GRAPH_COLOR_OPTIONS } from '@/lib/graph-colors.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface GraphMenuItemProps {
   graph: RecentGraph
@@ -30,21 +31,22 @@ export function GraphMenuItem({
   onSelect,
 }: GraphMenuItemProps): ReactElement {
   const { colorFor, setColor } = useGraphColors()
+  const { t } = useI18n()
   const color = colorFor(graph.root) ?? DEFAULT_GRAPH_COLOR
 
   return (
     <div className="flex h-8 items-stretch">
       <DropdownMenuSub>
         <DropdownMenuSubTrigger
-          aria-label={`Change color for ${graph.name}`}
-          label={`Change color for ${graph.name}`}
+          aria-label={`${t('Change color for')} ${graph.name}`}
+          label={`${t('Change color for')} ${graph.name}`}
           openOnHover={false}
           showChevron={false}
           className="shrink-0 justify-center px-2 py-0"
         >
           <GraphSwatch color={color} className="size-3.5 rounded" />
         </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent aria-label={`Color for ${graph.name}`}>
+        <DropdownMenuSubContent aria-label={`${t('Color for')} ${graph.name}`}>
           <DropdownMenuRadioGroup value={color}>
             {GRAPH_COLOR_OPTIONS.map((option) => (
               <DropdownMenuRadioItem
@@ -55,7 +57,7 @@ export function GraphMenuItem({
                 className="h-8 gap-2 py-0 pl-2 text-[13px] text-text-secondary"
               >
                 <GraphSwatch color={option.id} className="size-3.5 rounded" />
-                {option.label}
+                {t(option.label)}
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>

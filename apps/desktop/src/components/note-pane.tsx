@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
 import { useNoteSearchQuery, useNoteSearchReport } from '@/providers/note-find-provider.tsx'
 import { useSettings } from '@/providers/settings-provider.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface NotePaneProps {
   /** Graph-relative path of the note to edit. */
@@ -124,6 +125,7 @@ export function NotePaneComponent({
 }: NotePaneProps): ReactElement {
   const { graph } = useGraph()
   const { settings } = useSettings()
+  const { t } = useI18n()
   const generation = graph?.generation ?? null
   const graphKey = graph?.root ?? null
   const dailyNote = isDaily(path)
@@ -278,7 +280,7 @@ export function NotePaneComponent({
   )
 
   return (
-    <div className={cn('relative', className)} aria-label={`Editing ${path}`}>
+    <div className={cn('relative', className)} aria-label={`${t('Editing')} ${path}`}>
       <div className={gutterClassName}>
         <NoteSaveAlerts document={document} assetSaveError={saveError} />
 
@@ -320,7 +322,7 @@ export function NotePaneComponent({
         onTagSearch={onTagSearch}
         // Daily notes carry no title semantics (the date is their subject),
         // so an empty leading H1 there is just an empty heading.
-        {...(dailyNote ? {} : { titlePlaceholder: 'Untitled' })}
+        {...(dailyNote ? {} : { titlePlaceholder: t('Untitled') })}
         // `reflect-note-surface` opts this primary editor into the reading
         // text size (Settings → Editor); compact MarkdownView previews that
         // also carry `reflect-editor` keep their own context size.

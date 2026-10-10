@@ -17,6 +17,7 @@ import { useGraph } from '@/providers/graph-provider.tsx'
 import { useSettings } from '@/providers/settings-provider.tsx'
 import { useRouter } from '@/routing/router.tsx'
 import { isModEvent } from '@meowdown/core'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface DayCalendarProps {
   /** The day the sidebar describes (highlighted as selected). */
@@ -41,6 +42,7 @@ const HEADER_BUTTON_CLASS =
  * calendar glyph between the month arrows jumps back to today.
  */
 export function DayCalendar({ selectedDate, today }: DayCalendarProps): ReactElement {
+  const { t } = useI18n()
   const { navigate } = useRouter()
   const navigateNoteLink = useNoteLinkNavigation(selectedDate)
   const { graph } = useGraph()
@@ -68,7 +70,7 @@ export function DayCalendar({ selectedDate, today }: DayCalendarProps): ReactEle
   const noted = useMemo(() => new Set(notedDates ?? []), [notedDates])
 
   return (
-    <div aria-label="Calendar" className="group min-w-36">
+    <div aria-label={t('Calendar')} className="group min-w-36">
       <header className="flex items-center justify-between px-4 py-4">
         <div className="cursor-default text-sm font-semibold text-text">{monthLabel(month)}</div>
         {/* window-drag-control lifts the buttons above the WindowDragRegion strip
@@ -76,7 +78,7 @@ export function DayCalendar({ selectedDate, today }: DayCalendarProps): ReactEle
         <nav className="window-drag-control flex items-center justify-center space-x-1 text-text-muted">
           <button
             type="button"
-            aria-label="Previous month"
+            aria-label={t('Previous month')}
             onClick={() => setMonth(addMonths(month, -1))}
             className={HEADER_BUTTON_CLASS}
           >
@@ -87,7 +89,7 @@ export function DayCalendar({ selectedDate, today }: DayCalendarProps): ReactEle
               render={
                 <button
                   type="button"
-                  aria-label="Jump to today"
+                  aria-label={t('Jump to today')}
                   onClick={() => {
                     setMonth(monthOf(today))
                     navigate({ kind: 'today' })
@@ -99,12 +101,12 @@ export function DayCalendar({ selectedDate, today }: DayCalendarProps): ReactEle
               }
             />
             <TooltipContent>
-              Jump to Today {TODAY_BINDING && <ShortcutKeys binding={TODAY_BINDING} />}
+              {t('Jump to today')} {TODAY_BINDING && <ShortcutKeys binding={TODAY_BINDING} />}
             </TooltipContent>
           </Tooltip>
           <button
             type="button"
-            aria-label="Next month"
+            aria-label={t('Next month')}
             onClick={() => setMonth(addMonths(month, 1))}
             className={HEADER_BUTTON_CLASS}
           >

@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from 'react'
 import { ErrorBoundary, type FallbackProps } from 'react-error-boundary'
 import { Button } from '@/components/ui/button.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 /**
  * Catches render-phase crashes on both surfaces. Without a boundary React
@@ -27,11 +28,12 @@ export function AppErrorBoundary({ children }: { children: ReactNode }): ReactEl
 }
 
 function CrashFallback({ error }: FallbackProps): ReactElement {
+  const { t } = useI18n()
   const message = error instanceof Error ? error.message : String(error)
   return (
     <div className="flex h-dvh w-screen items-center justify-center bg-black/20 px-6">
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-xl bg-popover p-4 text-sm ring-1 ring-foreground/10">
-        <p className="font-heading text-base font-medium">Something went wrong</p>
+        <p className="font-heading text-base font-medium">{t('Something went wrong')}</p>
         <p className="text-text-muted">{message}</p>
         <div className="flex justify-end">
           <Button
@@ -39,7 +41,7 @@ function CrashFallback({ error }: FallbackProps): ReactElement {
               window.location.reload()
             }}
           >
-            Reload
+            {t('Reload')}
           </Button>
         </div>
       </div>

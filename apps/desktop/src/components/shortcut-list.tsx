@@ -3,6 +3,7 @@ import { ShortcutKeys } from '@/components/shortcut-keys.tsx'
 import { formatBindingLabel } from '@/lib/keybindings.ts'
 import type { Shortcut } from '@/lib/shortcuts.ts'
 import { cn } from '@/lib/utils.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface ShortcutListProps {
   /** Group heading (a keymap scope: "App", "Editor"). */
@@ -25,6 +26,7 @@ export function ShortcutList({
   className,
   listClassName,
 }: ShortcutListProps): ReactElement {
+  const { t } = useI18n()
   return (
     <div className={className}>
       <h3 className="text-[11px] font-semibold tracking-[0.08em] text-text-muted uppercase">
@@ -36,7 +38,7 @@ export function ShortcutList({
             key={binding}
             className="flex break-inside-avoid items-center justify-between gap-4 py-1.5 text-sm text-text-secondary"
           >
-            <span className="min-w-0 truncate">{description}</span>
+            <span className="min-w-0 truncate">{t(description)}</span>
             {/* The keycaps are aria-hidden decoration; this carries the binding for AT. */}
             <span className="sr-only">{formatBindingLabel(binding)}</span>
             <ShortcutKeys binding={binding} />

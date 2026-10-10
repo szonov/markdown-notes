@@ -5,6 +5,7 @@ import { BacklinkSourceGroup } from '@/components/backlink-source-group.tsx'
 import { useBacklinkNavigation } from '@/hooks/use-backlink-navigation.ts'
 import { useBacklinkSources } from '@/hooks/use-backlink-sources.ts'
 import { useBacklinksExpanded } from '@/hooks/use-backlinks-expanded.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface BacklinksPanelProps {
   /** Graph-relative path of the note whose inbound links to show. */
@@ -28,6 +29,7 @@ interface BacklinksPanelProps {
  * mobile surfaces render `IncomingBacklinks` over the same data layer.
  */
 export function BacklinksPanel({ path }: BacklinksPanelProps): ReactElement | null {
+  const { t } = useI18n()
   const {
     groups,
     count,
@@ -42,9 +44,9 @@ export function BacklinksPanel({ path }: BacklinksPanelProps): ReactElement | nu
 
   if (isError) {
     return (
-      <section aria-label="Incoming backlinks" className="mt-8">
+      <section aria-label={t('Incoming backlinks')} className="mt-8">
         <p role="alert" className="text-xs text-text-muted">
-          Couldn’t load backlinks.
+          {t('Couldn’t load backlinks.')}
         </p>
       </section>
     )
@@ -59,7 +61,7 @@ export function BacklinksPanel({ path }: BacklinksPanelProps): ReactElement | nu
   }
 
   return (
-    <section aria-label="Incoming backlinks" className="mt-8">
+    <section aria-label={t('Incoming backlinks')} className="mt-8">
       <h3 className="text-xs font-medium text-text-secondary">
         <button
           type="button"
@@ -74,7 +76,7 @@ export function BacklinksPanel({ path }: BacklinksPanelProps): ReactElement | nu
             }`}
           />
           <span>
-            Incoming backlink{count === 1 ? '' : 's'} ({count})
+            {t(count === 1 ? 'Incoming backlink' : 'Incoming backlinks')} ({count})
           </span>
         </button>
       </h3>

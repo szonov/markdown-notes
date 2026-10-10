@@ -12,18 +12,20 @@ import {
 } from '@/components/ui/dialog.tsx'
 import { Input } from '@/components/ui/input.tsx'
 import { useGraph } from '@/providers/graph-provider.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 import { SettingsField } from './field.tsx'
 import { SettingsSection } from './section.tsx'
 
 export function DestructiveSection(): ReactElement {
   const { graph, forget, deleteGraph } = useGraph()
+  const { t } = useI18n()
   const [confirming, setConfirming] = useState(false)
   const [forgetting, setForgetting] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteName, setDeleteName] = useState('')
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const graphId = graph?.root ?? 'this graph'
+  const graphId = graph?.root ?? t('this graph')
   const graphName = graph?.name ?? ''
   // GitHub-style guard: the delete button stays dead until the typed name
   // matches the graph's folder name exactly.
@@ -67,7 +69,7 @@ export function DestructiveSection(): ReactElement {
   return (
     <>
       <SettingsSection id="destructive">
-        <SettingsField legend="Saved graph" description="Forget this graph. Files stay on disk.">
+        <SettingsField legend={t('Saved folder')} description={t('Forget this folder. Files stay on disk.')}>
           <div className="mt-3 flex justify-start">
             <Button
               type="button"
@@ -76,13 +78,13 @@ export function DestructiveSection(): ReactElement {
               disabled={graph === null || forgetting}
               onClick={() => setConfirming(true)}
             >
-              Forget graph
+              {t('Forget folder')}
             </Button>
           </div>
         </SettingsField>
         <SettingsField
-          legend="Delete graph"
-          description="Move the entire selected folder and everything inside it to Trash."
+          legend={t('Delete folder')}
+          description={t('Move the entire selected folder and everything inside it to Trash.')}
         >
           <div className="mt-3 flex justify-start">
             <Button
@@ -92,7 +94,7 @@ export function DestructiveSection(): ReactElement {
               disabled={graph === null || deleting}
               onClick={openDeleteDialog}
             >
-              Delete graph
+              {t('Delete folder')}
             </Button>
           </div>
         </SettingsField>
@@ -100,21 +102,22 @@ export function DestructiveSection(): ReactElement {
 
       <Dialog open={confirming} onOpenChange={(open) => !forgetting && setConfirming(open)}>
         <DialogContent>
-          <DialogTitle>Forget graph?</DialogTitle>
+          <DialogTitle>{t('Forget folder?')}</DialogTitle>
           <DialogDescription className="min-w-0">
-            Remove <span className="font-mono text-text [overflow-wrap:anywhere]">{graphId}</span>{' '}
-            from saved graphs. Files stay on disk.
+            {t('Remove')}{' '}
+            <span className="font-mono text-text [overflow-wrap:anywhere]">{graphId}</span>{' '}
+            {t('from saved folders. Files stay on disk.')}
           </DialogDescription>
           <DialogFooter>
             <DialogClose
               render={
                 <Button variant="ghost" disabled={forgetting}>
-                  Cancel
+                  {t('Cancel')}
                 </Button>
               }
             />
             <Button variant="destructive" disabled={forgetting} onClick={() => void forgetGraph()}>
-              {forgetting ? 'Forgetting…' : 'Forget graph'}
+              {forgetting ? t('Forgetting…') : t('Forget folder')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -125,15 +128,15 @@ export function DestructiveSection(): ReactElement {
         onOpenChange={(open) => !deleting && setConfirmingDelete(open)}
       >
         <DialogContent>
-          <DialogTitle>Delete graph?</DialogTitle>
+          <DialogTitle>{t('Delete folder?')}</DialogTitle>
           <DialogDescription className="min-w-0">
-            Move the entire selected folder{' '}
-            <span className="font-mono text-text [overflow-wrap:anywhere]">{graphId}</span> and
-            everything inside it to Trash. Type{' '}
-            <span className="font-mono text-text">{graphName}</span> to confirm.
+            {t('Move the entire selected folder')}{' '}
+            <span className="font-mono text-text [overflow-wrap:anywhere]">{graphId}</span>{' '}
+            {t('and everything inside it to Trash. Type')}{' '}
+            <span className="font-mono text-text">{graphName}</span> {t('to confirm.')}
           </DialogDescription>
           <Input
-            aria-label="Graph name"
+            aria-label={t('Folder name')}
             placeholder={graphName}
             value={deleteName}
             autoComplete="off"
@@ -159,7 +162,7 @@ export function DestructiveSection(): ReactElement {
             <DialogClose
               render={
                 <Button variant="ghost" disabled={deleting}>
-                  Cancel
+                  {t('Cancel')}
                 </Button>
               }
             />
@@ -168,7 +171,7 @@ export function DestructiveSection(): ReactElement {
               disabled={!nameConfirmed || deleting}
               onClick={() => void deleteGraphToTrash()}
             >
-              {deleting ? 'Deleting…' : 'Delete graph'}
+              {deleting ? t('Deleting…') : t('Delete folder')}
             </Button>
           </DialogFooter>
         </DialogContent>

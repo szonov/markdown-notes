@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog.tsx'
 import { useNoteTrash } from '@/lib/notes/use-note-trash.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface AllNotesTrashDialogProps {
   /** Whether the confirm is shown. */
@@ -42,6 +43,7 @@ export function AllNotesTrashDialog({
   onTrashed,
 }: AllNotesTrashDialogProps): ReactElement {
   const { trash, isTrashing } = useNoteTrash()
+  const { t } = useI18n()
   const confirmButtonRef = useRef<HTMLButtonElement>(null)
   // Guards against a double-submit: the button's `disabled={isTrashing}` only
   // takes effect after a re-render, so a fast second click/Return could start a
@@ -81,17 +83,16 @@ export function AllNotesTrashDialog({
         initialFocus={confirmButtonRef}
       >
         <DialogTitle>
-          Trash {count} {count === 1 ? 'note' : 'notes'}?
+          {t('Trash')} {count} {t(count === 1 ? 'note' : 'notes')}?
         </DialogTitle>
         <DialogDescription>
-          {count === 1 ? 'It moves' : 'They move'} to your system Trash, where you can restore{' '}
-          {count === 1 ? 'it' : 'them'}.
+          {t(count === 1 ? 'It moves to your system Trash, where you can restore it.' : 'They move to your system Trash, where you can restore them.')}
         </DialogDescription>
         <DialogFooter>
           <DialogClose
             render={
               <Button variant="ghost" disabled={isTrashing}>
-                Cancel
+                {t('Cancel')}
               </Button>
             }
           />
@@ -101,7 +102,7 @@ export function AllNotesTrashDialog({
             disabled={isTrashing}
             onClick={() => void onConfirm()}
           >
-            Trash
+            {t('Trash')}
           </Button>
         </DialogFooter>
       </DialogContent>

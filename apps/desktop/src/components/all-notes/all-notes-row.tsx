@@ -2,6 +2,7 @@ import { memo, type MouseEvent, type ReactElement } from 'react'
 import { displayNoteTitle, type NoteListEntry } from '@reflect/core'
 import { formatRecencyLabel } from '@/lib/dates.ts'
 import { cn } from '@/lib/utils.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 import type { ModClickEvent } from '@/lib/windows/open-in-new-window.ts'
 import { useSettings } from '@/providers/settings-provider.tsx'
 
@@ -38,6 +39,7 @@ export const AllNotesRow = memo(function AllNotesRow({
   onOpen,
 }: AllNotesRowProps): ReactElement {
   const { settings } = useSettings()
+  const { t } = useI18n()
   return (
     <div
       onClick={(event) => {
@@ -59,7 +61,7 @@ export const AllNotesRow = memo(function AllNotesRow({
     >
       <button
         type="button"
-        aria-label={selected ? 'Deselect note' : 'Select note'}
+        aria-label={t(selected ? 'Deselect note' : 'Select note')}
         aria-pressed={selected}
         onClick={(event) => {
           event.stopPropagation()

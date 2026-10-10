@@ -6,21 +6,23 @@ import { useGraphColors } from '@/hooks/use-graph-colors.ts'
 import { graphColorCss } from '@/lib/graph-colors.ts'
 import { cn } from '@/lib/utils.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 /** Opens a local Markdown folder and keeps a short list of recent folders. */
 export function GraphChooser(): ReactElement {
   const { recents, error, pickAndOpen, openRecent, forget } = useGraph()
   const { colorFor } = useGraphColors()
+  const { t } = useI18n()
 
   return (
     <div className="flex h-screen w-screen overflow-auto bg-surface-app p-8">
       <div className="m-auto w-full max-w-md space-y-8">
         <div className="space-y-1.5 text-center">
           <h1 className="text-2xl font-semibold tracking-tight text-text">
-            Welcome to Markdown Notes
+            {t('Welcome to Markdown Notes')}
           </h1>
           <p className="text-sm text-text-secondary">
-            Your notes are plain Markdown files in a folder you choose.
+            {t('Your notes are plain Markdown files in a folder you choose.')}
           </p>
         </div>
 
@@ -30,15 +32,15 @@ export function GraphChooser(): ReactElement {
               <Folder aria-hidden className="size-4" strokeWidth={1.75} />
             </div>
             <div className="min-w-0 flex-1 space-y-1">
-              <h2 className="text-base font-semibold text-text">Local Markdown folder</h2>
+              <h2 className="text-base font-semibold text-text">{t('Local Markdown folder')}</h2>
               <p className="text-sm text-text-secondary">
-                Open an existing folder or choose an empty folder for a new collection of notes.
+                {t('Open an existing folder or choose an empty folder for a new collection of notes.')}
               </p>
             </div>
           </div>
           <Button type="button" className="w-full" onClick={() => void pickAndOpen()}>
             <FolderPlus aria-hidden strokeWidth={1.75} />
-            Choose a folder…
+            {t('Choose a folder…')}
           </Button>
         </section>
 
@@ -50,7 +52,7 @@ export function GraphChooser(): ReactElement {
 
         {recents.length > 0 ? (
           <div className="space-y-2">
-            <p className="px-2 text-2xs font-medium tracking-wide text-text-muted">Recent</p>
+            <p className="px-2 text-2xs font-medium tracking-wide text-text-muted">{t('Recent')}</p>
             <ul className="space-y-px">
               {recents.map((recent) => {
                 const color = colorFor(recent.root)
@@ -84,10 +86,10 @@ export function GraphChooser(): ReactElement {
                       variant="ghost"
                       size="xs"
                       onClick={() => void forget(recent.root)}
-                      aria-label={`Forget ${recent.name}`}
+                      aria-label={`${t('Forget')} ${recent.name}`}
                       className="shrink-0 text-text-muted opacity-0 transition-opacity duration-100 hover:text-text-secondary group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100"
                     >
-                      Forget
+                      {t('Forget')}
                     </Button>
                   </li>
                 )

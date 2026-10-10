@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils.ts'
 import { isMainWindow } from '@/lib/windows/window-role.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
 import { useRouter } from '@/routing/router.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 const MENU_ITEM_CLASS = 'h-8 gap-2 px-2 py-0 text-[13px] text-text-secondary'
 const SETTINGS_BINDING = keybindingFor('settings.open')
@@ -49,6 +50,7 @@ interface GraphFooterProps {
  * Menu content matches the trigger width to stay inset from the sidebar edges.
  */
 export function GraphFooter({ graph, context }: GraphFooterProps): ReactElement {
+  const { t } = useI18n()
   const graphTriggerRef = useRef<HTMLButtonElement>(null)
   const { recents, indexing, openRecent, chooseGraph } = useGraph()
   const { colorFor } = useGraphColors()
@@ -79,7 +81,7 @@ export function GraphFooter({ graph, context }: GraphFooterProps): ReactElement 
                     </span>
                     {indexing ? (
                       <span role="status" className="sr-only">
-                        Indexing
+                        {t('Indexing')}
                       </span>
                     ) : null}
                   </Button>
@@ -89,7 +91,7 @@ export function GraphFooter({ graph, context }: GraphFooterProps): ReactElement 
           />
           <TooltipContent>{graph.root}</TooltipContent>
         </Tooltip>
-        <DropdownMenuContent aria-label="Switch graph" side="top" sideOffset={6}>
+        <DropdownMenuContent aria-label={t('Switch graph')} side="top" sideOffset={6}>
           {recents.map((recent, index) => (
             <GraphMenuItem
               key={recent.root}
@@ -113,13 +115,13 @@ export function GraphFooter({ graph, context }: GraphFooterProps): ReactElement 
             className={MENU_ITEM_CLASS}
           >
             <LocateFixed aria-hidden strokeWidth={1.75} className="size-3.5 shrink-0" />
-            <span className="min-w-0 flex-1 truncate">Reveal graph in Finder</span>
+            <span className="min-w-0 flex-1 truncate">{t('Reveal graph in Finder')}</span>
           </DropdownMenuItem>
           {/* Graph switching re-roots every window; note windows hide it. */}
           {isMainWindow() ? (
             <DropdownMenuItem onClick={() => void chooseGraph()} className={MENU_ITEM_CLASS}>
               <FolderOpen aria-hidden strokeWidth={1.75} className="size-3.5 shrink-0" />
-              <span className="min-w-0 flex-1 truncate">Open another graph…</span>
+              <span className="min-w-0 flex-1 truncate">{t('Open another graph…')}</span>
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuSeparator />
@@ -128,7 +130,7 @@ export function GraphFooter({ graph, context }: GraphFooterProps): ReactElement 
             className={MENU_ITEM_CLASS}
           >
             <Settings aria-hidden strokeWidth={1.75} className="size-3.5 shrink-0" />
-            <span className="min-w-0 flex-1 truncate">Preferences</span>
+            <span className="min-w-0 flex-1 truncate">{t('Preferences')}</span>
             {SETTINGS_BINDING && (
               <ShortcutKeys binding={SETTINGS_BINDING} className="text-[10px]" />
             )}
@@ -142,7 +144,7 @@ export function GraphFooter({ graph, context }: GraphFooterProps): ReactElement 
               type="button"
               variant="ghost"
               size="icon-sm"
-              aria-label="Open settings"
+              aria-label={t('Open settings')}
               aria-current={settingsActive ? 'page' : undefined}
               onClick={() => void runCommand('settings.open', context)}
               className={cn(
@@ -157,7 +159,7 @@ export function GraphFooter({ graph, context }: GraphFooterProps): ReactElement 
           }
         />
         <TooltipContent>
-          Settings {SETTINGS_BINDING && <ShortcutKeys binding={SETTINGS_BINDING} />}
+          {t('Settings')} {SETTINGS_BINDING && <ShortcutKeys binding={SETTINGS_BINDING} />}
         </TooltipContent>
       </Tooltip>
     </div>

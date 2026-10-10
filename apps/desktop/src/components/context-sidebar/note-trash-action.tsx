@@ -14,6 +14,7 @@ import { deleteOpenNote } from '@/lib/note-delete.ts'
 import { startOperation } from '@/lib/operations.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
 import { useRouter } from '@/routing/router.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface NoteTrashActionProps {
   /** Graph-relative path of the regular note to move into trash. */
@@ -26,6 +27,7 @@ interface NoteTrashActionProps {
  * enforces the same rule before touching disk.
  */
 export function NoteTrashAction({ path }: NoteTrashActionProps): ReactElement | null {
+  const { t } = useI18n()
   const { graph } = useGraph()
   const { navigate } = useRouter()
   const [confirmingTrash, setConfirmingTrash] = useState(false)
@@ -69,7 +71,7 @@ export function NoteTrashAction({ path }: NoteTrashActionProps): ReactElement | 
           <Trash2 size={14} aria-hidden />
         </span>
         <span className="min-w-0 flex-1 truncate text-xs font-medium group-hover:text-destructive">
-          Trash note
+          {t('Trash note')}
         </span>
       </button>
 
@@ -78,21 +80,21 @@ export function NoteTrashAction({ path }: NoteTrashActionProps): ReactElement | 
         onOpenChange={(open) => !isTrashing && setConfirmingTrash(open)}
       >
         <DialogContent>
-          <DialogTitle>Trash this note?</DialogTitle>
+          <DialogTitle>{t('Trash this note?')}</DialogTitle>
           <DialogDescription>
-            It moves to your system Trash, where you can restore it.
+            {t('It moves to your system Trash, where you can restore it.')}
           </DialogDescription>
           {error !== null ? <p className="text-sm text-destructive">{error}</p> : null}
           <DialogFooter>
             <DialogClose
               render={
                 <Button variant="ghost" disabled={isTrashing}>
-                  Cancel
+                  {t('Cancel')}
                 </Button>
               }
             />
             <Button variant="destructive" disabled={isTrashing} onClick={() => void onTrash()}>
-              Trash note
+              {t('Trash note')}
             </Button>
           </DialogFooter>
         </DialogContent>

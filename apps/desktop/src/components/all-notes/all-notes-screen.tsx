@@ -19,6 +19,7 @@ import { AllNotesTrashDialog } from './all-notes-trash-dialog.tsx'
 import { NewNoteButton } from './new-note-button.tsx'
 import { useAllNotesKeyboard } from './use-all-notes-keyboard.ts'
 import { isModEvent } from '@meowdown/core'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface AllNotesScreenProps {
   /** Active tag filter carried by the route (`null` = all non-daily notes). */
@@ -42,6 +43,7 @@ interface AllNotesScreenProps {
  * wired to the router's per-entry scroll memory by hand.
  */
 export function AllNotesScreen({ tag }: AllNotesScreenProps): ReactElement {
+  const { t } = useI18n()
   const { graph } = useGraph()
   const { navigate } = useRouter()
   const navigateNoteLink = useNoteLinkNavigation()
@@ -128,22 +130,22 @@ export function AllNotesScreen({ tag }: AllNotesScreenProps): ReactElement {
     <div
       ref={rootRef}
       tabIndex={-1}
-      aria-label="All notes"
+      aria-label={t('All notes')}
       className="flex h-full min-h-0 flex-col outline-none"
     >
       <header className="flex flex-none flex-wrap items-center justify-between gap-3 border-b border-border py-4 pl-12 pr-7">
-        <h1 className="text-[15px] font-semibold text-text">Notes</h1>
+        <h1 className="text-[15px] font-semibold text-text">{t('Notes')}</h1>
         <div className="flex flex-wrap items-center gap-3">
           {trashableSelectedPaths.length > 0 ? (
             <Button
               type="button"
               variant="outline"
-              aria-label={`Trash (${trashableSelectedPaths.length})`}
+              aria-label={`${t('Trash')} (${trashableSelectedPaths.length})`}
               onClick={openTrashConfirm}
               className="text-text-secondary hover:text-destructive"
             >
               <Trash2 aria-hidden className="size-3.5" />
-              <span>Trash</span>
+              <span>{t('Trash')}</span>
               <span
                 aria-hidden
                 className="flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive/10 px-1 text-[10px] font-semibold leading-none tabular-nums text-destructive"

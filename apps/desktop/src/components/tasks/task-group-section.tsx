@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils.ts'
 import type { ModClickEvent } from '@/lib/windows/open-in-new-window.ts'
 import { TaskBreadcrumbs } from './task-breadcrumbs.tsx'
 import { TaskRow } from './task-row.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface TaskGroupSectionProps {
   group: TaskGroup
@@ -48,6 +49,7 @@ export function TaskGroupSection({
   convertControllerRef,
   onOpen,
 }: TaskGroupSectionProps): ReactElement {
+  const { t } = useI18n()
   const showSource = group.kind !== 'note'
   const { notePath } = group
   const { icon, colorClass } = taskGroupHeaderStyle(group)
@@ -68,24 +70,24 @@ export function TaskGroupSection({
               {group.label}
             </button>
           ) : (
-            <span className="truncate">{group.label}</span>
+            <span className="truncate">{t(group.label)}</span>
           )}
         </h2>
         {addTarget !== null ? (
           <button
             type="button"
-            aria-label={`Add a task to ${group.kind === 'current' ? 'today' : group.label}`}
+            aria-label={`${t('Add a task to')} ${group.kind === 'current' ? t('today') : group.label}`}
             onClick={() => onAdd(addTarget)}
             className="ml-auto flex flex-none items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-text-muted transition-colors hover:text-text focus-visible:text-text focus-visible:outline-none"
           >
             <Plus aria-hidden className="size-3.5" />
-            Add
+            {t('Add')}
           </button>
         ) : null}
       </div>
       <ul className="flex flex-col py-1">
         {group.tasks.length === 0 ? (
-          <li className="px-4 py-1.5 text-sm text-text-muted lg:px-12">No tasks</li>
+          <li className="px-4 py-1.5 text-sm text-text-muted lg:px-12">{t('No tasks')}</li>
         ) : (
           contexts.map((context) => {
             const firstTask = context.tasks[0]!

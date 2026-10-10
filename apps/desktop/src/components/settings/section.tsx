@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode } from 'react'
 import { settingsSectionDomId, settingsSectionTitle, type SettingsSectionId } from './sections.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface SettingsSectionProps {
   /**
@@ -17,7 +18,8 @@ interface SettingsSectionProps {
  * registered in the sections registry so the navigator can list and target it.
  */
 export function SettingsSection({ id, children }: SettingsSectionProps): ReactElement {
-  const title = settingsSectionTitle(id)
+  const { t } = useI18n()
+  const title = t(settingsSectionTitle(id))
   return (
     <section id={settingsSectionDomId(id)} aria-label={title} className="mt-8 first:mt-0">
       <h2 className="px-1 text-[13px] font-semibold text-text">{title}</h2>

@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 import { dismissOperation, useOperations } from '@/lib/operations.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 import { cn } from '@/lib/utils.ts'
 
 /**
@@ -14,6 +15,7 @@ import { cn } from '@/lib/utils.ts'
  */
 export function MobileOperationsPills(): ReactElement | null {
   const operations = useOperations()
+  const { t } = useI18n()
   const attention = operations.filter((operation) => operation.status !== 'running')
 
   if (attention.length === 0) {
@@ -38,9 +40,9 @@ export function MobileOperationsPills(): ReactElement | null {
             )}
           />
           <span className="truncate">
-            {operation.label}
+            {t(operation.label)}
             {operation.message !== null ? (
-              <span className="font-normal text-text-muted"> — {operation.message}</span>
+              <span className="font-normal text-text-muted"> — {t(operation.message)}</span>
             ) : null}
           </span>
         </button>

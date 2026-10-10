@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/command.tsx'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx'
 import { cn } from '@/lib/utils.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface CustomFilterMenuProps {
   /** Tags not pinned as their own tab, with non-daily note counts. */
@@ -32,6 +33,7 @@ export function CustomFilterMenu({
   activeTag,
   onSelect,
 }: CustomFilterMenuProps): ReactElement {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
 
@@ -48,11 +50,11 @@ export function CustomFilterMenu({
   const listed = facets.some((facet) => foldTag(facet.tag) === typedKey)
   const offerTyped = typed !== '' && !listed && isTagName(typed)
 
-  let emptyMessage = 'No matching tags.'
+  let emptyMessage = t('No matching tags.')
   if (typed === '') {
-    emptyMessage = 'Type a tag to filter by.'
+    emptyMessage = t('Type a tag to filter by.')
   } else if (!isTagName(typed)) {
-    emptyMessage = 'Not a valid tag name.'
+    emptyMessage = t('Not a valid tag name.')
   }
 
   return (
@@ -74,12 +76,12 @@ export function CustomFilterMenu({
             : 'text-text-secondary hover:bg-surface-hover hover:text-text',
         )}
       >
-        {activeTag !== null ? `#${activeTag}` : 'Custom'}
+        {activeTag !== null ? `#${activeTag}` : t('Custom')}
         <ChevronDown aria-hidden strokeWidth={1.75} className="size-3.5 shrink-0" />
       </PopoverTrigger>
       <PopoverContent align="end" sideOffset={6} className="w-56 p-0">
-        <Command label="Filter by another tag">
-          <CommandInput value={query} onValueChange={setQuery} placeholder="Filter by any tag…" />
+        <Command label={t('Filter by another tag')}>
+          <CommandInput value={query} onValueChange={setQuery} placeholder={t('Filter by any tag…')} />
           <CommandList>
             {/* A force-mounted item never counts as a match, so cmdk would
                 show the empty state right above it — render one or the other. */}
@@ -107,7 +109,7 @@ export function CustomFilterMenu({
               // no item inside it matches the query, even force-mounted ones.
               <CommandGroup forceMount>
                 <CommandItem forceMount value={`custom:${typed}`} onSelect={() => choose(typed)}>
-                  <span className="min-w-0 flex-1 truncate">Filter by #{typed}</span>
+                  <span className="min-w-0 flex-1 truncate">{t('Filter by')} #{typed}</span>
                 </CommandItem>
               </CommandGroup>
             ) : null}

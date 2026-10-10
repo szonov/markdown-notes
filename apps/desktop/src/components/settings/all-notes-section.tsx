@@ -2,6 +2,7 @@ import { useState, type ReactElement } from 'react'
 import { foldTag, isTagName } from '@reflect/core'
 import { X } from 'lucide-react'
 import { useSettings } from '@/providers/settings-provider.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 import { SettingsField } from './field.tsx'
 import { SettingsSection } from './section.tsx'
 
@@ -21,6 +22,7 @@ function normalizeTagInput(value: string): string {
  */
 export function AllNotesSection(): ReactElement {
   const { settings, updateSettings } = useSettings()
+  const { language, t } = useI18n()
   const [draft, setDraft] = useState('')
   const [draftError, setDraftError] = useState<string | null>(null)
   const tags = settings.allNotesFilterTags
@@ -34,9 +36,9 @@ export function AllNotesSection(): ReactElement {
     // pin that fails it would be a forever-empty filter — reject it here,
     // keeping the draft so the user can fix it.
     if (!isTagName(tag)) {
-      setDraftError(
-        `"${tag}" can't be a tag — tags start with a letter and use letters, numbers, /, _ or -.`,
-      )
+      setDraftError(language === 'ru'
+        ? `«${tag}» не может быть тегом — тег должен начинаться с буквы и может содержать буквы, цифры, /, _ или -.`
+        : `"${tag}" can't be a tag — tags start with a letter and use letters, numbers, /, _ or -.`)
       return
     }
     setDraft('')
@@ -53,8 +55,8 @@ export function AllNotesSection(): ReactElement {
   return (
     <SettingsSection id="all-notes">
       <SettingsField
-        legend="Filter tags"
-        description="Tags pinned as one-click filters at the top of the All Notes screen."
+        legend={t('Filter tags')}
+        description={t('Tags pinned as one-click filters at the top of the All Notes screen.')}
       >
         <ul className="mt-3 flex flex-wrap items-center gap-1.5">
           {tags.map((tag) => (
@@ -65,7 +67,7 @@ export function AllNotesSection(): ReactElement {
               #{tag}
               <button
                 type="button"
-                aria-label={`Remove ${tag}`}
+                aria-label={`${t('Remove')} ${tag}`}
                 onClick={() => removeTag(tag)}
                 className="rounded-full p-0.5 text-text-muted transition-colors duration-100 hover:bg-border hover:text-text"
               >
@@ -75,7 +77,7 @@ export function AllNotesSection(): ReactElement {
           ))}
           {tags.length === 0 ? (
             <li className="text-[13px] text-text-muted">
-              No pinned tags — the screen shows only the All tab and the Custom menu.
+              {t('No pinned tags — the screen shows only the All tab and the Custom menu.')}
             </li>
           ) : null}
         </ul>
@@ -93,16 +95,16 @@ export function AllNotesSection(): ReactElement {
               setDraft(event.target.value)
               setDraftError(null)
             }}
-            aria-label="Add filter tag"
+            aria-label={t('Add filter tag')}
             aria-invalid={draftError !== null}
-            placeholder="Add a tag (e.g. book)"
+            placeholder={t('Add a tag (e.g. book)')}
             className="w-full max-w-60 rounded-[7px] border border-border-strong bg-input-bg px-2.5 py-1.5 text-sm text-text shadow-input placeholder:text-text-muted"
           />
           <button
             type="submit"
             className="rounded-[7px] border border-border-strong bg-surface px-3 py-1.5 text-sm font-medium text-text-secondary shadow-input transition-colors duration-100 hover:bg-surface-hover hover:text-text"
           >
-            Add
+            {t('Add')}
           </button>
         </form>
         {draftError !== null ? (

@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import { SearchIcon } from '@/components/icons/search-icon.tsx'
 import { ShortcutKeys } from '@/components/shortcut-keys.tsx'
 import { keybindingFor } from '@/lib/commands/app-commands.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 const PALETTE_BINDING = keybindingFor('palette.open')
 
@@ -11,6 +12,7 @@ const PALETTE_BINDING = keybindingFor('palette.open')
  * opens it (and teaches the shortcut with V1's ghost ⌘K hint).
  */
 export function SidebarSearch({ onOpen }: { onOpen: () => void }): ReactElement {
+  const { t } = useI18n()
   return (
     <button
       type="button"
@@ -20,7 +22,7 @@ export function SidebarSearch({ onOpen }: { onOpen: () => void }): ReactElement 
       <span className="flex-none">
         <SearchIcon />
       </span>
-      <span className="w-0 flex-1 truncate text-left">Search anything...</span>
+      <span className="w-0 flex-1 truncate text-left">{t('Search anything...')}</span>
       {PALETTE_BINDING !== null ? <ShortcutKeys binding={PALETTE_BINDING} ghost /> : null}
     </button>
   )

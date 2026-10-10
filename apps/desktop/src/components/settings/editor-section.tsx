@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import type { EditorMarkdownSyntax, EditorTextSize } from '@reflect/core'
 import { cn } from '@/lib/utils.ts'
 import { useSettings } from '@/providers/settings-provider.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 import { SettingsField } from './field.tsx'
 import { KeyboardShortcutsField } from './keyboard-shortcuts-field.tsx'
 import { SettingsOptionCard } from './option-card.tsx'
@@ -58,12 +59,13 @@ const TEXT_SIZE_OPTIONS: TextSizeOption[] = [
 
 export function EditorSection(): ReactElement {
   const { settings, updateSettings } = useSettings()
+  const { t } = useI18n()
 
   return (
     <SettingsSection id="editor">
       <SettingsField
-        legend="Markdown syntax"
-        description="How literal markdown characters (**, `, etc.) are displayed while editing."
+        legend={t('Markdown syntax')}
+        description={t('How literal markdown characters (**, `, etc.) are displayed while editing.')}
       >
         <div className="mt-3 @container">
           <div className="grid grid-cols-1 gap-2 @xl:grid-cols-3">
@@ -82,10 +84,10 @@ export function EditorSection(): ReactElement {
                         selected && 'text-accent-soft-text',
                       )}
                     >
-                      {option.label}
+                      {t(option.label)}
                     </span>
                     <span className="mt-0.5 block text-xs text-text-muted">
-                      {option.description}
+                      {t(option.description)}
                     </span>
                   </span>
                   <input
@@ -103,7 +105,7 @@ export function EditorSection(): ReactElement {
         </div>
       </SettingsField>
 
-      <SettingsField legend="Text size" description="The reading size of the note editor.">
+      <SettingsField legend={t('Text size')} description={t('The reading size of the note editor.')}>
         <div className="mt-3 @container">
           <div className="grid grid-cols-1 gap-2 @xl:grid-cols-3">
             {TEXT_SIZE_OPTIONS.map((option) => {
@@ -121,10 +123,10 @@ export function EditorSection(): ReactElement {
                         selected && 'text-accent-soft-text',
                       )}
                     >
-                      {option.label}
+                      {t(option.label)}
                     </span>
                     <span className="mt-0.5 block text-xs text-text-muted">
-                      {option.description}
+                      {t(option.description)}
                     </span>
                   </span>
                   <input
@@ -143,8 +145,8 @@ export function EditorSection(): ReactElement {
       </SettingsField>
 
       <SettingsSwitchField
-        legend="Continuous stream"
-        description="Show daily notes together in one scrollable timeline."
+        legend={t('Continuous stream')}
+        description={t('Show daily notes together in one scrollable timeline.')}
         checked={settings.dailyNotesView === 'stream'}
         onCheckedChange={(checked) =>
           updateSettings({ dailyNotesView: checked ? 'stream' : 'pages' })
@@ -152,29 +154,29 @@ export function EditorSection(): ReactElement {
       />
 
       <SettingsSwitchField
-        legend="Full-width notes"
-        description="Stretch note text across the window with a small edge margin."
+        legend={t('Full-width notes')}
+        description={t('Stretch note text across the window with a small edge margin.')}
         checked={settings.editorFullWidth}
         onCheckedChange={(checked) => updateSettings({ editorFullWidth: checked })}
       />
 
       <SettingsSwitchField
-        legend="Start with a bullet"
-        description="New and empty notes open with a single bullet point, ready to type."
+        legend={t('Start with a bullet')}
+        description={t('New and empty notes open with a single bullet point, ready to type.')}
         checked={settings.editorDefaultBullet}
         onCheckedChange={(checked) => updateSettings({ editorDefaultBullet: checked })}
       />
 
       <SettingsSwitchField
-        legend="Bullet after a heading"
-        description="Pressing Return at the end of a heading starts a new bullet."
+        legend={t('Bullet after a heading')}
+        description={t('Pressing Return at the end of a heading starts a new bullet.')}
         checked={settings.editorBulletAfterHeading}
         onCheckedChange={(checked) => updateSettings({ editorBulletAfterHeading: checked })}
       />
 
       <SettingsSwitchField
-        legend="Smooth caret animation"
-        description="Animate the text cursor as it moves while editing."
+        legend={t('Smooth caret animation')}
+        description={t('Animate the text cursor as it moves while editing.')}
         checked={settings.editorSmoothCaretAnimation}
         onCheckedChange={(checked) => updateSettings({ editorSmoothCaretAnimation: checked })}
       />

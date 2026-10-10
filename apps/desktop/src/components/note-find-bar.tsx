@@ -3,20 +3,22 @@ import { ChevronDownIcon, ChevronUpIcon, XIcon } from 'lucide-react'
 import { getIsComposing, isModEvent } from '@meowdown/core'
 import { SearchIcon } from '@/components/icons/search-icon.tsx'
 import { useNoteFind } from '@/providers/note-find-provider.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 const FIND_BUTTON_CLASS =
   'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-[5px] text-text-muted transition-colors hover:bg-surface-hover hover:text-text disabled:pointer-events-none disabled:opacity-40'
 
-function statusText(active: number, total: number): string {
+function statusText(active: number, total: number, t: (text: string) => string): string {
   if (total === 0) {
-    return 'No matches'
+    return t('No matches')
   }
-  return `Match ${active} of ${total}`
+  return `${t('Match')} ${active} ${t('of')} ${total}`
 }
 
 /** Compact, non-modal browser-style Find chrome for the active note. */
 export function NoteFindBar(): ReactElement | null {
   const find = useNoteFind()
+  const { t } = useI18n()
   const inputRef = useRef<HTMLInputElement>(null)
 
   useLayoutEffect(() => {
@@ -81,7 +83,7 @@ export function NoteFindBar(): ReactElement | null {
   return (
     <div
       role="search"
-      aria-label="Find in note"
+      aria-label={t('Find in note')}
       // Same frame as the sidebar's search field, so the two read as one
       // family. The bar is its own focus treatment: it exists only while its
       // input is focused, so a focus ring would draw a second box inside it.
@@ -91,10 +93,10 @@ export function NoteFindBar(): ReactElement | null {
       <SearchIcon className="size-[18px] shrink-0 text-text-muted" />
       <input
         ref={inputRef}
-        aria-label="Find in note"
+        aria-label={t('Find in note')}
         autoComplete="off"
         className="reflect-find-input w-40 min-w-0 bg-transparent text-xs text-text placeholder:text-text-muted"
-        placeholder="Find in note…"
+        placeholder={t('Find in note…')}
         spellCheck={false}
         value={find.query}
         onChange={(event) => find.updateQuery(event.currentTarget.value)}
@@ -109,13 +111,13 @@ export function NoteFindBar(): ReactElement | null {
           <span aria-hidden>
             {active}/{total}
           </span>
-          <span className="sr-only">{statusText(active, total)}</span>
+          <span className="sr-only">{statusText(active, total, t)}</span>
         </span>
       ) : null}
       <span aria-hidden className="mx-0.5 h-4 w-px shrink-0 bg-border" />
       <button
         type="button"
-        aria-label="Previous match"
+        aria-label={t('Previous match')}
         className={FIND_BUTTON_CLASS}
         disabled={!canNavigate}
         onClick={find.previous}
@@ -124,7 +126,7 @@ export function NoteFindBar(): ReactElement | null {
       </button>
       <button
         type="button"
-        aria-label="Next match"
+        aria-label={t('Next match')}
         className={FIND_BUTTON_CLASS}
         disabled={!canNavigate}
         onClick={find.next}
@@ -133,7 +135,7 @@ export function NoteFindBar(): ReactElement | null {
       </button>
       <button
         type="button"
-        aria-label="Close find"
+        aria-label={t('Close find')}
         className={FIND_BUTTON_CLASS}
         onClick={() => find.close(true)}
       >

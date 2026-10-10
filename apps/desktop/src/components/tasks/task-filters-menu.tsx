@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx'
 import type { TaskFilters, TaskFiltersControl } from '@/lib/tasks/task-filters.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 const BUCKET_FILTERS: ReadonlyArray<{ key: keyof TaskFilters; label: string }> = [
   { key: 'pinned', label: 'Pinned tasks' },
@@ -38,6 +39,7 @@ export function TaskFiltersMenu({
   open,
   onOpenChange,
 }: TaskFiltersMenuProps): ReactElement {
+  const { t } = useI18n()
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger
@@ -47,20 +49,20 @@ export function TaskFiltersMenu({
             className="window-drag-control text-xs font-normal text-text-muted"
           >
             <ListFilter aria-hidden className="size-3.5" />
-            Task filters
+            {t('Task filters')}
           </Button>
         }
       />
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Tasks</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('Tasks')}</DropdownMenuLabel>
           {BUCKET_FILTERS.map(({ key, label }) => (
             <DropdownMenuCheckboxItem
               key={key}
               checked={filters[key]}
               onCheckedChange={() => toggle(key)}
             >
-              {label}
+              {t(label)}
             </DropdownMenuCheckboxItem>
           ))}
         </DropdownMenuGroup>
@@ -69,7 +71,7 @@ export function TaskFiltersMenu({
           checked={filters.archived}
           onCheckedChange={() => toggle('archived')}
         >
-          Show archived tasks
+          {t('Show archived tasks')}
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -4,6 +4,7 @@ import { GraphWorkspace } from '@/components/graph-workspace.tsx'
 import { installQuitFlush } from '@/lib/quit-flush.ts'
 import { isMainWindow } from '@/lib/windows/window-role.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 /**
  * Root component — the Plan 02 loading gate. Routes between the graph chooser
@@ -12,6 +13,7 @@ import { useGraph } from '@/providers/graph-provider.tsx'
  */
 export function App(): ReactElement {
   const { status, graph, error } = useGraph()
+  const { t } = useI18n()
 
   // Quit-time persistence: flush dirty note buffers before the webview dies
   // (secondary-window close, ⌘Q, reload) or the macOS main window hides.
@@ -32,7 +34,7 @@ export function App(): ReactElement {
     if (!isMainWindow()) {
       return (
         <div className="flex h-screen w-screen flex-col items-center justify-center gap-1 px-8 text-center text-sm text-text-muted">
-          <p>This window couldn’t open the graph. Close it and reopen from the main window.</p>
+          <p>{t('This window couldn’t open the folder. Close it and reopen from the main window.')}</p>
           {error !== null ? <p className="text-xs">{error}</p> : null}
         </div>
       )
@@ -43,7 +45,7 @@ export function App(): ReactElement {
   // 'loading' | 'opening'
   return (
     <div className="flex h-screen w-screen items-center justify-center text-sm text-text-muted">
-      Loading…
+      {t('Loading…')}
     </div>
   )
 }

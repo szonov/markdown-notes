@@ -11,6 +11,7 @@ import { isMobileSurface } from '@/lib/platform-surface.ts'
 import { queryKeys } from '@/lib/query-client.ts'
 import { cn } from '@/lib/utils.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface SyncConflictNoticeProps {
   /** Graph-relative path of the open note. */
@@ -42,6 +43,7 @@ export function SyncConflictNotice({
   path,
   className,
 }: SyncConflictNoticeProps): ReactElement | null {
+  const { t } = useI18n()
   const { graph } = useGraph()
   const { busy, error, resolve } = useConflictResolution(path)
   const bridgeReady = useBridgeReady()
@@ -85,10 +87,9 @@ export function SyncConflictNotice({
       <div className="flex gap-2">
         <GitMerge aria-hidden className="mt-0.5 size-3.5 shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="font-semibold">This note was edited on two devices at once.</p>
+          <p className="font-semibold">{t('This note was edited on two devices at once.')}</p>
           <p className="mt-0.5">
-            Both versions are highlighted below. Choose what to keep — every version stays
-            recoverable in the backup history.
+            {t('Both versions are highlighted below. Choose what to keep — every version stays recoverable in the backup history.')}
           </p>
         </div>
       </div>
@@ -99,7 +100,7 @@ export function SyncConflictNotice({
           disabled={busy}
           onClick={() => void resolve('ours')}
         >
-          {named ? `Keep “${labels.ours}”` : 'Keep this device’s version'}
+          {named ? `${t('Keep')} “${labels.ours}”` : t('Keep this device’s version')}
         </ResolveButton>
         <ResolveButton
           dot="theirs"
@@ -108,10 +109,10 @@ export function SyncConflictNotice({
           onClick={() => void resolve('theirs')}
         >
           {manySided
-            ? 'Keep the other versions'
+            ? t('Keep the other versions')
             : named
-              ? `Keep “${labels.theirs}”`
-              : 'Keep the other device’s'}
+              ? `${t('Keep')} “${labels.theirs}”`
+              : t('Keep the other device’s')}
         </ResolveButton>
         <ResolveButton
           dot="both"
@@ -119,11 +120,11 @@ export function SyncConflictNotice({
           disabled={busy}
           onClick={() => void resolve('both')}
         >
-          {manySided ? 'Keep all' : 'Keep both'}
+          {t(manySided ? 'Keep all' : 'Keep both')}
         </ResolveButton>
       </div>
       {error !== null ? (
-        <p className="mt-2 text-red-700 dark:text-red-300">Couldn’t resolve: {error}</p>
+        <p className="mt-2 text-red-700 dark:text-red-300">{t('Couldn’t resolve:')} {error}</p>
       ) : null}
     </InlineAlert>
   )

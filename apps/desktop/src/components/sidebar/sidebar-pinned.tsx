@@ -19,6 +19,7 @@ import { routeForPath, routesEqual } from '@/routing/route.ts'
 import { useRouter } from '@/routing/router.tsx'
 import { SidebarPinnedRowPreview } from './sidebar-pinned-row-preview.tsx'
 import { SidebarSortablePinnedRow } from './sidebar-sortable-pinned-row.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 /**
  * The sidebar's Pinned section (the Mac app's "Pinned notes" shelf):
@@ -29,6 +30,7 @@ export function SidebarPinned(): ReactElement | null {
   const pinned = usePinnedNotes()
   const reorder = useReorderPinnedNotes(pinned)
   const { settings } = useSettings()
+  const { t } = useI18n()
   const { route } = useRouter()
   const [activePath, setActivePath] = useState<string | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
@@ -59,9 +61,9 @@ export function SidebarPinned(): ReactElement | null {
   return (
     // px-6.5 starts the section's text at the nav rows' icon edge (the nav's
     // px-4 plus each row's px-2.5).
-    <section aria-label="Pinned notes" className="px-6.5">
+    <section aria-label={t('Pinned notes')} className="px-6.5">
       <h2 className="pt-4 text-2xs font-medium leading-5 tracking-wide text-text-muted">
-        Pinned notes
+        {t('Pinned notes')}
       </h2>
       <DndContext
         sensors={sensors}

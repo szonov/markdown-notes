@@ -2,6 +2,7 @@ import { Priority, type EditorExtension } from '@meowdown/core'
 import { useEditor, useKeymap } from '@meowdown/react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactElement } from 'react'
 import { createPortal } from 'react-dom'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface WikilinkDraft {
   from: number
@@ -28,6 +29,7 @@ function parseSelectedWikilink(source: string): Pick<WikilinkDraft, 'target' | '
  */
 export function WikilinkEditDialog(): ReactElement | null {
   const editor = useEditor<EditorExtension>()
+  const { t } = useI18n()
   const [draft, setDraft] = useState<WikilinkDraft | null>(null)
 
   const keymap = useMemo(
@@ -113,7 +115,7 @@ export function WikilinkEditDialog(): ReactElement | null {
     <div
       ref={popupRef}
       role="dialog"
-      aria-label="Edit internal link"
+      aria-label={t('Edit internal link')}
       className="fixed z-50 flex w-[min(20rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--meowdown-hover-card-border)] bg-[color:var(--meowdown-popover-bg)] text-sm text-[color:var(--meowdown-text)] shadow-md"
       style={{ left: draft.left, top: draft.top }}
       data-testid="wikilink-edit-dialog"
@@ -121,7 +123,7 @@ export function WikilinkEditDialog(): ReactElement | null {
       <form className="flex flex-col gap-2.5 p-3" onSubmit={save}>
         <label className="flex flex-col gap-1">
           <span className="text-[0.8125rem] font-medium text-[color:var(--meowdown-muted)]">
-            Text
+            {t('Text')}
           </span>
           <input
             autoFocus
@@ -133,7 +135,7 @@ export function WikilinkEditDialog(): ReactElement | null {
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-[0.8125rem] font-medium text-[color:var(--meowdown-muted)]">
-            Link
+            {t('Link')}
           </span>
           <input
             className="h-8 w-full rounded-lg border border-[color:var(--meowdown-input-border)] bg-transparent px-2.5 font-[inherit] text-[color:var(--meowdown-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--meowdown-placeholder)] focus:border-[color:var(--meowdown-focus-ring)] focus:ring-3 focus:ring-[color-mix(in_oklab,var(--meowdown-focus-ring)_50%,transparent)]"
@@ -148,7 +150,7 @@ export function WikilinkEditDialog(): ReactElement | null {
             className="mr-auto min-h-8 cursor-pointer rounded-lg border-0 bg-transparent px-2.5 py-1.5 font-[inherit] font-medium text-[color:var(--meowdown-danger)] hover:bg-[color-mix(in_oklab,var(--meowdown-danger)_10%,transparent)] focus-visible:ring-3 focus-visible:ring-[color-mix(in_oklab,var(--meowdown-focus-ring)_50%,transparent)] focus-visible:outline-none"
             onClick={() => replace(text)}
           >
-            Remove link
+            {t('Remove link')}
           </button>
           <button
             type="submit"
@@ -156,7 +158,7 @@ export function WikilinkEditDialog(): ReactElement | null {
             className="min-h-8 cursor-pointer rounded-lg border-0 bg-[color:var(--meowdown-accent)] px-2.5 py-1.5 font-[inherit] font-medium text-[color:var(--meowdown-accent-contrast)] transition-[background-color,transform] hover:not-disabled:bg-[color-mix(in_oklab,var(--meowdown-accent)_80%,transparent)] active:not-disabled:translate-y-px disabled:cursor-default disabled:opacity-50 focus-visible:ring-3 focus-visible:ring-[color-mix(in_oklab,var(--meowdown-focus-ring)_50%,transparent)] focus-visible:outline-none"
             data-testid="wikilink-save"
           >
-            Save
+            {t('Save')}
           </button>
         </div>
       </form>

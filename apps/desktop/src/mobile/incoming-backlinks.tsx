@@ -6,6 +6,7 @@ import { useBacklinkSources } from '@/hooks/use-backlink-sources.ts'
 import { useBacklinksExpanded } from '@/hooks/use-backlinks-expanded.ts'
 import { IncomingBacklinkGroup } from '@/mobile/incoming-backlink-group.tsx'
 import { cn } from '@/lib/utils.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface IncomingBacklinksProps {
   /** Graph-relative path of the note whose inbound links to show. */
@@ -33,6 +34,7 @@ export function IncomingBacklinks({
   path,
   className,
 }: IncomingBacklinksProps): ReactElement | null {
+  const { t } = useI18n()
   const {
     groups,
     count,
@@ -47,9 +49,9 @@ export function IncomingBacklinks({
 
   if (isError) {
     return (
-      <section aria-label="Incoming backlinks" className={cn('mt-6', className)}>
+      <section aria-label={t('Incoming backlinks')} className={cn('mt-6', className)}>
         <p role="alert" className="text-sm text-text-muted">
-          Couldn’t load backlinks.
+          {t('Couldn’t load backlinks.')}
         </p>
       </section>
     )
@@ -60,7 +62,7 @@ export function IncomingBacklinks({
   }
 
   return (
-    <section aria-label="Incoming backlinks" className={cn('mt-6', className)}>
+    <section aria-label={t('Incoming backlinks')} className={cn('mt-6', className)}>
       <h3 className="text-sm font-medium text-text-secondary">
         <button
           type="button"
@@ -73,7 +75,7 @@ export function IncomingBacklinks({
             className={cn('size-4 shrink-0 transition-transform', expanded && 'rotate-90')}
           />
           <span>
-            Incoming backlink{count === 1 ? '' : 's'} ({count})
+            {t(count === 1 ? 'Incoming backlink' : 'Incoming backlinks')} ({count})
           </span>
         </button>
       </h3>

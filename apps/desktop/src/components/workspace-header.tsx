@@ -4,6 +4,7 @@ import { ShortcutKeys } from '@/components/shortcut-keys.tsx'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx'
 import { keybindingFor } from '@/lib/commands/app-commands.ts'
 import type { ResolvedTheme } from '@/providers/theme-provider.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 const SETTINGS_BINDING = keybindingFor('settings.open')
 
@@ -35,6 +36,7 @@ export function WorkspaceHeader({
   onToggleTheme,
   onOpenSettings,
 }: WorkspaceHeaderProps): ReactElement {
+  const { t } = useI18n()
   return (
     <header className="flex items-center justify-between gap-4 border-b border-black/10 px-6 py-3 dark:border-white/10">
       <Tooltip>
@@ -50,7 +52,7 @@ export function WorkspaceHeader({
             role="status"
             className="text-xs text-[color:var(--text-muted)] motion-safe:animate-pulse"
           >
-            Indexing…
+            {t('Indexing…')}
           </span>
         ) : null}
         <span className="text-xs text-[color:var(--text-muted)]">v{version ?? '—'}</span>
@@ -59,14 +61,14 @@ export function WorkspaceHeader({
           onClick={onToggleTheme}
           className="rounded-md border border-black/10 px-2.5 py-1 text-xs font-medium dark:border-white/10"
         >
-          {resolvedTheme === 'dark' ? 'Light' : 'Dark'} mode
+          {t(resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode')}
         </button>
         <Tooltip>
           <TooltipTrigger
             render={
               <button
                 type="button"
-                aria-label="Open settings"
+                aria-label={t('Open settings')}
                 onClick={onOpenSettings}
                 className="rounded-md border border-black/10 p-1.5 text-[color:var(--text-secondary)] dark:border-white/10"
               >
@@ -75,7 +77,7 @@ export function WorkspaceHeader({
             }
           />
           <TooltipContent>
-            Settings {SETTINGS_BINDING && <ShortcutKeys binding={SETTINGS_BINDING} />}
+            {t('Settings')} {SETTINGS_BINDING && <ShortcutKeys binding={SETTINGS_BINDING} />}
           </TooltipContent>
         </Tooltip>
       </div>

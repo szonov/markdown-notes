@@ -8,6 +8,7 @@ import { queryKeys } from '@/lib/query-client.ts'
 import { useGraph } from '@/providers/graph-provider.tsx'
 import { useSettings } from '@/providers/settings-provider.tsx'
 import type { NoteEntry } from './entries.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 /**
  * The palette's live preview pane: the highlighted result's markdown, read
@@ -35,6 +36,7 @@ async function readNoteForPreview(path: string): Promise<string | null> {
 }
 
 export function NotePreview({ entry }: NotePreviewProps): ReactElement {
+  const { t } = useI18n()
   const { graph } = useGraph()
   const { settings } = useSettings()
   const { resolveImageUrl, resolveWikiEmbed } = useNoteAttachments(
@@ -51,11 +53,11 @@ export function NotePreview({ entry }: NotePreviewProps): ReactElement {
 
   let content: ReactElement | null
   if (isError) {
-    content = <p className="text-sm text-text-muted">This note can’t be previewed.</p>
+    content = <p className="text-sm text-text-muted">{t('This note can’t be previewed.')}</p>
   } else if (data === undefined) {
     content = null // still loading; blank beats a flash of the wrong state
   } else if (body === null || body.trim() === '') {
-    content = <p className="text-sm text-text-muted italic">Empty</p>
+    content = <p className="text-sm text-text-muted italic">{t('Empty')}</p>
   } else {
     content = (
       <MarkdownPreview

@@ -17,6 +17,7 @@ import { NavigateArrows } from './navigate-arrows.tsx'
 import { SidebarItem } from './sidebar-item.tsx'
 import { SidebarPinned } from './sidebar-pinned.tsx'
 import { SidebarSearch } from './sidebar-search.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface SidebarProps {
   graph: GraphInfo
@@ -34,6 +35,7 @@ interface SidebarProps {
  * `Mod-\` via the command registry.)
  */
 export function Sidebar({ graph, context }: SidebarProps): ReactElement {
+  const { t } = useI18n()
   const { route } = useRouter()
   const today = useToday()
   const pinned = usePinnedNotes()
@@ -65,10 +67,10 @@ export function Sidebar({ graph, context }: SidebarProps): ReactElement {
           </div>
         </div>
 
-        <nav aria-label="Primary" className="mt-6 space-y-1 px-4">
+        <nav aria-label={t('Primary')} className="mt-6 space-y-1 px-4">
           <SidebarItem
             icon={<PencilIcon className="shrink-0" />}
-            label="Daily notes"
+            label={t('Daily notes')}
             binding={keybindingFor('nav.today') ?? undefined}
             active={(route.kind === 'today' || route.kind === 'daily') && !hasActivePinnedNote}
             onClick={() => void runCommand('nav.today', context)}
@@ -79,7 +81,7 @@ export function Sidebar({ graph, context }: SidebarProps): ReactElement {
                 <SquarePen aria-hidden strokeWidth={1.75} className="size-4" />
               </span>
             }
-            label="New note"
+            label={t('New note')}
             binding={keybindingFor('note.new') ?? undefined}
             // Active while the open note is still on its ULID placeholder
             // name — the state this row creates. The birth rename onto a
@@ -90,7 +92,7 @@ export function Sidebar({ graph, context }: SidebarProps): ReactElement {
           />
           <SidebarItem
             icon={<ListIcon className="shrink-0" />}
-            label="All notes"
+            label={t('All notes')}
             binding={keybindingFor('nav.allNotes') ?? undefined}
             // A named note lives in the All Notes collection, so keep this row
             // lit while editing one. A brand-new note is still an untitled
@@ -108,7 +110,7 @@ export function Sidebar({ graph, context }: SidebarProps): ReactElement {
                 <ListChecks aria-hidden strokeWidth={1.75} className="size-4" />
               </span>
             }
-            label="Tasks"
+            label={t('Tasks')}
             binding={keybindingFor('nav.tasks') ?? undefined}
             active={route.kind === 'tasks'}
             onClick={() => void runCommand('nav.tasks', context)}

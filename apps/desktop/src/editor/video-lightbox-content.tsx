@@ -8,6 +8,7 @@ import {
 import { XIcon } from 'lucide-react'
 import { LightboxChromeButton } from '@/editor/lightbox-chrome-button.tsx'
 import { cn } from '@/lib/utils.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface VideoLightboxContentProps {
   item: LightboxVideoItem | LightboxFrameItem
@@ -20,6 +21,7 @@ export function VideoLightboxContent({
   mobileSurface,
   onClose,
 }: VideoLightboxContentProps): ReactElement {
+  const { t } = useI18n()
   return (
     // Clicking the dark area around the player closes; clicking the player
     // reaches its controls.
@@ -37,7 +39,7 @@ export function VideoLightboxContent({
       <LightboxChromeButton
         side={mobileSurface ? 'left' : 'right'}
         size="icon-lg"
-        aria-label="Close"
+        aria-label={t('Close')}
         onClick={onClose}
       >
         <XIcon />

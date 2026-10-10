@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react'
 import { InlineAlert } from '@/components/inline-alert.tsx'
 import { Button } from '@/components/ui/button.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface NoteConflictBannerProps {
   /** Resolve by keeping the editor buffer (rewrites the file). */
@@ -19,15 +20,16 @@ export function NoteConflictBanner({
   onKeepMine,
   onLoadTheirs,
 }: NoteConflictBannerProps): ReactElement {
+  const { t } = useI18n()
   return (
     <InlineAlert className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-      <span className="min-w-0 flex-1">This note changed on disk while you had unsaved edits.</span>
+      <span className="min-w-0 flex-1">{t('This note changed on disk while you had unsaved edits.')}</span>
       <div className="flex gap-2">
         <Button size="xs" variant="outline" onClick={onKeepMine}>
-          Keep mine
+          {t('Keep mine')}
         </Button>
         <Button size="xs" variant="outline" onClick={onLoadTheirs}>
-          Load theirs
+          {t('Load theirs')}
         </Button>
       </div>
     </InlineAlert>

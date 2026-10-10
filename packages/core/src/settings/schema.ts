@@ -41,6 +41,8 @@ export const contextSidebarWidthSchema = sidebarWidthValueSchema(CONTEXT_SIDEBAR
 
 export const themePreferenceSchema = z.enum(['system', 'light', 'dark']).catch('system')
 export type ThemePreference = z.infer<typeof themePreferenceSchema>
+export const languagePreferenceSchema = z.enum(['system', 'en', 'ru']).catch('system')
+export type LanguagePreference = z.infer<typeof languagePreferenceSchema>
 export const timeFormatSchema = z.enum(['12h', '24h']).catch('12h')
 export type TimeFormat = z.infer<typeof timeFormatSchema>
 export const dateFormatSchema = z.enum(['mdy', 'dmy', 'iso']).catch('mdy')
@@ -85,6 +87,7 @@ export const settingsSchema = z
     sidebarWidth: sidebarWidthSchema,
     contextSidebarWidth: contextSidebarWidthSchema,
     theme: themePreferenceSchema,
+    language: languagePreferenceSchema,
     timeFormat: timeFormatSchema,
     dateFormat: dateFormatSchema,
     weekStartDay: weekStartDaySchema,

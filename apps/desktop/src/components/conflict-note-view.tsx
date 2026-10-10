@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react'
 import { parseConflictMarkers, type ConflictSide } from '@reflect/core'
 import { cn } from '@/lib/utils.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 /**
  * The dot classes for the two sides of a conflict block. Exported so the
@@ -68,6 +69,7 @@ interface ConflictSideViewProps {
 
 function ConflictSideView({ side, tone }: ConflictSideViewProps): ReactElement {
   const tones = SIDE_TONES[tone]
+  const { t } = useI18n()
   return (
     <div className={cn('px-3 py-2', tones.block, tone === 'theirs' && 'border-t border-border')}>
       <div className={cn('mb-1 flex items-center gap-1.5 text-xs font-medium', tones.header)}>
@@ -77,7 +79,7 @@ function ConflictSideView({ side, tone }: ConflictSideViewProps): ReactElement {
       {side.text.length > 0 ? (
         <pre className="whitespace-pre-wrap">{side.text}</pre>
       ) : (
-        <p className="text-xs text-text-muted italic">Empty on this side</p>
+        <p className="text-xs text-text-muted italic">{t('Empty on this side')}</p>
       )}
     </div>
   )

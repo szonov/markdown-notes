@@ -4,6 +4,7 @@ import { ShortcutKeys } from '@/components/shortcut-keys.tsx'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx'
 import { keybindingFor } from '@/lib/commands/app-commands.ts'
 import { useRouter } from '@/routing/router.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 const BACK_BINDING = keybindingFor('history.back')
 const FORWARD_BINDING = keybindingFor('history.forward')
@@ -20,6 +21,7 @@ const BUTTON_CLASS =
  */
 export function NavigateArrows(): ReactElement {
   const { back, forward, canBack, canForward } = useRouter()
+  const { t } = useI18n()
 
   return (
     // The arrows sit inside the overlaid macOS title-bar band, where the
@@ -35,7 +37,7 @@ export function NavigateArrows(): ReactElement {
             <span>
               <button
                 type="button"
-                aria-label="Go back"
+                aria-label={t('Go back')}
                 disabled={!canBack}
                 onClick={back}
                 className={BUTTON_CLASS}
@@ -46,7 +48,7 @@ export function NavigateArrows(): ReactElement {
           }
         />
         <TooltipContent>
-          Go back {BACK_BINDING && <ShortcutKeys binding={BACK_BINDING} />}
+          {t('Go back')} {BACK_BINDING && <ShortcutKeys binding={BACK_BINDING} />}
         </TooltipContent>
       </Tooltip>
       <Tooltip>
@@ -55,7 +57,7 @@ export function NavigateArrows(): ReactElement {
             <span>
               <button
                 type="button"
-                aria-label="Go forward"
+                aria-label={t('Go forward')}
                 disabled={!canForward}
                 onClick={forward}
                 className={BUTTON_CLASS}
@@ -66,7 +68,7 @@ export function NavigateArrows(): ReactElement {
           }
         />
         <TooltipContent>
-          Go forward {FORWARD_BINDING && <ShortcutKeys binding={FORWARD_BINDING} />}
+          {t('Go forward')} {FORWARD_BINDING && <ShortcutKeys binding={FORWARD_BINDING} />}
         </TooltipContent>
       </Tooltip>
     </div>

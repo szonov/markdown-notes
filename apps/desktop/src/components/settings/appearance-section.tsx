@@ -1,11 +1,24 @@
 import type { ReactElement } from 'react'
-import type { ThemePreference } from '@reflect/core'
+import {
+  languagePreferenceSchema,
+  type LanguagePreference,
+  type ThemePreference,
+} from '@reflect/core'
 import { Monitor, Moon, Sun, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils.ts'
 import { useSettings } from '@/providers/settings-provider.tsx'
 import { SettingsField } from './field.tsx'
 import { SettingsOptionCard } from './option-card.tsx'
 import { SettingsSection } from './section.tsx'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface ThemeOption {
   value: ThemePreference
@@ -26,12 +39,42 @@ const THEME_OPTIONS: ThemeOption[] = [
  */
 export function AppearanceSection(): ReactElement {
   const { settings, updateSettings } = useSettings()
+  const { t } = useI18n()
+  const languages: Array<{ value: LanguagePreference; label: string }> = [
+    { value: 'system', label: t('System') },
+    { value: 'ru', label: t('Russian') },
+    { value: 'en', label: t('English') },
+  ]
 
   return (
     <SettingsSection id="appearance">
+      <SettingsField legend={t('Language')} description={t('Language used by the application interface.')}>
+        <div className="mt-3">
+          <Select
+            value={settings.language}
+            items={languages}
+            onValueChange={(value) =>
+              updateSettings({ language: languagePreferenceSchema.parse(value) })
+            }
+          >
+            <SelectTrigger aria-label={t('Language')} className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {languages.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      </SettingsField>
       <SettingsField
-        legend="Theme"
-        description="System follows your OS appearance. Saved with your settings."
+        legend={t('Theme')}
+        description={t('System follows your OS appearance. Saved with your settings.')}
       >
         <div className="mt-3 grid grid-cols-3 gap-2">
           {THEME_OPTIONS.map(({ value, label, icon: Icon }) => {
@@ -54,7 +97,7 @@ export function AppearanceSection(): ReactElement {
                   className="sr-only"
                 />
                 <Icon aria-hidden strokeWidth={1.75} className="size-4" />
-                <span className="text-xs font-medium">{label}</span>
+                <span className="text-xs font-medium">{t(label)}</span>
               </SettingsOptionCard>
             )
           })}

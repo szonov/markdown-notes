@@ -3,6 +3,7 @@ import { ShortcutList } from '@/components/shortcut-list.tsx'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx'
 import { APP_SHORTCUTS, EDITOR_SHORTCUTS } from '@/lib/shortcuts.ts'
 import { useShortcuts } from '@/providers/shortcuts-provider.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 /**
  * The ⌘/ cheat-sheet (Plan 15): every registered binding from both keymap
@@ -10,6 +11,7 @@ import { useShortcuts } from '@/providers/shortcuts-provider.tsx'
  * the bindings fire from, so the sheet can never advertise a dead shortcut.
  */
 export function ShortcutsDialog(): ReactElement {
+  const { t } = useI18n()
   const { open, closeShortcuts } = useShortcuts()
 
   return (
@@ -27,13 +29,13 @@ export function ShortcutsDialog(): ReactElement {
         className="grid max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)] overflow-hidden sm:max-w-3xl lg:max-w-5xl xl:max-w-6xl"
       >
         <DialogHeader className="pr-8">
-          <DialogTitle>Keyboard shortcuts</DialogTitle>
+          <DialogTitle>{t('Keyboard shortcuts')}</DialogTitle>
         </DialogHeader>
         <div className="min-h-0 overflow-y-auto pr-1">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-[minmax(14rem,1fr)_minmax(0,2fr)] xl:grid-cols-[minmax(14rem,1fr)_minmax(0,3fr)]">
-            <ShortcutList heading="App" shortcuts={APP_SHORTCUTS} />
+            <ShortcutList heading={t('App')} shortcuts={APP_SHORTCUTS} />
             <ShortcutList
-              heading="Editor"
+              heading={t('Editor')}
               shortcuts={EDITOR_SHORTCUTS}
               listClassName="lg:columns-2 xl:columns-3 lg:gap-8"
             />

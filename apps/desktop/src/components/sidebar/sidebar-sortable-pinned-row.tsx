@@ -15,6 +15,7 @@ import { routeForPath, routesEqual } from '@/routing/route.ts'
 import { useRouter } from '@/routing/router.tsx'
 import { SidebarPinnedRowPreview } from './sidebar-pinned-row-preview.tsx'
 import { isModEvent } from '@meowdown/core'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface SidebarSortablePinnedRowProps {
   note: PinnedNote
@@ -28,6 +29,7 @@ export const SidebarSortablePinnedRow = memo(function SidebarSortablePinnedRow({
   const { settings } = useSettings()
   const { graph } = useGraph()
   const queryClient = useQueryClient()
+  const { t } = useI18n()
   const target = routeForPath(note.path)
   const active = routesEqual(route, target)
   const label =
@@ -51,7 +53,7 @@ export const SidebarSortablePinnedRow = memo(function SidebarSortablePinnedRow({
       void openNativeContextMenu({
         items: [
           {
-            text: 'Unpin Note',
+            text: t('Unpin note'),
             action: () => {
               void unpinNote({
                 queryClient,
@@ -66,7 +68,7 @@ export const SidebarSortablePinnedRow = memo(function SidebarSortablePinnedRow({
         startOperation('Opening note menu').fail(errorMessage(cause))
       })
     },
-    [graph, note, queryClient],
+    [graph, note, queryClient, t],
   )
 
   return (

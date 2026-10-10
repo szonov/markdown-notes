@@ -4,6 +4,7 @@ import type { WikilinkClickHandler } from '@meowdown/core'
 import { displayNoteTitle } from '@reflect/core'
 import { BacklinkSnippet } from '@/components/backlink-snippet.tsx'
 import type { BacklinkSource } from '@/lib/group-backlinks.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 import type { ModClickEvent } from '@/lib/windows/open-in-new-window.ts'
 
 interface BacklinkSourceGroupProps {
@@ -41,6 +42,7 @@ export function BacklinkSourceGroup({
   onOpen,
   onWikilinkClick,
 }: BacklinkSourceGroupProps): ReactElement {
+  const { t } = useI18n()
   const [expanded, setExpanded] = useState(expandedOverride)
 
   // Reset to the panel-level toggle whenever it changes; the group chevron can
@@ -74,7 +76,7 @@ export function BacklinkSourceGroup({
           <button
             type="button"
             aria-expanded={expanded}
-            aria-label={`${expanded ? 'Collapse' : 'Expand'} references from ${displayNoteTitle(source.title)}`}
+            aria-label={`${t(expanded ? 'Collapse' : 'Expand')} ${t('references from')} ${displayNoteTitle(source.title)}`}
             onClick={() => setExpanded(!expanded)}
             className="absolute inset-y-0 -left-5 flex items-center text-text-muted opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
           >

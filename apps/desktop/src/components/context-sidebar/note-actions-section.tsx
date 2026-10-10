@@ -8,6 +8,7 @@ import { useGraph } from '@/providers/graph-provider.tsx'
 import { NoteActionButton } from './note-action-button.tsx'
 import { NoteTrashAction } from './note-trash-action.tsx'
 import { SidebarSection } from './sidebar-section.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface NoteActionsSectionProps {
   /** Graph-relative path of the note the actions operate on. */
@@ -31,6 +32,7 @@ export function NoteActionsSection({
   path,
   showTrash = false,
 }: NoteActionsSectionProps): ReactElement {
+  const { t } = useI18n()
   const isPinned = usePinnedNotes().some((note) => note.path === path)
   const { graph } = useGraph()
   const queryClient = useQueryClient()
@@ -46,12 +48,12 @@ export function NoteActionsSection({
   }
 
   return (
-    <SidebarSection storageKey="note-actions" title="Note actions">
+    <SidebarSection storageKey="note-actions" title={t('Note actions')}>
       <NoteActionButton
         isActive={isPinned}
         onClick={togglePin}
         icon={<PinIcon width={20} height={20} />}
-        labels={{ active: 'Un-pin this note', inactive: 'Pin this note' }}
+        labels={{ active: t('Un-pin this note'), inactive: t('Pin this note') }}
         keybinding={PIN_KEYBINDING}
       />
       {showTrash ? <NoteTrashAction path={path} /> : null}

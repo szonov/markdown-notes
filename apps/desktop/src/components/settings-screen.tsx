@@ -6,6 +6,7 @@ import { DateTimeSection } from './settings/date-time-section.tsx'
 import { DestructiveSection } from './settings/destructive-section.tsx'
 import { EditorSection } from './settings/editor-section.tsx'
 import { SearchSection } from './settings/search-section.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 /**
  * The settings screen (a routed view, like notes — reached via ⌘, or the
@@ -13,9 +14,10 @@ import { SearchSection } from './settings/search-section.tsx'
  * settings provider; there is no save button.
  */
 export function SettingsScreen(): ReactElement {
+  const { t } = useI18n()
   return (
-    <div aria-label="Settings">
-      <h1 className="text-lg font-semibold text-text">Settings</h1>
+    <div aria-label={t('Settings')}>
+      <h1 className="text-lg font-semibold text-text">{t('Settings')}</h1>
       <div className="mt-6">
         <AppearanceSection />
         <EditorSection />

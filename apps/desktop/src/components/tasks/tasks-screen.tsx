@@ -38,6 +38,7 @@ import { TaskGroupSection } from './task-group-section.tsx'
 import { TaskScheduleCalendar } from './task-schedule-calendar.tsx'
 import { TaskToolbarCountBadge } from './task-toolbar-count-badge.tsx'
 import { isModEvent } from '@meowdown/core'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 /** The selected task that owns keyboard focus: the cursor/anchor, else the first row left selected. */
 function focusedSelectedKey(
@@ -72,6 +73,7 @@ function focusedSelectedKey(
  * "show archived" filter, which reveals the whole completed history.
  */
 export function TasksScreen(): ReactElement {
+  const { t } = useI18n()
   const { graph } = useGraph()
   const navigateNoteLink = useNoteLinkNavigation()
   const today = useToday()
@@ -242,7 +244,7 @@ export function TasksScreen(): ReactElement {
     <div
       ref={rootRef}
       tabIndex={-1}
-      aria-label="Tasks"
+      aria-label={t('Tasks')}
       className="flex h-full min-h-0 flex-col outline-none"
     >
       <header className="flex flex-none items-center gap-2 border-b border-border py-2.5 pl-2 pr-3 lg:pl-10">
@@ -254,8 +256,8 @@ export function TasksScreen(): ReactElement {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search..."
-            aria-label="Search tasks"
+            placeholder={t('Search...')}
+            aria-label={t('Search tasks')}
             className="h-9 border-none bg-transparent pl-8 shadow-none focus-visible:ring-0"
           />
         </div>
@@ -269,11 +271,11 @@ export function TasksScreen(): ReactElement {
             <Button
               type="button"
               variant="ghost"
-              aria-label={`Schedule ${selection.selectedCount}`}
+              aria-label={`${t('Schedule')} ${selection.selectedCount}`}
               className="window-drag-control text-xs text-text-muted"
             >
               <CalendarClock aria-hidden className="size-3.5" />
-              Schedule
+              {t('Schedule')}
               <TaskToolbarCountBadge count={selection.selectedCount} />
             </Button>
           </TaskScheduleCalendar>
@@ -282,13 +284,13 @@ export function TasksScreen(): ReactElement {
           <Button
             type="button"
             variant="ghost"
-            aria-label={`Convert to bullet ${selection.selectedCount}`}
+            aria-label={`${t('Convert to bullet')} ${selection.selectedCount}`}
             onClick={onConvertToBullet}
-            title="Drop the checkbox, keeping the line as a plain bullet — leaves the Tasks list"
+              title={t('Drop the checkbox, keeping the line as a plain bullet — leaves the Tasks list')}
             className="window-drag-control text-xs text-text-muted"
           >
             <List aria-hidden className="size-3.5" />
-            Convert to bullet
+            {t('Convert to bullet')}
             <TaskToolbarCountBadge count={selection.selectedCount} />
           </Button>
         ) : null}
@@ -296,12 +298,12 @@ export function TasksScreen(): ReactElement {
           <Button
             type="button"
             variant="ghost"
-            aria-label={`Archive ${recentlyCompleted.length}`}
+            aria-label={`${t('Archive')} ${recentlyCompleted.length}`}
             onClick={actions.archive}
             className="window-drag-control text-xs text-text-muted"
           >
             <Archive aria-hidden className="size-3.5" />
-            Archive
+            {t('Archive')}
             <TaskToolbarCountBadge count={recentlyCompleted.length} />
           </Button>
         ) : null}
@@ -315,11 +317,11 @@ export function TasksScreen(): ReactElement {
       <div ref={setScrollElement} onScroll={onScroll} className="min-h-0 flex-1 overflow-auto pb-8">
         {isError ? (
           <p role="alert" className="px-4 py-6 text-sm text-text-muted lg:px-12">
-            Couldn’t load tasks.
+            {t('Couldn’t load tasks.')}
           </p>
         ) : ready && groups.length === 0 ? (
           <p className="px-4 py-6 text-sm text-text-muted lg:px-12">
-            {needle ? 'No matching tasks.' : 'No tasks to show.'}
+            {t(needle ? 'No matching tasks.' : 'No tasks to show.')}
           </p>
         ) : (
           <div className="flex flex-col">

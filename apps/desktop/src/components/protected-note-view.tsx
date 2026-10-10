@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 import { InlineAlert } from '@/components/inline-alert.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 interface ProtectedNoteViewProps {
   /** The full file content (frontmatter included — honest display). */
@@ -13,11 +14,11 @@ interface ProtectedNoteViewProps {
  * gate).
  */
 export function ProtectedNoteView({ content }: ProtectedNoteViewProps): ReactElement {
+  const { t } = useI18n()
   return (
     <div>
       <InlineAlert className="mb-4">
-        This note contains markdown the editor can’t yet reproduce faithfully (for example task
-        lists), so it’s open read-only to protect your file. Edit it in another tool for now.
+        {t('This note contains markdown the editor can’t yet reproduce faithfully (for example task lists), so it’s open read-only to protect your file. Edit it in another tool for now.')}
       </InlineAlert>
       <pre className="reflect-protected-note whitespace-pre-wrap text-sm leading-relaxed">
         {content}

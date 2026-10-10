@@ -4,6 +4,7 @@ import { scrollToSettingsSection } from './section-scrolling.ts'
 import type { SettingsSectionId } from './sections.ts'
 import { useActiveSettingsSection } from './use-active-settings-section.ts'
 import { useVisibleSettingsSections } from './use-visible-settings-sections.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 /** Where the sliding marker sits, in the rail's own coordinates. */
 interface MarkerPosition {
@@ -25,6 +26,7 @@ interface SettingsNavigatorProps {
  * gains a size.
  */
 export function SettingsNavigator({ className }: SettingsNavigatorProps): ReactElement {
+  const { t } = useI18n()
   const navRef = useRef<HTMLElement | null>(null)
   const itemRefs = useRef(new Map<SettingsSectionId, HTMLButtonElement>())
   const activeId = useActiveSettingsSection(navRef)
@@ -55,7 +57,7 @@ export function SettingsNavigator({ className }: SettingsNavigatorProps): ReactE
   }, [measure])
 
   return (
-    <nav ref={navRef} aria-label="Settings sections" className={cn('text-[13px]', className)}>
+    <nav ref={navRef} aria-label={t('Settings sections')} className={cn('text-[13px]', className)}>
       <div className="relative flex flex-col border-l border-border">
         {marker !== null && (
           <span
@@ -89,7 +91,7 @@ export function SettingsNavigator({ className }: SettingsNavigatorProps): ReactE
                 isActive ? 'text-text' : 'text-text-secondary hover:text-text',
               )}
             >
-              {section.title}
+              {t(section.title)}
             </button>
           )
         })}

@@ -13,6 +13,7 @@ import { getTaskKey } from '@/lib/tasks/task-identity.ts'
 import { cn } from '@/lib/utils.ts'
 import type { ModClickEvent } from '@/lib/windows/open-in-new-window.ts'
 import { useSettings } from '@/providers/settings-provider.tsx'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 import { TaskEditor, type TaskNavigate } from './task-editor.tsx'
 import { TaskText } from './task-text.tsx'
 
@@ -93,9 +94,10 @@ export function TaskRow({
   onOpen,
 }: TaskRowProps): ReactElement {
   const { settings } = useSettings()
+  const { t } = useI18n()
   const checkboxToggleControllerRef = useRef<(() => void) | null>(null)
   const done = task.checked
-  const label = task.text || 'Empty task'
+  const label = task.text || t('Empty task')
   const selectFromKeyboard = (event: KeyboardEvent<HTMLDivElement>): void => {
     if (getIsComposing()) {
       return

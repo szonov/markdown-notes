@@ -17,6 +17,7 @@ import type { NoteEntry } from './entries.ts'
 import { NotePreview } from './note-preview.tsx'
 import { usePalette } from './palette-provider.tsx'
 import { usePaletteResults } from './use-palette-results.ts'
+import { useI18n } from '@/providers/i18n-provider.tsx'
 
 /**
  * The ⌘K palette (Plan 08): one keyboard surface for find / navigate / do.
@@ -57,6 +58,7 @@ interface PendingNoteOpen {
 }
 
 export function CommandPalette({ context }: CommandPaletteProps): ReactElement | null {
+  const { t } = useI18n()
   const { open, query, setQuery, closePalette } = usePalette()
   const { settings } = useSettings()
   const { sections, resultsSettled, searchFailed } = usePaletteResults(open, query)
@@ -142,14 +144,14 @@ export function CommandPalette({ context }: CommandPaletteProps): ReactElement |
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Command palette"
+        aria-label={t('Command palette')}
         className={cn('w-full', splitLayout ? 'max-w-4xl' : 'max-w-xl')}
         onPointerDown={(event) => {
           event.stopPropagation() // clicks inside must not close
         }}
       >
         <Command
-          label="Command palette"
+          label={t('Command palette')}
           shouldFilter={false}
           value={selectedValue}
           onValueChange={setSelectedValue}
@@ -179,7 +181,7 @@ export function CommandPalette({ context }: CommandPaletteProps): ReactElement |
             autoFocus
             value={query}
             onValueChange={setQuery}
-            placeholder="Search notes, or > for commands…"
+            placeholder={t('Search notes, or > for commands…')}
             className="reflect-palette-input"
           />
           <div className={cn(splitLayout && 'flex h-[min(60vh,36rem)]')}>
@@ -188,15 +190,15 @@ export function CommandPalette({ context }: CommandPaletteProps): ReactElement |
             >
               {searchFailed ? (
                 <div role="alert" className="reflect-palette-empty">
-                  Search unavailable — the index didn’t answer.
+                  {t('Search unavailable — the index didn’t answer.')}
                 </div>
               ) : null}
               {resultsSettled && !searchFailed ? (
-                <Command.Empty className="reflect-palette-empty">No results</Command.Empty>
+                <Command.Empty className="reflect-palette-empty">{t('No results')}</Command.Empty>
               ) : null}
               {sections.notes.length > 0 ? (
                 <Command.Group
-                  heading={query.trim() === '' ? 'Recent' : 'Notes'}
+                  heading={t(query.trim() === '' ? 'Recent' : 'Notes')}
                   className="reflect-palette-group"
                 >
                   {sections.notes.map((entry) => {
@@ -247,7 +249,7 @@ export function CommandPalette({ context }: CommandPaletteProps): ReactElement |
                 </Command.Group>
               ) : null}
               {sections.commands.length > 0 ? (
-                <Command.Group heading="Commands" className="reflect-palette-group">
+                <Command.Group heading={t('Commands')} className="reflect-palette-group">
                   {sections.commands.map((command) => {
                     const Icon = COMMAND_ICONS[command.id] ?? FALLBACK_COMMAND_ICON
                     return (
@@ -288,7 +290,7 @@ export function CommandPalette({ context }: CommandPaletteProps): ReactElement |
                   <NotePreview key="note-preview" entry={selectedNote} />
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm text-text-muted">
-                    No note selected
+                    {t('No note selected')}
                   </div>
                 )}
               </div>
@@ -300,18 +302,18 @@ export function CommandPalette({ context }: CommandPaletteProps): ReactElement |
           >
             <span className="flex items-center gap-1.5">
               <Kbd>↑</Kbd>
-              <Kbd>↓</Kbd> Navigate
+              <Kbd>↓</Kbd> {t('Navigate')}
             </span>
             <span className="flex items-center gap-1.5">
-              <Kbd>↩</Kbd> Open
+              <Kbd>↩</Kbd> {t('Open')}
             </span>
             {splitLayout ? (
               <span className="flex items-center gap-1.5">
-                <ShortcutKeys binding="Mod-Enter" /> Open in new window
+                <ShortcutKeys binding="Mod-Enter" /> {t('Open in new window')}
               </span>
             ) : null}
             <span className="flex items-center gap-1.5">
-              <Kbd>esc</Kbd> Close
+              <Kbd>esc</Kbd> {t('Close')}
             </span>
           </div>
         </Command>
